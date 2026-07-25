@@ -4,6 +4,7 @@ This file records changes pushed for local Argus releases. New entries use a `YY
 
 ## 2026-07-25
 
+- Releases now use one version manifest and bounded verification stages that retain diagnostics, validate the built app and Companion CLI, and stop timed-out or interrupted command groups. Concurrent Git commands no longer leave the test run waiting after the processes have exited. ([cb1b68a](https://github.com/jeanduplessis/argus/commit/cb1b68a))
 - Standalone workspaces can now choose their working directory from the workspace context menu. Files, changes, and new terminal tabs use the selected directory while existing terminal sessions remain unchanged. ([f368d2c](https://github.com/jeanduplessis/argus/commit/f368d2c))
 - Files and folders can now copy their path relative to the Workspace Root from the Files View context menu. ([1533541](https://github.com/jeanduplessis/argus/commit/1533541))
 - Argus now shows and sounds an alert when a Kilo turn finishes outside the active tab, with explicit Kilo integration controls in Settings. ([3e55ea4](https://github.com/jeanduplessis/argus/commit/3e55ea4))
