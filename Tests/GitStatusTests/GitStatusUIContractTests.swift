@@ -365,6 +365,7 @@ struct WorkspaceFilesUIContractTests {
                 ".contextMenu {",
                 "Button(\"Open Folder\")",
                 "Button(\"Copy Folder\")",
+                "Button(\"Copy Relative Path\")",
                 "Button(\"Delete Folder\", role: .destructive)",
                 "Button(\"Rename Folder\")",
                 "Button(\"Open File\")",
@@ -372,6 +373,7 @@ struct WorkspaceFilesUIContractTests {
                 "Button(\"Delete File\", role: .destructive)",
                 "Button(\"Rename File\")",
                 "copyWorkspaceItem(file, rootPath: rootPath)",
+                "copyWorkspaceItemRelativePath(file)",
                 "$0.id == initiatingRequest.workspaceId",
                 "sourceWorkspace.openFilePanel("
             ], "files panel row interactions")
@@ -383,6 +385,8 @@ struct WorkspaceFilesUIContractTests {
             [
                 "WorkspaceFileOperating",
                 "FileManagerWorkspaceFileOperator",
+                "WorkspaceRelativePathCopying",
+                "PasteboardWorkspaceRelativePathClipboard",
                 "NSPasteboard.general",
                 "confirmDelete(path: String)",
                 "promptRename(currentName: String)",

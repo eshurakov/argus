@@ -189,6 +189,20 @@ struct WorkspaceFileTreeDirectoryError: Equatable, Sendable {
     let message: String
 }
 
+@MainActor
+protocol WorkspaceRelativePathCopying: AnyObject {
+    func copyRelativePath(_ path: String)
+}
+
+@MainActor
+final class PasteboardWorkspaceRelativePathClipboard: WorkspaceRelativePathCopying {
+    func copyRelativePath(_ path: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(path, forType: .string)
+    }
+}
+
 enum WorkspaceFileTreeLoadState: Equatable, Sendable {
     case idle
     case loading

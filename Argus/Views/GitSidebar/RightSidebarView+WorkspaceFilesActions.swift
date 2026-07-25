@@ -12,6 +12,9 @@ extension WorkspaceFilesView {
         Button("Copy Folder") {
             copyWorkspaceItem(directory, rootPath: rootPath)
         }
+        Button("Copy Relative Path") {
+            copyWorkspaceItemRelativePath(directory)
+        }
         Button("Delete Folder", role: .destructive) {
             guard let initiatingRequest = request else { return }
             Task {
@@ -44,6 +47,9 @@ extension WorkspaceFilesView {
         }
         Button("Copy File") {
             copyWorkspaceItem(file, rootPath: rootPath)
+        }
+        Button("Copy Relative Path") {
+            copyWorkspaceItemRelativePath(file)
         }
         Button("Delete File", role: .destructive) {
             guard let initiatingRequest = request else { return }

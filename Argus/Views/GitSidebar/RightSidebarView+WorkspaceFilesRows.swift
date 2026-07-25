@@ -275,6 +275,11 @@ extension WorkspaceFilesView {
         viewModel.copyFile(rootPath: rootPath, path: item.path)
     }
 
+    func copyWorkspaceItemRelativePath(_ item: WorkspaceFileTreeNode) {
+        selectWorkspaceItem(item)
+        viewModel.copyRelativePath(item.path)
+    }
+
     func deleteWorkspaceItem(
         _ item: WorkspaceFileTreeNode,
         rootPath: String,

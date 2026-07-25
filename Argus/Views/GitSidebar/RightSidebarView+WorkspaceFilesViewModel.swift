@@ -10,6 +10,7 @@ final class WorkspaceFilesViewModel: ObservableObject {
     private let provider: any WorkspaceFileTreeProviding
     private let fileOperator: any WorkspaceFileOperating
     private let filePrompter: any WorkspaceFileOperationPrompting
+    private let relativePathClipboard: any WorkspaceRelativePathCopying
     private var activeRequest: WorkspaceFileTreeRequest?
     private var requestGeneration: UInt64 = 0
     private var directoryLoadGenerations: [String: UInt64] = [:]
@@ -17,11 +18,13 @@ final class WorkspaceFilesViewModel: ObservableObject {
     init(
         provider: any WorkspaceFileTreeProviding = FileManagerWorkspaceFileTreeProvider(),
         fileOperator: any WorkspaceFileOperating = FileManagerWorkspaceFileOperator(),
-        filePrompter: any WorkspaceFileOperationPrompting = AlertWorkspaceFileOperationPrompter()
+        filePrompter: any WorkspaceFileOperationPrompting = AlertWorkspaceFileOperationPrompter(),
+        relativePathClipboard: any WorkspaceRelativePathCopying = PasteboardWorkspaceRelativePathClipboard()
     ) {
         self.provider = provider
         self.fileOperator = fileOperator
         self.filePrompter = filePrompter
+        self.relativePathClipboard = relativePathClipboard
     }
 }
 
@@ -227,6 +230,10 @@ extension WorkspaceFilesViewModel {
                 message: error.localizedDescription
             )
         }
+    }
+
+    func copyRelativePath(_ path: String) {
+        relativePathClipboard.copyRelativePath(path)
     }
 
     func deleteFileWithConfirmation(request: WorkspaceFileTreeRequest, path: String) async -> Bool {

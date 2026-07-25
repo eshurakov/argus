@@ -122,7 +122,7 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 2. Directories MUST load their children when expanded rather than requiring the entire tree to be loaded initially.
 3. Directories MUST sort before files at each level.
 4. Workspace Items MUST use semantic file and folder icons; unknown files MUST use `doc`.
-5. The Files View MUST support selection and Workspace Item Operations for open, copy, rename, and delete where applicable.
+5. The Files View MUST support selection and Workspace Item Operations for open, copy, rename, and delete where applicable. File and directory context menus MUST support copying the Workspace Item path relative to the Workspace Root as plain text.
 6. Destructive Workspace Item Operations MUST require confirmation.
 7. Refreshing the same Workspace File Tree SHOULD retain the current tree while new data loads and MUST ignore stale asynchronous results.
 8. File enumeration MUST remain bounded and disclose truncation when its display limit is reached.
