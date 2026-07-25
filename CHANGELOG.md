@@ -4,6 +4,7 @@ This file records changes pushed for local Argus releases. New entries use a `YY
 
 ## 2026-07-25
 
+- Files and folders can now copy their path relative to the Workspace Root from the Files View context menu. ([1533541](https://github.com/jeanduplessis/argus/commit/1533541))
 - Argus now shows and sounds an alert when a Kilo turn finishes outside the active tab, with explicit Kilo integration controls in Settings. ([3e55ea4](https://github.com/jeanduplessis/argus/commit/3e55ea4))
 
 ## 2026-07-24
