@@ -54,6 +54,7 @@ final class AppSettings: ObservableObject {
         static let documentTextSize = "Argus.settings.appearance.documentTextSize"
         static let interfaceDensity = "Argus.settings.appearance.interfaceDensity"
         static let audibleBell = "Argus.settings.terminal.audibleBell"
+        static let agentCompletionSound = "Argus.settings.agent.completionSound"
         static let showHiddenFiles = "Argus.settings.filesAndChanges.showHiddenFiles"
         static let wrapSourceLines = "Argus.settings.filesAndChanges.wrapSourceLines"
         static let openMarkdownInPreview = "Argus.settings.filesAndChanges.openMarkdownInPreview"
@@ -119,6 +120,9 @@ final class AppSettings: ObservableObject {
         didSet { persist(interfaceDensity.rawValue, for: Keys.interfaceDensity) }
     }
     @Published var audibleBell: Bool { didSet { persist(audibleBell, for: Keys.audibleBell) } }
+    @Published var agentCompletionSound: Bool {
+        didSet { persist(agentCompletionSound, for: Keys.agentCompletionSound) }
+    }
     @Published var showHiddenFiles: Bool { didSet { persist(showHiddenFiles, for: Keys.showHiddenFiles) } }
     @Published var wrapSourceLines: Bool { didSet { persist(wrapSourceLines, for: Keys.wrapSourceLines) } }
     @Published var openMarkdownInPreview: Bool {
@@ -173,6 +177,7 @@ final class AppSettings: ObservableObject {
         documentTextSize = Self.clamp(defaults.double(forKey: Keys.documentTextSize), to: 10...24, fallback: 12)
         interfaceDensity = Self.enumValue(defaults, key: Keys.interfaceDensity, fallback: .compact)
         audibleBell = Self.bool(defaults, key: Keys.audibleBell, fallback: true)
+        agentCompletionSound = Self.bool(defaults, key: Keys.agentCompletionSound, fallback: true)
         showHiddenFiles = Self.bool(defaults, key: Keys.showHiddenFiles, fallback: true)
         wrapSourceLines = Self.bool(defaults, key: Keys.wrapSourceLines, fallback: true)
         openMarkdownInPreview = Self.bool(defaults, key: Keys.openMarkdownInPreview, fallback: false)
@@ -208,6 +213,7 @@ final class AppSettings: ObservableObject {
         persist(documentTextSize, for: Keys.documentTextSize)
         persist(interfaceDensity.rawValue, for: Keys.interfaceDensity)
         persist(audibleBell, for: Keys.audibleBell)
+        persist(agentCompletionSound, for: Keys.agentCompletionSound)
         persist(showHiddenFiles, for: Keys.showHiddenFiles)
         persist(wrapSourceLines, for: Keys.wrapSourceLines)
         persist(openMarkdownInPreview, for: Keys.openMarkdownInPreview)

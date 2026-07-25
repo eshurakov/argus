@@ -17,7 +17,7 @@ V1 includes:
 - session restore for Projects, Workspaces, and Terminal Panels;
 - process-local Agent Status presentation.
 
-The Companion CLI is a scaffold. V1 does not include a Socket Server, socket-backed CLI commands, coding-agent integrations, notifications, PID tracking, or TTS. Accepted future work is kept under `docs/proposals/`.
+The Companion CLI is a scaffold and has no socket-backed commands. Argus supports Kilo turn-completion attention through an app-owned local socket and an explicitly installed TUI plugin. V1 does not include live external Agent Status updates, PID tracking, notification history, macOS notifications, or TTS. Future work is kept under `docs/proposals/`.
 
 ## Requirements
 

@@ -26,8 +26,11 @@ targets:
         excludes:
           - "**/.DS_Store"
           - "Resources/ArgusTerminalTheme.ghostty"
+          - "Resources/ArgusKiloTurnCompletionPlugin.js"
           - "Resources/pierre-diffs-bundle.js"
       - path: Argus/Resources/ArgusTerminalTheme.ghostty
+        buildPhase: resources
+      - path: Argus/Resources/ArgusKiloTurnCompletionPlugin.js
         buildPhase: resources
       - path: Argus/Resources/pierre-diffs-bundle.js
         buildPhase: resources
@@ -35,8 +38,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.argus.app
         PRODUCT_NAME: Argus
-        MARKETING_VERSION: "0.1.0"
-        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "1.1.0"
+        CURRENT_PROJECT_VERSION: "2"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_GENERATION_MODE: GeneratedByBuildSystem
         GENERATE_INFOPLIST_FILE: YES

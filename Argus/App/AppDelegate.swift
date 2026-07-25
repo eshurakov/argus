@@ -10,16 +10,22 @@ import SwiftUI
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
 
-    /// Set by ArgusApp.body's `.onAppear` once the view hierarchy is live.
-    var workspaceManager: WorkspaceManager? {
-        didSet { updateWindowTitle() }
-    }
+    private var workspaceManager: WorkspaceManager?
+    private var turnCompletionRuntime: TurnCompletionRuntime?
+    private var agentSocketServer: AgentSocketServer?
 
     // MARK: - NSApplicationDelegate
 
     /// Tracks windows we've already configured to avoid redundant work.
     private var configuredWindows: Set<ObjectIdentifier> = []
     private var windowTitleObserver: NSObjectProtocol?
+    private var windowKeyObservers: [NSObjectProtocol] = []
+
+    func configureTurnCompletion(workspaceManager: WorkspaceManager, runtime: TurnCompletionRuntime) {
+        self.workspaceManager = workspaceManager
+        turnCompletionRuntime = runtime
+        startAgentSocketIfReady()
+    }
 
     func application(_ application: NSApplication, shouldSaveApplicationState coder: NSCoder) -> Bool {
         false
@@ -64,12 +70,41 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         ) { [weak self] _ in
             self?.updateWindowTitle()
         }
+        windowKeyObservers = [
+            NotificationCenter.default.addObserver(
+                forName: NSWindow.didBecomeKeyNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                guard let window = notification.object as? NSWindow,
+                    window.identifier?.rawValue == "main"
+                else { return }
+                Task { @MainActor [weak self] in
+                    self?.workspaceManager?.acknowledgeSelectedActiveTabIfViewed()
+                }
+            },
+            NotificationCenter.default.addObserver(
+                forName: NSWindow.didResignKeyNotification,
+                object: nil,
+                queue: .main
+            ) { _ in }
+        ]
+        startAgentSocketIfReady()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         workspaceManager?.saveSession()
         if let windowTitleObserver {
             NotificationCenter.default.removeObserver(windowTitleObserver)
+        }
+        windowKeyObservers.forEach(NotificationCenter.default.removeObserver)
+        if let agentSocketServer {
+            let shutdown = DispatchSemaphore(value: 0)
+            Task.detached {
+                await agentSocketServer.shutdown()
+                shutdown.signal()
+            }
+            shutdown.wait()
         }
     }
 
@@ -110,9 +145,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     ///
     /// Falls back to "Argus" when no workspace is selected.
     func updateWindowTitle(_ window: NSWindow? = nil) {
-        let targetWindow = window ?? NSApp.mainWindow
+        let targetWindow = window ?? NSApp.windows.first { $0.identifier?.rawValue == "main" }
         targetWindow?.title =
             workspaceManager?.activeWorkspaceTitle
             ?? WorkspaceTitleFormatter.fallbackTitle
+    }
+
+    private func startAgentSocketIfReady() {
+        guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
+        guard agentSocketServer == nil, let turnCompletionRuntime else { return }
+        let path = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".argus/argus.sock").path
+        let server = AgentSocketServer(path: path) { event in
+            turnCompletionRuntime.receive(event)
+        }
+        agentSocketServer = server
+        Task {
+            do {
+                try await server.start()
+            } catch {
+                self.agentSocketServer = nil
+            }
+        }
     }
 }

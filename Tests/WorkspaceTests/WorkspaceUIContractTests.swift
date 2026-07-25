@@ -177,10 +177,13 @@ struct WorkspaceUIContractTests {
         try SourceContract("Argus/Services/WorkspaceManager.swift").containsAll(
             [
                 "workspace.closePane(surfaceId)",
-                "workspace.closePane(activePanelId)",
                 "requestCloseTab(activeTabId, in: workspace.id)",
                 "workspace.closeTab(panelId)"
             ], "close commands preserve Pane and Top-level Tab scope")
+        try SourceContract("Argus/Services/WorkspaceManager+Navigation.swift").contains(
+            "closePane(activePanelId, in: workspace)",
+            "active Pane closure stays in the navigation owner"
+        )
         try SourceContract("Argus/Views/Content/ContentAreaView.swift").containsAll(
             ["PanelSplitLayoutView", "workspace.layout(for: tabId)", "isVisible: isVisible"],
             "content area must render each terminal split tree with active visibility"

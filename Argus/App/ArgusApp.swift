@@ -6,12 +6,35 @@ struct ArgusApp: App {
     @StateObject private var workspaceManager: WorkspaceManager
     @StateObject private var agentStatusStore = AgentStatusStore()
     @StateObject private var appSettings: AppSettings
+    @StateObject private var turnCompletionAttentionStore: TurnCompletionAttentionStore
+    @StateObject private var kiloIntegration: KiloIntegrationModel
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
         let settings = AppSettings()
+        let attentionStore = TurnCompletionAttentionStore()
+        let manager = WorkspaceManager(settings: settings)
         _appSettings = StateObject(wrappedValue: settings)
-        _workspaceManager = StateObject(wrappedValue: WorkspaceManager(settings: settings))
+        _workspaceManager = StateObject(wrappedValue: manager)
+        _turnCompletionAttentionStore = StateObject(wrappedValue: attentionStore)
+        _kiloIntegration = StateObject(wrappedValue: KiloIntegrationModel())
+        let runtime = TurnCompletionRuntime(
+            workspaceManager: manager,
+            attentionStore: attentionStore,
+            isMainWindowKey: {
+                NSApp.windows.contains { $0.identifier?.rawValue == "main" && $0.isKeyWindow }
+            },
+            onAcceptedUnviewed: {
+                if settings.agentCompletionSound {
+                    TurnCompletionSoundPlayer.play()
+                }
+            }
+        )
+        manager.setTurnCompletionRuntime(runtime)
+        appDelegate.configureTurnCompletion(
+            workspaceManager: manager,
+            runtime: runtime
+        )
 
         // Initialize GhosttyApp singleton — this triggers ghostty_init and
         // configures the terminal environment (TERM, PATH, GHOSTTY_RESOURCES_DIR).
@@ -24,16 +47,14 @@ struct ArgusApp: App {
                 .environmentObject(workspaceManager)
                 .environmentObject(agentStatusStore)
                 .environmentObject(appSettings)
-                .onAppear {
-                    appDelegate.workspaceManager = workspaceManager
-                    appDelegate.updateWindowTitle()
-                }
+                .environmentObject(turnCompletionAttentionStore)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1200, height: 800)
         Settings {
             SettingsView()
                 .environmentObject(appSettings)
+                .environmentObject(kiloIntegration)
         }
         .commands {
             // File menu — replace default "New" with workspace/tab commands

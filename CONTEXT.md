@@ -16,7 +16,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 | **Files and Changes** | Right-sidebar navigation, workspace file tree, Git status snapshot, change actions, filesystem item actions, and file/preview loading | `Argus/Views/GitSidebar/`, `Argus/Models/GitStatus.swift`, `Argus/Services/GitStatus*`, `Argus/Services/GitPreviewService.swift` | Git Status Root never follows a terminal's live working directory. |
 | **User interface** | Single-window surface placement, tab behavior, interaction affordances, chrome, and accessibility contract | `Argus/Views/`, `docs/UI_DESIGN_PRINCIPLES.md` | Inspectable content belongs in Workspace tabs, not independent windows. |
 | **Session persistence** | Session snapshots, restore validation, Project/Workspace reconciliation, and sidebar preferences | `Argus/Models/SessionSnapshot.swift`, `Argus/Services/WorkspaceManager.swift`, `Argus/Views/Sidebar/SidebarState.swift` | Durable state and ephemeral runtime state must remain distinct. |
-| **Agent status and future integrations** | In-process Agent Status display plus proposed external integration boundaries | `Argus/Services/AgentStatusStore.swift`, `ArgusCLI/`, `docs/proposals/` | V1 has no Socket Server or functional Companion CLI commands. |
+| **Agent status and integrations** | In-process Agent Status display, Turn Completion Attention, Socket Server routing, and external integration setup | `Argus/Services/AgentStatusStore.swift`, `Argus/Services/TurnCompletionAttentionStore.swift`, `Argus/Services/AgentSocketServer.swift`, `ArgusCLI/` | The Socket Server implements only `agent.turnCompleted`; the Companion CLI remains a scaffold. |
 
 ## Canonical Terms
 
@@ -72,22 +72,23 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 | **Preview Kind** | Semantic Git preview operation: diff or blame. | Tab identity and action choice. | Preview rendering payload. |
 | **Preview Content** | Loaded rendering payload, currently structured diff or ANSI text. | Renderer selection and fallback messages. | Preview Kind. |
 | **Session Snapshot** | Codable durable state written to Argus application support storage and validated as one schema version. | Save, restore, limits, and reconciliation. | Runtime view state or Agent Status. |
-| **Unix Domain Socket** | Proposed local transport endpoint at `~/.argus/argus.sock` for future integrations. No listener is implemented in v1. | Proposal and future transport design. | Describing it as a running v1 service. |
-| **Socket Server** | Proposed app-owned component that would accept and route Unix Domain Socket requests. | Future integration design only. | Separate process, daemon, or implemented v1 component. |
-| **Socket Request** | Proposed newline-delimited JSON request. Its exact contract belongs to an accepted proposal until implemented. | Future wire-protocol design. | Inferring a contract from CLI command names. |
+| **Unix Domain Socket** | User-local transport endpoint at `~/.argus/argus.sock` used by implemented integrations. | Local integration transport. | Separate process or network service. |
+| **Socket Server** | App-owned component accepting bounded newline-delimited JSON requests over the Unix Domain Socket. | Implemented integration routing. | Separate process, daemon, or Companion CLI. |
+| **Socket Request** | Versioned newline-delimited JSON request accepted by the Socket Server. | Implemented integration wire behavior. | Inferring unsupported Companion CLI methods. |
 | **Request ID** | Proposed protocol correlation identifier unrelated to domain entity IDs. | Future Socket Request correlation. | Project ID, Workspace ID, Panel ID, or Surface ID. |
 | **Agent Key** | Unrestricted string identifying an agent in the v1 in-process Agent Status store or a future integration. | Agent Status and proposed agent-agnostic IPC. | Product-specific enum or hard-coded Kilo-only value. |
 | **Agent Integration** | External plugin or client that translates an agent process lifecycle into Socket Requests, Agent Status Entries, PID registration, and Agent Notifications. | Integration-side lifecycle and cleanup behavior. | App-owned Agent Tracker or Kilo-only behavior. |
 | **Agent Status Entry** | Ephemeral agent telemetry scoped to a Workspace or Terminal Surface. | Agent lifecycle display and cleanup. | Git Status Snapshot, Git File Status, or load state. |
 | **Workspace-level Agent Status** | Agent Status Entry without Surface ID that applies across a Workspace. | Workspace-wide telemetry and fallback display. | Per-panel Agent Status. |
 | **Per-panel Agent Status** | Agent Status Entry scoped by Surface ID to one Terminal Panel. | Pane-specific agent telemetry. | Generic Panel-scoped state for File or Git Preview Panels. |
-| **Agent Notification** | Proposal-only external event requesting attention for an agent outcome. V1 does not implement Agent Notifications. | Future integration behavior. | Foundation notification, macOS notification, or TTS announcement. |
+| **Turn Completion Event** | Agent-agnostic `agent.turnCompleted` Socket Request identifying an Agent Key, Workspace ID, Surface ID, and integration event ID. | Successful coding-agent turn completion delivery. | Kilo lifecycle details or Agent Status Entry. |
+| **Turn Completion Attention** | Runtime-only state indicating that the Top-level Tab containing a completed agent turn has not been viewed. | Tab and Workspace bell indicators and acknowledgment. | Agent Status Entry, history, count, or persistent notification. |
 | **Foundation Notification** | In-process `NotificationCenter` event coordinating app UI and Ghostty state. | Internal event wiring. | Agent Notification or public socket method. |
 | **Workspace Number** | Global one-based Workspace position in left-sidebar order across all Projects. | Keyboard shortcuts and proposed notification wording. | Project-local index or Workspace ID. |
 
 ## Relationships
 
-- The Argus Application owns one `WorkspaceManager` and one global `GhosttyApp`. A Socket Server is proposed but not implemented in v1.
+- The Argus Application owns one `WorkspaceManager`, one global `GhosttyApp`, and the process-wide Socket Server used by implemented integrations.
 - A Named Project references an ordered set of Workspaces by Workspace ID.
 - The Catch-all Project groups Standalone Workspaces and is ordered after Named Projects.
 - A Workspace has one Workspace Root, owns all of its Panels, orders top-level Panel roots as Top-level Tabs, and stores one split layout per Top-level Tab.

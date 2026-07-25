@@ -3,6 +3,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var settings: AppSettings
+    @EnvironmentObject private var kiloIntegration: KiloIntegrationModel
 
     var body: some View {
         TabView {
@@ -16,6 +17,8 @@ struct SettingsView: View {
                 .tabItem { Label("Files & Changes", systemImage: "doc.text") }
             browser
                 .tabItem { Label("Browser", systemImage: "globe") }
+            agent
+                .tabItem { Label("Agent", systemImage: "bell") }
         }
         .frame(width: 560, height: 430)
     }
@@ -155,6 +158,49 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    private var agent: some View {
+        Form {
+            Toggle("Agent completion sound", isOn: $settings.agentCompletionSound)
+
+            Section("Kilo Integration") {
+                LabeledContent("Status") { Text(kiloStatusTitle) }
+                LabeledContent("Managed configuration") {
+                    Text(kiloIntegration.managedConfigPath)
+                        .font(.system(.body, design: .monospaced))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .help(kiloIntegration.managedConfigPath)
+                }
+                HStack {
+                    Button("Enable") { kiloIntegration.enable() }
+                        .disabled(kiloIntegration.status == .busy || kiloIntegration.status == .installed)
+                    Button("Disable") { kiloIntegration.disable() }
+                        .disabled(kiloIntegration.status == .busy)
+                    if kiloIntegration.status == .busy { ProgressView().controlSize(.small) }
+                }
+                if case .failed(let error) = kiloIntegration.status {
+                    Text(error).foregroundStyle(.red)
+                }
+                Text(
+                    "Restart running Kilo sessions after changing this integration. "
+                        + "Kilo cannot prove whether every ordinary user message was typed by a person."
+                )
+                .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+
+    private var kiloStatusTitle: String {
+        switch kiloIntegration.status {
+        case .unavailable: "Not enabled"
+        case .installed: "Enabled — restart Kilo sessions required"
+        case .busy: "Updating"
+        case .failed: "Configuration error"
+        }
     }
 
     private func chooseStandaloneWorkspaceDirectory() {

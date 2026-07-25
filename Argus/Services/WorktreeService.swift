@@ -51,6 +51,66 @@ struct OrphanedWorktreeInfo: Identifiable, Sendable {
     let projectId: UUID
 }
 
+private final class WorktreeProcessDataBox: @unchecked Sendable {
+    var data = Data()
+}
+
+private final class WorktreeProcessOutputReader: @unchecked Sendable {
+    private let outputGroup = DispatchGroup()
+    private let stdout: Pipe
+    private let stderr: Pipe
+    private let stdoutBox = WorktreeProcessDataBox()
+    private let stderrBox = WorktreeProcessDataBox()
+
+    init(stdout: Pipe, stderr: Pipe) {
+        self.stdout = stdout
+        self.stderr = stderr
+        let stdoutDescriptor = Darwin.dup(stdout.fileHandleForReading.fileDescriptor)
+        let stderrDescriptor = Darwin.dup(stderr.fileHandleForReading.fileDescriptor)
+        outputGroup.enter()
+        DispatchQueue.global(qos: .utility).async { [stdoutBox, outputGroup] in
+            stdoutBox.data = Self.readToEnd(fileDescriptor: stdoutDescriptor)
+            outputGroup.leave()
+        }
+        outputGroup.enter()
+        DispatchQueue.global(qos: .utility).async { [stderrBox, outputGroup] in
+            stderrBox.data = Self.readToEnd(fileDescriptor: stderrDescriptor)
+            outputGroup.leave()
+        }
+    }
+    private static func readToEnd(fileDescriptor: Int32) -> Data {
+        guard fileDescriptor >= 0 else { return Data() }
+        defer { Darwin.close(fileDescriptor) }
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 16_384)
+        while true {
+            let count = Darwin.read(fileDescriptor, &buffer, buffer.count)
+            if count > 0 {
+                data.append(buffer, count: count)
+            } else if count == 0 {
+                return data
+            } else if errno != EINTR {
+                return data
+            }
+        }
+    }
+    var isFinished: Bool {
+        outputGroup.wait(timeout: .now()) == .success
+    }
+    func close() {
+        try? stdout.fileHandleForReading.close()
+        try? stderr.fileHandleForReading.close()
+    }
+    func readToEnd() async -> (stdout: Data, stderr: Data) {
+        await withCheckedContinuation { continuation in
+            outputGroup.notify(queue: .global(qos: .utility)) {
+                continuation.resume()
+            }
+        }
+        return (stdoutBox.data, stderrBox.data)
+    }
+}
+
 // MARK: - WorktreeService
 
 /// Manages git worktrees via the git CLI (`/usr/bin/git`).
@@ -80,7 +140,6 @@ final class WorktreeService: Sendable {
     init(gitCommandTimeout: TimeInterval = 30) {
         self.gitCommandTimeout = gitCommandTimeout
     }
-
     // MARK: - Private Helpers
 
     /// Runs a git command and returns the trimmed stdout output.
@@ -107,7 +166,6 @@ final class WorktreeService: Sendable {
             commandDescription: "git \(args.joined(separator: " "))"
         )
     }
-
     /// Runs a subprocess while draining both output pipes. The timeout covers
     /// process exit and pipe EOF because git transport helpers can outlive git
     /// while retaining inherited pipe handles.
@@ -127,7 +185,6 @@ final class WorktreeService: Sendable {
         if let workingDirectory {
             process.currentDirectoryURL = URL(fileURLWithPath: workingDirectory)
         }
-
         let stdout = Pipe()
         let stderr = Pipe()
         process.standardOutput = stdout
@@ -170,10 +227,8 @@ final class WorktreeService: Sendable {
                 process.terminationStatus
             )
         }
-
         return output
     }
-
     private func stop(_ process: Process) async {
         if process.isRunning {
             process.terminate()
@@ -190,7 +245,6 @@ final class WorktreeService: Sendable {
         }
         process.waitUntilExit()
     }
-
     /// Runs a git command and returns whether it succeeded (exit code 0).
     func runGitQuiet(
         args: [String],
@@ -228,7 +282,6 @@ final class WorktreeService: Sendable {
         while slug.contains("--") {
             slug = slug.replacingOccurrences(of: "--", with: "-")
         }
-
         // Trim leading and trailing hyphens.
         slug = slug.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
 
@@ -249,7 +302,6 @@ final class WorktreeService: Sendable {
         if !fm.fileExists(atPath: candidatePath) {
             return base
         }
-
         // Append numeric suffix until unique.
         var counter = 1
         while true {
@@ -259,51 +311,6 @@ final class WorktreeService: Sendable {
                 return candidate
             }
             counter += 1
-        }
-    }
-
-    private final class WorktreeProcessDataBox: @unchecked Sendable {
-        var data = Data()
-    }
-
-    private final class WorktreeProcessOutputReader: @unchecked Sendable {
-        private let outputGroup = DispatchGroup()
-        private let stdout: Pipe
-        private let stderr: Pipe
-        private let stdoutBox = WorktreeProcessDataBox()
-        private let stderrBox = WorktreeProcessDataBox()
-
-        init(stdout: Pipe, stderr: Pipe) {
-            self.stdout = stdout
-            self.stderr = stderr
-            outputGroup.enter()
-            DispatchQueue.global(qos: .utility).async { [stdoutBox, outputGroup] in
-                stdoutBox.data = stdout.fileHandleForReading.readDataToEndOfFile()
-                outputGroup.leave()
-            }
-            outputGroup.enter()
-            DispatchQueue.global(qos: .utility).async { [stderrBox, outputGroup] in
-                stderrBox.data = stderr.fileHandleForReading.readDataToEndOfFile()
-                outputGroup.leave()
-            }
-        }
-
-        var isFinished: Bool {
-            outputGroup.wait(timeout: .now()) == .success
-        }
-
-        func close() {
-            try? stdout.fileHandleForReading.close()
-            try? stderr.fileHandleForReading.close()
-        }
-
-        func readToEnd() async -> (stdout: Data, stderr: Data) {
-            await withCheckedContinuation { continuation in
-                outputGroup.notify(queue: .global(qos: .utility)) {
-                    continuation.resume()
-                }
-            }
-            return (stdoutBox.data, stderrBox.data)
         }
     }
 
@@ -331,7 +338,6 @@ final class WorktreeService: Sendable {
                 return String(branchName)
             }
         }
-
         // Strategy 2: check for refs/heads/main.
         if await runGitQuiet(
             args: ["show-ref", "--verify", "refs/heads/main"],
@@ -339,7 +345,6 @@ final class WorktreeService: Sendable {
         ) {
             return "main"
         }
-
         // Strategy 3: check for refs/heads/master.
         if await runGitQuiet(
             args: ["show-ref", "--verify", "refs/heads/master"],
@@ -347,7 +352,6 @@ final class WorktreeService: Sendable {
         ) {
             return "master"
         }
-
         // Strategy 4: current HEAD branch name.
         if let output = try? await runGit(
             args: ["rev-parse", "--abbrev-ref", "HEAD"],

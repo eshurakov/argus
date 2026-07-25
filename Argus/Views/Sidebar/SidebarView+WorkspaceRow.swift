@@ -7,6 +7,7 @@ import SwiftUI
 struct SidebarWorkspaceRow: View {
     @ObservedObject var workspace: Workspace
     @EnvironmentObject var agentStatusStore: AgentStatusStore
+    @EnvironmentObject var turnCompletionAttentionStore: TurnCompletionAttentionStore
     @EnvironmentObject private var appSettings: AppSettings
     let globalIndex: Int
     let isSelected: Bool
@@ -29,7 +30,13 @@ struct SidebarWorkspaceRow: View {
                     .foregroundColor(.secondary)
                     .frame(width: 16)
 
-                if let agentStatus {
+                if hasAttention {
+                    Image(systemName: "bell.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(.orange)
+                        .frame(width: 14)
+                        .accessibilityHidden(true)
+                } else if let agentStatus {
                     Image(systemName: agentStatus.state.symbolName)
                         .font(.system(size: 11))
                         .foregroundColor(agentStatus.state.color)
@@ -105,6 +112,10 @@ struct SidebarWorkspaceRow: View {
         )
     }
 
+    private var hasAttention: Bool {
+        turnCompletionAttentionStore.workspaceHasAttention(workspace.id)
+    }
+
     private var backgroundColor: Color {
         if isSelected {
             return Color.accentColor
@@ -132,6 +143,9 @@ struct SidebarWorkspaceRow: View {
 
     private var workspaceAccessibilityValue: String {
         var values = [isSelected ? "Selected" : "Not selected"]
+        if hasAttention {
+            values.append("One or more tabs need attention")
+        }
         if let agentStatus {
             values.append("Agent status: \(agentStatus.state.label)")
         }

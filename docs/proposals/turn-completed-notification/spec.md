@@ -3,11 +3,11 @@
 ## Status
 
 - Lifecycle: Accepted
-- Implementation: Not started
-- Last reviewed: 2026-07-23
+- Implementation: Implemented
+- Last reviewed: 2026-07-24
 - Stable-contract target: `docs/SPEC.md`
 
-This proposal does not describe current v1 behavior. When implementation and verification are complete, promote the shipped behavior into `docs/SPEC.md` and mark this proposal Implemented or Superseded.
+This proposal records the design implemented in the stable application contract. `docs/SPEC.md` is authoritative for shipped behavior.
 
 ## Summary
 

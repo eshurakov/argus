@@ -12,6 +12,7 @@ struct TabBarView: View {
     @ObservedObject var workspace: Workspace
     @EnvironmentObject var workspaceManager: WorkspaceManager
     @EnvironmentObject var agentStatusStore: AgentStatusStore
+    @EnvironmentObject var turnCompletionAttentionStore: TurnCompletionAttentionStore
     @EnvironmentObject private var appSettings: AppSettings
 
     @State private var renamePanelId: UUID?
@@ -29,8 +30,12 @@ struct TabBarView: View {
                                 panel: panel,
                                 title: workspace.tabDisplayTitle(for: panelId),
                                 agentStatus: agentStatus(for: panelId),
+                                hasAttention: turnCompletionAttentionStore.hasAttention(
+                                    workspaceId: workspace.id,
+                                    tabId: panelId
+                                ),
                                 isActive: panelId == workspace.activeTabId,
-                                onSelect: { workspace.selectPanel(panelId) },
+                                onSelect: { workspaceManager.focusPanel(panelId) },
                                 onRename: panel.panelType == .terminal
                                     ? {
                                         renamePanelId = panelId
@@ -165,6 +170,7 @@ struct TabItemView: View {
     let panel: any Panel
     let title: String
     let agentStatus: AgentStatusEntry?
+    let hasAttention: Bool
     let isActive: Bool
     let onSelect: () -> Void
     let onRename: (() -> Void)?
@@ -188,21 +194,30 @@ struct TabItemView: View {
         HStack(spacing: 2) {
             Button(action: onSelect) {
                 HStack(spacing: 4) {
-                    if panel.isLoading {
-                        ProgressView()
-                            .controlSize(.mini)
-                            .frame(width: 10, height: 10)
-                            .accessibilityLabel("Loading \(title)")
-                    } else if let agentStatus {
-                        Image(systemName: agentStatus.state.symbolName)
-                            .font(.system(size: 10))
-                            .foregroundColor(agentStatus.state.color)
-                            .accessibilityHidden(true)
-                    } else if let icon = panel.displayIcon {
-                        Image(systemName: icon)
-                            .font(.system(size: 10))
-                            .foregroundColor(isActive ? .primary : .secondary)
+                    // Fixed icon slot keeps tab geometry stable while the
+                    // loading, attention, and Agent Status states change.
+                    Group {
+                        if panel.isLoading {
+                            ProgressView()
+                                .controlSize(.mini)
+                                .accessibilityLabel("Loading \(title)")
+                        } else if hasAttention {
+                            Image(systemName: "bell.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(.orange)
+                                .accessibilityHidden(true)
+                        } else if let agentStatus {
+                            Image(systemName: agentStatus.state.symbolName)
+                                .font(.system(size: 10))
+                                .foregroundColor(agentStatus.state.color)
+                                .accessibilityHidden(true)
+                        } else if let icon = panel.displayIcon {
+                            Image(systemName: icon)
+                                .font(.system(size: 10))
+                                .foregroundColor(isActive ? .primary : .secondary)
+                        }
                     }
+                    .frame(width: 14, height: 14)
 
                     Text(title)
                         .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 12)))
@@ -265,6 +280,9 @@ struct TabItemView: View {
 
     private var tabAccessibilityValue: String {
         var values = [isActive ? "Selected" : "Not selected"]
+        if hasAttention {
+            values.append("Agent turn completed")
+        }
         if let agentStatus {
             values.append("Agent status: \(agentStatus.state.label)")
         }

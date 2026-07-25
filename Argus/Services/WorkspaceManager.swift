@@ -43,12 +43,13 @@ final class WorkspaceManager: ObservableObject {
     var lastWorkspaceCreationError: WorktreeError?
 
     /// Last worktree deletion error for user-visible close feedback.
-    private(set) var lastWorkspaceDeletionError: WorktreeError?
+    internal(set) var lastWorkspaceDeletionError: WorktreeError?
 
     /// Location of the minimal Phase 2 session snapshot.
     private let sessionSnapshotURL: URL
 
     let settings: AppSettings
+    var turnCompletionRuntime: TurnCompletionRuntime?
 
     // MARK: - Computed Properties
 
@@ -248,6 +249,15 @@ final class WorkspaceManager: ObservableObject {
     /// panel from its workspace.
     private func handleSurfaceClosed(_ surfaceId: UUID) {
         guard let workspace = workspace(containingPanel: surfaceId) else { return }
+        guard let tabId = workspace.panelOrder.first(where: { workspace.layout(for: $0).contains(surfaceId) }) else {
+            return
+        }
+        let layout = workspace.layout(for: tabId)
+        if layout.leaves.count == 1 {
+            turnCompletionRuntime?.removeAttention(workspaceId: workspace.id, tabId: tabId)
+        } else if surfaceId == tabId, let replacement = layout.removingLeaf(surfaceId)?.leaves.first {
+            turnCompletionRuntime?.migrateAttention(workspaceId: workspace.id, from: tabId, to: replacement)
+        }
         workspace.closePane(surfaceId)
 
         // An empty workspace is equivalent to a closed workspace.
@@ -287,6 +297,10 @@ final class WorkspaceManager: ObservableObject {
         removeWorkspaceFromState(workspaceId)
     }
 
+    func setTurnCompletionRuntime(_ runtime: TurnCompletionRuntime) {
+        turnCompletionRuntime = runtime
+    }
+
     func shouldConfirmWorktreeDeletionBeforeClosing(_ workspaceId: UUID) -> Bool {
         guard let workspace = workspaces.first(where: { $0.id == workspaceId }),
             workspace.worktreePath != nil,
@@ -296,10 +310,12 @@ final class WorkspaceManager: ObservableObject {
         return true
     }
 
-    private func removeWorkspaceFromState(_ workspaceId: UUID) {
+    func removeWorkspaceFromState(_ workspaceId: UUID) {
         guard let index = workspaces.firstIndex(where: { $0.id == workspaceId }) else { return }
 
         let workspace = workspaces[index]
+
+        turnCompletionRuntime?.removeAttention(forWorkspace: workspaceId)
 
         // Close all panels in the workspace before removal.
         for panelId in workspace.panelOrder {
@@ -341,47 +357,5 @@ final class WorkspaceManager: ObservableObject {
             title: title,
             workingDirectory: workingDirectory ?? settings.defaultStandaloneWorkspaceDirectory
         )
-    }
-}
-
-extension WorkspaceManager {
-    /// Removes a workspace, optionally deleting its associated git worktree first.
-    @discardableResult
-    func removeWorkspace(
-        _ workspaceId: UUID,
-        deletingWorktree: Bool,
-        onProgress: (@MainActor @Sendable (WorkspaceDeletionStage) -> Void)? = nil
-    ) async -> Bool {
-        lastWorkspaceDeletionError = nil
-        guard let workspace = workspaces.first(where: { $0.id == workspaceId }) else { return false }
-
-        if deletingWorktree,
-            let worktreePath = workspace.worktreePath,
-            let project = project(for: workspaceId),
-            !project.isCatchAll
-        {
-            do {
-                onProgress?(.removingWorktree)
-                try await worktreeService.removeWorktree(
-                    repositoryPath: project.repositoryPath,
-                    worktreePath: worktreePath,
-                    force: true
-                )
-            } catch let error as WorktreeError {
-                lastWorkspaceDeletionError = error
-                print("Failed to remove worktree before closing workspace: \(error.localizedDescription)")
-                return false
-            } catch {
-                let deletionError = WorktreeError.worktreeRemovalFailed(error.localizedDescription)
-                lastWorkspaceDeletionError = deletionError
-                print("Failed to remove worktree before closing workspace: \(deletionError.localizedDescription)")
-                return false
-            }
-        }
-
-        onProgress?(.closingWorkspace)
-        await Task.yield()
-        removeWorkspaceFromState(workspaceId)
-        return true
     }
 }

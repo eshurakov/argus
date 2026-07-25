@@ -24,6 +24,7 @@ struct AppSettingsTests {  // swiftlint:disable:this type_body_length
             #expect(settings.documentTextSize == 12)
             #expect(settings.interfaceDensity == .compact)
             #expect(settings.audibleBell)
+            #expect(settings.agentCompletionSound)
             #expect(settings.showHiddenFiles)
             #expect(settings.wrapSourceLines)
             #expect(!settings.openMarkdownInPreview)
@@ -47,6 +48,7 @@ struct AppSettingsTests {  // swiftlint:disable:this type_body_length
             let settings = AppSettings(defaults: defaults)
             settings.restorePreviousSession = false
             settings.audibleBell = false
+            settings.agentCompletionSound = false
             settings.showHiddenFiles = false
             settings.wrapSourceLines = false
             settings.openMarkdownInPreview = true
@@ -59,6 +61,7 @@ struct AppSettingsTests {  // swiftlint:disable:this type_body_length
             let restored = AppSettings(defaults: defaults)
             #expect(!restored.restorePreviousSession)
             #expect(!restored.audibleBell)
+            #expect(!restored.agentCompletionSound)
             #expect(!restored.showHiddenFiles)
             #expect(!restored.wrapSourceLines)
             #expect(restored.openMarkdownInPreview)

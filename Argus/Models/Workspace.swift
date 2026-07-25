@@ -206,6 +206,15 @@ final class Workspace: Identifiable, ObservableObject {
         tabLayouts[tabId] ?? .leaf(tabId)
     }
 
+    /// Returns the Top-level Tab containing a current Terminal Surface.
+    ///
+    /// Surface IDs are Terminal Panel IDs. Nonterminal panels deliberately do
+    /// not resolve here, even when their Panel ID appears in a tab layout.
+    func topLevelTabId(containingTerminalSurface surfaceId: UUID) -> UUID? {
+        guard panels[surfaceId] is TerminalPanel else { return nil }
+        return panelOrder.first { layout(for: $0).contains(surfaceId) }
+    }
+
     /// Updates one nested split ratio without changing Pane or Top-level Tab identity.
     func setSplitRatio(_ ratio: CGFloat, for tabId: UUID, at path: [PanelLayoutBranch]) {
         guard panelOrder.contains(tabId) else { return }
