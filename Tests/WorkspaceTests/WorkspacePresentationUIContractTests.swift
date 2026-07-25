@@ -39,4 +39,23 @@ struct WorkspacePresentationUIContractTests {
             "presentation must use an identifiable request"
         )
     }
+
+    @Test
+    func standaloneWorkspaceRootPickerUsesManagerOwnedMutation() throws {
+        try SourceContract("Argus/Views/Sidebar/SidebarView+Projects.swift").containsAll(
+            [
+                "if workspace.workspaceType == .external",
+                "Button(\"Change Working Directory…\")",
+                "panel.canChooseDirectories = true",
+                "workspaceManager.setStandaloneWorkspaceRoot(workspace.id, directoryURL: directoryURL)"
+            ], "Standalone Workspace context-menu directory picker")
+        try SourceContract("Argus/Services/WorkspaceManager+Navigation.swift").containsAll(
+            [
+                "func setStandaloneWorkspaceRoot(",
+                "workspace.workspaceType == .external",
+                "directoryURL.standardizedFileURL",
+                "workspace.currentDirectory = standardizedURL.path",
+                "notifyWorkspaceContextChanged()"
+            ], "Workspace Root mutation boundary")
+    }
 }

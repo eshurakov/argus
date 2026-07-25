@@ -52,6 +52,11 @@ struct ProjectSection: View {
                                     userInfo: ["workspaceId": workspace.id]
                                 )
                             }
+                            if workspace.workspaceType == .external {
+                                Button("Change Working Directory…") {
+                                    chooseWorkspaceRoot(for: workspace)
+                                }
+                            }
                             Button("Move Up") {
                                 moveWorkspaceUp(workspace.id)
                             }
@@ -111,6 +116,17 @@ struct ProjectSection: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(path, forType: .string)
+    }
+
+    private func chooseWorkspaceRoot(for workspace: Workspace) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = URL(fileURLWithPath: workspace.currentDirectory)
+        panel.message = "Select the working directory for \(workspace.displayTitle)"
+        guard panel.runModal() == .OK, let directoryURL = panel.url else { return }
+        workspaceManager.setStandaloneWorkspaceRoot(workspace.id, directoryURL: directoryURL)
     }
 }
 

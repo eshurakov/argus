@@ -44,6 +44,26 @@ extension WorkspaceManager {
         }
     }
 
+    @discardableResult
+    func setStandaloneWorkspaceRoot(_ workspaceId: UUID, directoryURL: URL) -> Bool {
+        guard let workspace = workspaces.first(where: { $0.id == workspaceId }),
+            workspace.workspaceType == .external
+        else { return false }
+
+        let standardizedURL = directoryURL.standardizedFileURL
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: standardizedURL.path, isDirectory: &isDirectory),
+            isDirectory.boolValue
+        else { return false }
+
+        guard workspace.currentDirectory != standardizedURL.path else { return true }
+        workspace.currentDirectory = standardizedURL.path
+        if selectedWorkspaceId == workspaceId {
+            notifyWorkspaceContextChanged()
+        }
+        return true
+    }
+
     func reorderWorkspace(from source: Int, to destination: Int) {
         guard source >= 0, source < workspaces.count,
             destination >= 0, destination < workspaces.count,

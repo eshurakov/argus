@@ -234,6 +234,7 @@ extension GitSidebarView {
     }
 
     var selectedSnapshotOwner: GitStatusSnapshotOwner? {
+        _ = workspaceManager.workspaceContextRevision
         guard let workspace = workspaceManager.selectedWorkspace,
             let context = statusContext()
         else { return nil }

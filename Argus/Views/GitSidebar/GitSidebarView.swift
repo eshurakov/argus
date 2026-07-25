@@ -295,18 +295,8 @@ struct GitSidebarView: View {
                 VisualEffectView(material: .sidebar, blendingMode: .behindWindow)
             }
         }
-        .task {
-            guard let owner = selectedSnapshotOwner else {
-                viewModel.clearSelection()
-                autoRefreshController.stop()
-                return
-            }
-            viewModel.activate(owner)
-            startAutoRefresh(owner: owner)
-            await refresh(owner: owner)
-        }
-        .onChange(of: workspaceManager.selectedWorkspaceId) { _, _ in
-            guard let owner = selectedSnapshotOwner else {
+        .onChange(of: selectedSnapshotOwner, initial: true) { _, owner in
+            guard let owner else {
                 viewModel.clearSelection()
                 autoRefreshController.stop()
                 return

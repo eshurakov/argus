@@ -30,6 +30,10 @@ final class WorkspaceManager: ObservableObject {
         didSet { notifyWorkspaceContextChanged() }
     }
 
+    /// Changes whenever the selected Workspace's filesystem context changes
+    /// without changing Workspace identity.
+    @Published private(set) var workspaceContextRevision: UInt64 = 0
+
     /// Ordered list of projects (named projects first, catch-all last).
     @Published internal(set) var projects: [Project] = []
 
@@ -346,6 +350,7 @@ final class WorkspaceManager: ObservableObject {
     }
 
     func notifyWorkspaceContextChanged() {
+        workspaceContextRevision &+= 1
         NotificationCenter.default.post(name: .workspaceContextDidChange, object: nil)
     }
 

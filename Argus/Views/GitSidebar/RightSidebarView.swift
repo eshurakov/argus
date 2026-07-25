@@ -156,6 +156,7 @@ struct RightSidebarView: View {
     }
 
     private var filesRequest: WorkspaceFileTreeRequest? {
+        _ = workspaceManager.workspaceContextRevision
         guard let workspace = workspaceManager.selectedWorkspace else { return nil }
         return WorkspaceFileTreeRequest(
             workspaceId: workspace.id,
