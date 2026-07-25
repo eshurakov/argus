@@ -2,6 +2,10 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-07-25
+
+- Argus now shows and sounds an alert when a Kilo turn finishes outside the active tab, with explicit Kilo integration controls in Settings. ([3e55ea4](https://github.com/jeanduplessis/argus/commit/3e55ea4))
+
 ## 2026-07-24
 
 - Swift source and tests now pass the repository's lint rules without force casts or oversized type, function, and file bodies. ([928faf9](https://github.com/jeanduplessis/argus/commit/928faf9))
