@@ -226,7 +226,7 @@ do_build() {
         -scheme Argus \
         -configuration "${CONFIGURATION}" \
         -derivedDataPath "${BUILD_DIR}" \
-        build 2>&1 | tail -5
+        build
 
     local app_path
     app_path="$(find_app)"

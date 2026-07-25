@@ -78,6 +78,7 @@ struct ArgusDiffRenderingTests {
         let configuration = WKWebViewConfiguration()
         configuration.userContentController = contentController
         let webView = WKWebView(frame: .zero, configuration: configuration)
+        defer { coordinator.dismantle(webView: webView) }
         coordinator.bridgeDidBecomeReady()
 
         coordinator.dismantle(webView: webView)
@@ -106,6 +107,7 @@ struct ArgusDiffRenderingTests {
         configuration.userContentController = contentController
         configuration.websiteDataStore = .nonPersistent()
         let webView = WKWebView(frame: .zero, configuration: configuration)
+        defer { coordinator.dismantle(webView: webView) }
         coordinator.attach(to: webView)
         coordinator.update(input: sampleInput())
         webView.loadHTMLString(ArgusDiffHTMLTemplate.html, baseURL: Bundle.main.resourceURL)
@@ -125,7 +127,6 @@ struct ArgusDiffRenderingTests {
 
         #expect(rendererError == nil)
         #expect(childCount > 0)
-        coordinator.dismantle(webView: webView)
     }
 
     private func sampleInput() -> ArgusDiffInput {

@@ -2,6 +2,10 @@
 .build/
 .swiftpm/
 
+# Python script bytecode
+__pycache__/
+*.pyc
+
 # JavaScript build dependencies
 ArgusWeb/node_modules/
 

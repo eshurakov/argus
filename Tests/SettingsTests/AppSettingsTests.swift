@@ -262,6 +262,7 @@ struct AppSettingsTests {  // swiftlint:disable:this type_body_length
                 dataStore: .private
             )
             let homepagePanel = BrowserPanel(configuration: configuration)
+            defer { homepagePanel.close() }
             #expect(homepagePanel.currentURL?.absoluteString == "https://argus.local/home")
             #expect(homepagePanel.webView.pageZoom == 1.25)
             #expect(homepagePanel.webView.isInspectable)
@@ -274,6 +275,7 @@ struct AppSettingsTests {  // swiftlint:disable:this type_body_length
 
             let explicitURL = URL(string: "https://example.com/explicit")!
             let explicitPanel = BrowserPanel(currentURL: explicitURL, configuration: configuration)
+            defer { explicitPanel.close() }
             #expect(explicitPanel.currentURL == explicitURL)
 
             let blankPanel = BrowserPanel(
@@ -285,6 +287,7 @@ struct AppSettingsTests {  // swiftlint:disable:this type_body_length
                     dataStore: .persistent
                 )
             )
+            defer { blankPanel.close() }
             #expect(blankPanel.currentURL == nil)
             #expect(blankPanel.webView.configuration.websiteDataStore.isPersistent)
         }

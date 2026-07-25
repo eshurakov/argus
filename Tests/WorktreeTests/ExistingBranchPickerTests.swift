@@ -60,6 +60,25 @@ struct ExistingBranchPickerTests {
         assertTrue(available.contains("\(branchPrefix)699"), "last generated branch is returned")
     }
 
+    @Test(.timeLimit(.minutes(1)))
+    func concurrentCompletedProcessesDoNotBlockAfterExit() async throws {
+        let service = WorktreeService(gitCommandTimeout: 2)
+
+        async let first = service.runProcess(
+            executableURL: URL(fileURLWithPath: "/usr/bin/true"),
+            args: [],
+            commandDescription: "first completed fixture"
+        )
+        async let second = service.runProcess(
+            executableURL: URL(fileURLWithPath: "/usr/bin/true"),
+            args: [],
+            commandDescription: "second completed fixture"
+        )
+
+        let outputs = try await [first, second]
+        #expect(outputs == ["", ""])
+    }
+
     @Test
     func coveredBehaviors() async throws {
         let temp = URL(fileURLWithPath: NSTemporaryDirectory())

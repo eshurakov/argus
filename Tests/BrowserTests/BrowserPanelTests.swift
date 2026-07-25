@@ -40,6 +40,7 @@ struct BrowserPanelTests {
                 developerToolsEnabled: false,
                 dataStore: .persistent
             ))
+        defer { panel.close() }
 
         #expect(panel.currentURL?.absoluteString == "https://example.com/docs")
     }
@@ -52,6 +53,7 @@ struct BrowserPanelTests {
             pageZoom: 1.25,
             developerToolsEnabled: true
         )
+        defer { panel.close() }
 
         #expect(panel.id == id)
         #expect(panel.webView.pageZoom == 1.25)

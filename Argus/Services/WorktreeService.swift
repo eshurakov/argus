@@ -203,7 +203,6 @@ final class WorktreeService: Sendable {
             outputReader.close()
             throw WorktreeError.gitCommandTimedOut(commandDescription)
         }
-        process.waitUntilExit()
         let outputDeadline = Date().addingTimeInterval(0.25)
         while !outputReader.isFinished && Date() < outputDeadline {
             try? await Task.sleep(nanoseconds: 25_000_000)
@@ -243,7 +242,6 @@ final class WorktreeService: Sendable {
         while process.isRunning {
             try? await Task.sleep(nanoseconds: 25_000_000)
         }
-        process.waitUntilExit()
     }
     /// Runs a git command and returns whether it succeeded (exit code 0).
     func runGitQuiet(

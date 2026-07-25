@@ -7,33 +7,31 @@ Run the release from `main`. Do not mix unrelated work into the release commits.
 
 ## 1. Prepare the version
 
-Update every version source:
-
-- Set `MARKETING_VERSION` in `project.yml` to the new semantic version.
-- Increment `CURRENT_PROJECT_VERSION` in `project.yml` by one.
-- Set the CLI version in `ArgusCLI/main.swift` to the same semantic version.
-- Update the CLI version assertion in `scripts/test.sh`.
-
-For a release from version `1.0.0` with build number `1`, use version `1.1.0` and build number `2`.
-
-Regenerate the Xcode project after changing `project.yml`:
+`VERSION` is the canonical machine-readable version manifest. Prepare the next feature release with:
 
 ```sh
-./scripts/build.sh generate
+./scripts/release.sh prepare minor
 ```
 
-Do not edit `Argus.xcodeproj/project.pbxproj` by hand. Confirm that the generated project contains the new
-`MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` values.
+The command increments the minor semantic version, resets the patch version to zero, increments the build number,
+synchronizes `project.yml` and `ArgusCLI/main.swift`, regenerates the Xcode project, and verifies every generated
+consumer. For a release from version `1.0.0` with build number `1`, it prepares version `1.1.0` and build number `2`.
+
+Do not edit generated version consumers independently or edit `Argus.xcodeproj/project.pbxproj` by hand. Run
+`python3 scripts/version.py verify` to check consistency without changing files.
 
 ## 2. Verify the release
 
 Confirm that `docs/SPEC.md` describes the feature being released, then run:
 
 ```sh
-./scripts/test.sh
-git diff --check
-./scripts/build.sh build --release --no-open
+./scripts/release.sh verify
 ```
+
+Verification runs version consistency, lint, app tests, Companion CLI checks, `git diff --check`, the Release build,
+and built-artifact validation as independent bounded stages. Complete output and the app-test `.xcresult` are retained
+under `.build/release-diagnostics/<timestamp>-<pid>/`. A timeout fails the stage, terminates its process group, and reports
+the diagnostic path; printed test success never overrides a process that did not exit successfully.
 
 Resolve failures before committing. Review `git status` and `git diff` to make sure the release contains only the
 intended feature, its tests and documentation, and the version changes.
@@ -43,7 +41,7 @@ intended feature, its tests and documentation, and the version changes.
 Commit the verified feature and version changes:
 
 ```sh
-git add <feature-files> project.yml Argus.xcodeproj/project.pbxproj ArgusCLI/main.swift scripts/test.sh
+git add <feature-files> VERSION project.yml Argus.xcodeproj/project.pbxproj ArgusCLI/main.swift
 git commit -m "Release turn completion notifications"
 ```
 
