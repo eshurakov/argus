@@ -10,7 +10,8 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 
 | Context | Owns | Location | Notes |
 |---|---|---|---|
-| **Workspace organization** | Projects, Workspaces, Panels, top-level tabs, panes, ordering, selection, and focus model | `Argus/Models/Project.swift`, `Argus/Models/Workspace.swift`, `Argus/Models/Panel.swift`, `Argus/Services/WorkspaceManager.swift` | UUIDs are identity; display names are not keys. |
+| **Work Mode organization** | Application-level Work Mode selection and each Work Mode's independent navigation, content, sidebar, and restoration state | Future work under `docs/proposals/work-modes-review/` | Global Settings and Project identity remain shared across Work Modes. |
+| **Workspace organization** | Projects, Workspaces, Panels, top-level tabs, panes, ordering, selection, and focus model within Code Work Mode | `Argus/Models/Project.swift`, `Argus/Models/Workspace.swift`, `Argus/Models/Panel.swift`, `Argus/Services/WorkspaceManager.swift` | UUIDs are identity; display names are not keys. |
 | **Worktree management** | Repository validation, branch discovery, worktree creation/removal, managed storage, and orphan discovery | `Argus/Services/WorktreeService.swift` | All git operations use spawned `git` processes; no libgit2. |
 | **Terminal runtime** | Global Ghostty engine, terminal surfaces, shell processes, rendering, terminal input, and first-responder behavior | `Argus/Ghostty/`, `Argus/Models/TerminalPanel.swift` | One global `GhosttyApp`; one Terminal Surface per Terminal Panel. |
 | **Files and Changes** | Right-sidebar navigation, workspace file tree, Git status snapshot, change actions, filesystem item actions, and file/preview loading | `Argus/Views/GitSidebar/`, `Argus/Models/GitStatus.swift`, `Argus/Services/GitStatus*`, `Argus/Services/GitPreviewService.swift` | Git Status Root never follows a terminal's live working directory. |
@@ -23,9 +24,16 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 | Term | Agent meaning | Use this when | Avoid |
 |---|---|---|---|
 | **Argus Application** | Native macOS app process that owns all authoritative domain state, UI, and persistence. | Referring to the app or its process-wide behavior. | "server process", "daemon", "backend". |
+| **Work Mode** | Application-level environment that owns an independent sidebar hierarchy and selection, center tabs, Right Sidebar state, and restoration state. | Referring to the top-level Code or Review environment selected from the left-sidebar header. | "mode" for a transient view filter or cosmetic layout. |
+| **Code Work Mode** | Work Mode containing the current Project, Workspace, Panel, terminal, Files, and Changes workflows. | Referring to the existing Argus experience after Work Modes are introduced. | "coding mode", which implies only terminal or agent activity. |
+| **Review Work Mode** | Work Mode organized around finding, reading, discussing, and submitting reviews for Pull Requests. | Referring to the proposed Pull Request review environment. | "PR mode" or a local Git Preview workflow. |
 | **Companion CLI** | The external `argus` executable reserved for future application control. It is a nonfunctional scaffold in v1. | Referring to the CLI target or proposed transport behavior. | Describing socket-backed commands as implemented. |
-| **Project** | UUID-identified aggregate that stores display metadata and an ordered list of Workspace references. | Referring to both Named Projects and the Catch-all Project. | "repo" when membership or UI grouping is intended. |
-| **Named Project** | Repository-backed Project with an immutable Project ID, repository path, main-branch metadata, and child Workspaces. | When repository ownership or removal behavior matters. | "normal project", "regular project". |
+| **Project** | UUID-identified aggregate representing one repository across Work Modes. A Project may initially have only a hosted Repository Identity for Review Work Mode and acquire a local Project Repository Root when Code Work Mode is configured. | Referring to repository grouping, shared identity, and cross-mode association. | "repo" when application identity or UI grouping is intended. |
+| **Named Project** | Current stable Code Work Mode form of a Project with an immutable Project ID, local Project Repository Root, main-branch metadata, and child Workspaces. The Review Work Mode proposal generalizes Project identity beyond this local-checkout requirement. | When current local repository ownership or removal behavior matters. | "normal project", "regular project". |
+| **Repository Identity** | Stable hosting-provider and repository coordinates used to recognize one hosted repository independently of a local checkout path. | Matching a Pull Request URL to a Project and preventing duplicate cross-mode Projects. | Repository display name or local path as hosted identity. |
+| **Pull Request** | Provider-qualified review subject identified by Repository Identity and provider Pull Request number. | Review Work Mode navigation, tabs, refresh, conversations, and review submission. | Local branch, Git Preview Tab, or an unqualified "PR" in domain contracts. |
+| **Review Inbox** | Provider-synchronized set of open Pull Requests for which the active GitHub account is explicitly requested as a reviewer. | Automatic Review Work Mode discovery and refresh. | All open Pull Requests or durable ownership of local review state. |
+| **Saved Pull Request** | Pull Request retained in Review Work Mode independently of current Review Inbox eligibility because it was manually added, explicitly saved, has an open review tab, or has local drafts. | Durable review navigation and safe retention. | A bookmark with no review state or an Inbox item that may be dropped unconditionally. |
 | **Catch-all Project** | The single synthetic, non-removable Project displayed as "Workspaces" that groups Standalone Workspaces. | Referring to unassigned Workspace organization. | "default project", "misc project", "unassigned project". |
 | **Project ID** | Immutable UUID used for identity, cross-references, and managed worktree storage paths. | Keys, persistence, APIs, and paths. | Project display name, repository basename, or slug as identity. |
 | **Workspace** | UUID-identified user work context with one Workspace Root, ordered top-level tabs, a Panel registry, and optional Named Project association. | Referring to the unit selected in the left sidebar. | "terminal", "worktree", or "tab" as a synonym. |
@@ -69,9 +77,14 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 | **Section Operation** | Git Mutation applied to an entire Change Section, including entries omitted by display caps. | Stage all, unstage all, discard all, and delete all. | "bulk operation" without section scope. |
 | **File Tab** | Top-level Tab backed by a File Panel and identified within a Workspace by Workspace Root plus relative path. | Opening or reusing Workspace file content. | "file preview", independent file window. |
 | **Git Preview Tab** | Top-level Tab backed by a Git Preview Panel and identified within a Workspace by Git Status Root, Preview Kind, and path. | Diff or blame presentation and refresh-in-place. | "preview panel" or floating `NSPanel`. |
+| **Pull Request Review Tab** | Review Work Mode Top-level Tab identified by provider-qualified Pull Request identity and owning that Pull Request's selected file, review progress, conversations, drafts, and submission state. | Reading and operating on one Pull Request in Review Work Mode. | One tab per changed file or a local Git Preview Tab. |
+| **Review Revision** | Immutable base and head commit pair loaded by one Pull Request Review Tab and used for its changed-file set, diffs, line mappings, and draft positions. | Refresh, stale-head detection, draft reconciliation, and review submission. | Whatever Pull Request head happens to be latest during an operation. |
+| **Pending Review** | GitHub-backed, unsubmitted review state for one Pull Request and Review Revision, containing new inline draft comments, an optional summary, and a selected review disposition. | Composing and confirming a Pull Request review submission. | Unsent reply text for an existing conversation or a published review. |
+| **Review Disposition** | Submission choice for a Pending Review: Approve, Comment, or Request Changes. | Review summary controls, confirmation, and submission. | Pull Request merge state or a local Git status. |
 | **Preview Kind** | Semantic Git preview operation: diff or blame. | Tab identity and action choice. | Preview rendering payload. |
 | **Preview Content** | Loaded rendering payload, currently structured diff or ANSI text. | Renderer selection and fallback messages. | Preview Kind. |
-| **Session Snapshot** | Codable durable state written to Argus application support storage and validated as one schema version. | Save, restore, limits, and reconciliation. | Runtime view state or Agent Status. |
+| **Session Snapshot** | Codable durable Code Work Mode state written to Argus application support storage and validated as one schema version. Review Work Mode uses independently persisted Review Session State. | Current Code Work Mode save, restore, limits, and reconciliation. | Runtime view state, Review Session State, or Agent Status. |
+| **Review Session State** | Durable Review Work Mode navigation, tab, Review Revision, progress, layout, reply-draft, and Pending Review state. User-authored drafts use crash-resilient autosave; provider responses are stored separately as replaceable cache data. | Review Work Mode restore and draft-loss prevention. | GitHub as the sole owner of unsent content or the Code Work Mode Session Snapshot. |
 | **Unix Domain Socket** | User-local transport endpoint at `~/.argus/argus.sock` used by implemented integrations. | Local integration transport. | Separate process or network service. |
 | **Socket Server** | App-owned component accepting bounded newline-delimited JSON requests over the Unix Domain Socket. | Implemented integration routing. | Separate process, daemon, or Companion CLI. |
 | **Socket Request** | Versioned newline-delimited JSON request accepted by the Socket Server. | Implemented integration wire behavior. | Inferring unsupported Companion CLI methods. |
@@ -89,7 +102,11 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 ## Relationships
 
 - The Argus Application owns one `WorkspaceManager`, one global `GhosttyApp`, and the process-wide Socket Server used by implemented integrations.
+- The Argus Application has one selected Work Mode. Code Work Mode and Review Work Mode independently own navigation selection, center tabs, Right Sidebar state, and restoration state while sharing global Settings and Named Project identity.
 - A Named Project references an ordered set of Workspaces by Workspace ID.
+- A Project may be created from Repository Identity for Review Work Mode without cloning. It appears in Code Work Mode only after a local checkout and Workspace are configured.
+- In the first Review Work Mode release, a Pull Request is hosted by GitHub and all authenticated provider operations use the active GitHub CLI authentication context; Argus does not own or persist GitHub credentials.
+- Review Work Mode discovers the active account's Review Inbox and groups Pull Requests by Project. Pull Requests with durable user intent or local review state become Saved Pull Requests and are not removed by Inbox synchronization.
 - The Catch-all Project groups Standalone Workspaces and is ordered after Named Projects.
 - A Workspace has one Workspace Root, owns all of its Panels, orders top-level Panel roots as Top-level Tabs, and stores one split layout per Top-level Tab.
 - A Top-level Tab contains one or more Pane leaves; closing the tab closes every Panel in its layout.
@@ -101,8 +118,11 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 - A Standalone Workspace resolves its Git Status Root from its Workspace Root.
 - A Git File Change belongs to one Change Section; one path may have separate Staged and Unstaged entries.
 - A File Tab and Git Preview Tab belong to the Workspace that initiated them and use that Workspace's normal tab lifecycle.
+- A Pull Request Review Tab belongs to Review Work Mode rather than a Code Workspace. One Pull Request has at most one open review tab, and changed-file selection remains inside that tab.
+- A Pull Request Review Tab reads one Review Revision at a time. A newer remote head is announced but does not replace the loaded revision until the user explicitly updates.
+- A Pending Review belongs to one Pull Request and Review Revision. Existing-conversation replies publish separately; new inline comments publish with the Pending Review and its Review Disposition.
 - A Per-panel Agent Status overrides Workspace-level Agent Status for the same terminal context.
-- A Session Snapshot persists durable application state; Agent Status Entries, agent PIDs, Git Status Snapshots, and socket connections are ephemeral.
+- The Session Snapshot persists Code Work Mode state. Review Session State persists Review Work Mode state independently. Agent Status Entries, agent PIDs, Git Status Snapshots, and socket connections are ephemeral.
 
 ## Agent Rules
 
@@ -136,7 +156,8 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 
 | Ambiguous term or conflict | Problem | Canonical decision |
 |---|---|---|
-| Project vs repository | A Project is an application aggregate; a repository is its git resource. | Use **Named Project** for aggregate behavior and **Project Repository Root** for checkout path. |
+| Project vs repository | A Project is an application aggregate; a repository is its hosted or local Git resource. | Use **Project** for aggregate behavior, **Repository Identity** for hosted identity, and **Project Repository Root** for a local checkout path. Use **Named Project** when current stable Code Work Mode behavior requires a local checkout. |
+| Project identity across Work Modes | Review can know a hosted repository before Code has a local checkout, while the stable Named Project model currently requires a Project Repository Root. | Use one Project ID and Repository Identity across Work Modes. Do not clone implicitly or create duplicate Projects; add local checkout state only when Code Work Mode is configured. |
 | Workspace vs worktree | A Workspace may be mistaken for its backing checkout. | A Workspace always has a Workspace Root; only Worktree Workspaces map to secondary git worktrees, and Standalone Workspaces may have no git context. |
 | Panel vs tab vs pane vs surface | Current comments and APIs sometimes use these as synonyms. | Use layout and runtime definitions in Canonical Terms; a Panel can back a Top-level Tab or Pane, while only Terminal Panels own Terminal Surfaces. |
 | `currentDirectory` | Name suggests live shell PWD but implementation uses it as stable Workspace filesystem context. | Call it **Workspace Root** in prose; use **Terminal Working Directory** for live PWD. |

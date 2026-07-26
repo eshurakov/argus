@@ -99,16 +99,39 @@ cli_build_path() {
 }
 
 quit_running() {
-    if pgrep -x "${APP_NAME}" > /dev/null 2>&1; then
-        log "Quitting running ${APP_NAME}..."
-        osascript -e "tell application \"${APP_NAME}\" to quit" 2>/dev/null || true
-        for _ in $(seq 1 5); do
-            pgrep -x "${APP_NAME}" > /dev/null 2>&1 || return 0
-            sleep 1
-        done
-        pkill -9 "${APP_NAME}" 2>/dev/null || true
-        sleep 0.5
-    fi
+    local pids
+    pids="$(pgrep -x "${APP_NAME}" || true)"
+    [[ -n "${pids}" ]] || return 0
+
+    log "Quitting running ${APP_NAME}..."
+    while IFS= read -r pid; do
+        # Target the process that was already running. `tell application
+        # "Argus" to quit` may launch another registered Argus bundle when
+        # the running bundle has just been replaced, and that transient app
+        # can overwrite the saved session with a fresh one.
+        osascript -l JavaScript \
+            -e 'ObjC.import("AppKit")' \
+            -e "const app = $.NSRunningApplication.runningApplicationWithProcessIdentifier(${pid});" \
+            -e 'if (app) app.terminate;' \
+            > /dev/null 2>&1 || true
+    done <<< "${pids}"
+
+    for _ in $(seq 1 5); do
+        local any_running=0
+        while IFS= read -r pid; do
+            if kill -0 "${pid}" 2>/dev/null; then
+                any_running=1
+                break
+            fi
+        done <<< "${pids}"
+        [[ ${any_running} -eq 0 ]] && return 0
+        sleep 1
+    done
+
+    while IFS= read -r pid; do
+        kill -9 "${pid}" 2>/dev/null || true
+    done <<< "${pids}"
+    sleep 0.5
 }
 
 launch_app() {
@@ -248,14 +271,14 @@ do_build() {
 }
 
 do_run() {
-    do_build
     quit_running
+    do_build
     launch_app "$(find_app)"
 }
 
 do_install() {
-    do_build
     quit_running
+    do_build
 
     local app_path
     app_path="$(find_app)"

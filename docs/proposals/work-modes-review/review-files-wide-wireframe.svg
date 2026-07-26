@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" role="img" aria-labelledby="title desc">
+  <title id="title">Wide Pull Request Files section wireframe</title>
+  <desc id="desc">A wide review tab with changed files, selected diff, conversations, and compact review footer.</desc>
+  <defs><style>
+    .bg{fill:#171717}.panel{fill:#202020;stroke:#555}.active{fill:#343434}.line{stroke:#666}.text{fill:#eee;font:15px -apple-system,BlinkMacSystemFont,sans-serif}.small{fill:#aaa;font:12px -apple-system,BlinkMacSystemFont,sans-serif}.mono{fill:#ddd;font:13px ui-monospace,SFMono-Regular,monospace}.add{fill:#203c2b}.del{fill:#47252a}.accent{fill:#7aa2f7}
+  </style></defs>
+  <rect class="bg" width="1280" height="760"/>
+  <rect class="panel" x="20" y="20" width="1240" height="720" rx="8"/>
+  <text class="text" x="42" y="52">Fix session restore race  #3214</text>
+  <text class="small" x="1040" y="52">New commits available   Refresh</text>
+  <line class="line" x1="20" y1="70" x2="1260" y2="70"/>
+  <rect class="active" x="38" y="80" width="70" height="28" rx="5"/><text class="text" x="56" y="100">Files</text>
+  <text class="text" x="130" y="100">Activity</text><text class="text" x="218" y="100">Checks</text>
+  <line class="line" x1="20" y1="118" x2="1260" y2="118"/>
+  <rect class="panel" x="36" y="134" width="250" height="520"/>
+  <text class="small" x="50" y="158">Filter changed files…</text>
+  <text class="small" x="50" y="188">3 of 12 viewed   Next unviewed ↓</text>
+  <rect class="active" x="44" y="206" width="234" height="48" rx="4"/>
+  <text class="mono" x="56" y="226">M  SessionStore.swift</text><text class="small" x="56" y="246">2 threads · 1 draft</text>
+  <text class="mono" x="56" y="282">A  ReviewMode.swift</text><text class="mono" x="56" y="316">M  MainWindowView.swift</text>
+  <text class="mono" x="56" y="350">R  SessionSnapshot.swift</text><text class="mono" x="56" y="384">D  LegacyState.swift</text>
+  <rect class="panel" x="298" y="134" width="612" height="520"/>
+  <text class="mono" x="316" y="160">Argus/Services/SessionStore.swift</text><text class="small" x="800" y="160">Split  Wrap  Viewed □</text>
+  <rect class="del" x="312" y="186" width="584" height="32"/><text class="mono" x="326" y="207">- saveOnTerminate()</text>
+  <rect class="add" x="312" y="220" width="584" height="48"/><text class="mono" x="326" y="241">+ await reviewState.flush()</text><text class="mono" x="326" y="260">+ saveCodeSession()</text>
+  <text class="mono" x="326" y="300">  func restore() async throws {</text>
+  <circle class="accent" cx="886" cy="294" r="7"/><text class="small" x="836" y="318">2 comments</text>
+  <rect class="panel" x="922" y="134" width="322" height="520"/>
+  <text class="text" x="940" y="160">Conversations</text>
+  <rect class="active" x="936" y="182" width="294" height="148" rx="6"/>
+  <text class="small" x="950" y="206">@reviewer · line 42 · unresolved</text>
+  <text class="text" x="950" y="234">Could this lose the latest draft?</text>
+  <rect class="panel" x="950" y="258" width="266" height="42" rx="4"/><text class="small" x="962" y="282">Reply…</text>
+  <text class="small" x="1164" y="318">Send</text>
+  <line class="line" x1="20" y1="670" x2="1260" y2="670"/>
+  <text class="text" x="42" y="704">Review summary</text><text class="small" x="180" y="704">2 inline drafts</text>
+  <text class="small" x="1030" y="704">Comment  ▾</text><rect class="active" x="1120" y="682" width="120" height="34" rx="5"/><text class="text" x="1135" y="704">Open review</text>
+</svg>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="620" viewBox="0 0 900 620" role="img" aria-labelledby="title desc">
+  <title id="title">Review summary and submission wireframe</title>
+  <desc id="desc">An expanded review summary drawer with disposition choices, summary text, draft count, and a confirmation popover.</desc>
+  <defs><style>
+    .bg{fill:#171717}.panel{fill:#202020;stroke:#555}.active{fill:#343434;stroke:#7aa2f7}.line{stroke:#666}.text{fill:#eee;font:15px -apple-system,BlinkMacSystemFont,sans-serif}.small{fill:#aaa;font:12px -apple-system,BlinkMacSystemFont,sans-serif}.label{fill:#ddd;font:13px ui-monospace,SFMono-Regular,monospace}.danger{fill:#f7768e}
+  </style></defs>
+  <rect class="bg" width="900" height="620"/>
+  <rect class="panel" x="30" y="30" width="840" height="560" rx="8"/>
+  <text class="text" x="54" y="66">Review summary</text><text class="small" x="744" y="66">2 inline drafts</text>
+  <text class="small" x="54" y="104">Disposition</text>
+  <rect class="panel" x="54" y="118" width="110" height="34" rx="5"/><text class="text" x="76" y="140">Approve</text>
+  <rect class="active" x="176" y="118" width="110" height="34" rx="5"/><text class="text" x="201" y="140">Comment</text>
+  <rect class="panel" x="298" y="118" width="154" height="34" rx="5"/><text class="text" x="316" y="140">Request changes</text>
+  <text class="small" x="54" y="188">Summary (optional)</text>
+  <rect class="panel" x="54" y="202" width="500" height="168" rx="6"/><text class="small" x="70" y="228">Write a review summary…</text>
+  <text class="small" x="54" y="400">Nothing is published until submission is confirmed.</text>
+  <rect class="active" x="414" y="422" width="140" height="38" rx="5"/><text class="text" x="436" y="447">Submit review</text>
+  <rect class="panel" x="586" y="170" width="250" height="234" rx="8"/>
+  <text class="label" x="606" y="200">CONFIRM SUBMISSION</text>
+  <text class="text" x="606" y="234">#3214 · Comment</text>
+  <text class="small" x="606" y="262">2 inline comments</text>
+  <text class="small" x="606" y="284">Summary included</text>
+  <text class="small" x="606" y="320">This publishes to GitHub.</text>
+  <rect class="panel" x="606" y="342" width="80" height="34" rx="5"/><text class="text" x="624" y="364">Cancel</text>
+  <rect class="active" x="698" y="342" width="118" height="34" rx="5"/><text class="text" x="712" y="364">Submit review</text>
+  <line class="line" x1="554" y1="300" x2="586" y2="286"/>
+</svg>

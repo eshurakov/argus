@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="720" viewBox="0 0 760 720" role="img" aria-labelledby="title desc">
+  <title id="title">Review Work Mode sidebar wireframe</title>
+  <desc id="desc">Annotated wireframe showing the Work Mode picker, review filter, and Projects with Inbox and Saved Pull Requests.</desc>
+  <defs><style>
+    .bg{fill:#171717}.panel{fill:#202020;stroke:#555}.selected{fill:#343434}.line{stroke:#666}.text{fill:#eee;font:16px -apple-system,BlinkMacSystemFont,sans-serif}.small{fill:#aaa;font:13px -apple-system,BlinkMacSystemFont,sans-serif}.label{fill:#ddd;font:14px ui-monospace,SFMono-Regular,monospace}.accent{fill:#7aa2f7}.warn{fill:#e0af68}.draft{fill:#bb9af7}
+  </style></defs>
+  <rect class="bg" width="760" height="720"/>
+  <rect class="panel" x="20" y="20" width="310" height="680" rx="8"/>
+  <rect class="selected" x="36" y="38" width="278" height="48" rx="10"/>
+  <text class="text" x="54" y="68">Review</text><text class="text" x="282" y="68">⌄</text>
+  <circle class="accent" cx="258" cy="61" r="5"/>
+  <rect class="panel" x="36" y="102" width="278" height="34" rx="6"/>
+  <text class="small" x="50" y="124">Filter reviews…</text>
+  <text class="small" x="40" y="166">▾  kilo-org/cloud</text>
+  <text class="small" x="56" y="196">INBOX  2</text>
+  <rect class="selected" x="48" y="208" width="266" height="64" rx="6"/>
+  <text class="text" x="62" y="232">Fix session restore race</text>
+  <text class="small" x="62" y="254">#3214  @author</text><circle class="accent" cx="292" cy="240" r="5"/>
+  <text class="text" x="62" y="300">Add review API</text>
+  <text class="small" x="62" y="322">#3215  @author</text><text class="warn" x="284" y="310">●</text>
+  <text class="small" x="56" y="360">SAVED  1</text>
+  <text class="text" x="62" y="394">Renderer cleanup</text>
+  <text class="small" x="62" y="416">#3198  merged</text><text class="draft" x="284" y="404">◆</text>
+  <rect class="panel" x="370" y="40" width="360" height="142" rx="8"/>
+  <text class="label" x="390" y="70">WORK MODE PICKER</text>
+  <text class="small" x="390" y="98">• Code and Review restore independently</text>
+  <text class="small" x="390" y="122">• Dot reports unseen Review activity</text>
+  <text class="small" x="390" y="146">• Switching never changes tabs or focus</text>
+  <line class="line" x1="330" y1="62" x2="370" y2="80"/>
+  <rect class="panel" x="370" y="220" width="360" height="182" rx="8"/>
+  <text class="label" x="390" y="250">PROJECT / PULL REQUEST TREE</text>
+  <text class="small" x="390" y="278">• Projects stay alphabetically stable</text>
+  <text class="small" x="390" y="302">• Inbox sorts by GitHub activity</text>
+  <text class="small" x="390" y="326">• Saved keeps manual order and drafts</text>
+  <text class="small" x="390" y="350">• Rows expose state without color alone</text>
+  <text class="small" x="390" y="374">• URL intake creates a Saved item</text>
+  <line class="line" x1="330" y1="286" x2="370" y2="286"/>
+  <rect class="panel" x="370" y="450" width="360" height="132" rx="8"/>
+  <text class="label" x="390" y="480">FILTERS</text>
+  <text class="small" x="390" y="508">Text: project, repository, title, #, author</text>
+  <text class="small" x="390" y="532">Status: Inbox, Saved, Draft, Open,</text>
+  <text class="small" x="390" y="554">Closed/Merged, Needs Attention</text>
+  <line class="line" x1="330" y1="118" x2="370" y2="500"/>
+</svg>
