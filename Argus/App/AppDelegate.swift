@@ -90,6 +90,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             ) { _ in }
         ]
         startAgentSocketIfReady()
+
+        // macOS 27 can fail or omit SF Symbol rendering when libghostty is
+        // initialized during AppKit's pre-visible window layout. Start it on
+        // the next main-loop turn, after the initial view hierarchy is mounted.
+        DispatchQueue.main.async {
+            GhosttyApp.shared.start()
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {

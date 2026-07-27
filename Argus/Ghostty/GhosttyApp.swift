@@ -23,9 +23,16 @@ final class GhosttyApp: ObservableObject {
     private(set) var defaultBackgroundOpacity: Double = 1.0
     @Published private(set) var chromePalette = ChromePalette.fallback
     private var appObservers: [NSObjectProtocol] = []
+    private var hasStarted = false
 
     private init() {
         configureGhosttyEnvironment()
+    }
+
+    @MainActor
+    func start() {
+        guard !hasStarted else { return }
+        hasStarted = true
         initializeGhostty()
     }
 
@@ -115,6 +122,7 @@ final class GhosttyApp: ObservableObject {
             return
         }
         self.app = ghosttyApp
+        NotificationCenter.default.post(name: .argusGhosttyDidStart, object: nil)
 
         observeApplicationFocus()
     }
@@ -273,4 +281,8 @@ final class GhosttyApp: ObservableObject {
         guard let app else { return false }
         return ghostty_app_needs_confirm_quit(app)
     }
+}
+
+extension Notification.Name {
+    static let argusGhosttyDidStart = Notification.Name("ArgusGhosttyDidStart")
 }

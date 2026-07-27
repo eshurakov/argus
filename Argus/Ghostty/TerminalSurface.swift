@@ -115,7 +115,20 @@ final class TerminalSurface: ObservableObject, Identifiable {
             self?._hostedView?.needsDisplay = true
         }
 
-        let mouseShapeObserver = NotificationCenter.default.addObserver(
+        notificationObservers.append(
+            contentsOf: [
+                titleObserver,
+                pwdObserver,
+                renderObserver,
+                observeMouseShapeChanges(),
+                observeGhosttyStartup()
+            ]
+        )
+    }
+
+    private func observeMouseShapeChanges() -> NSObjectProtocol {
+        let surfaceId = id
+        return NotificationCenter.default.addObserver(
             forName: .argusMouseShapeChanged,
             object: nil,
             queue: .main
@@ -128,8 +141,18 @@ final class TerminalSurface: ObservableObject, Identifiable {
             let shape = ghostty_action_mouse_shape_e(rawValue: shapeRaw)
             self?._hostedView?.updateCursor(shape: shape)
         }
+    }
 
-        notificationObservers.append(contentsOf: [titleObserver, pwdObserver, renderObserver, mouseShapeObserver])
+    private func observeGhosttyStartup() -> NSObjectProtocol {
+        NotificationCenter.default.addObserver(
+            forName: .argusGhosttyDidStart,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            // The view may have reached a window before deferred libghostty
+            // startup completed, so retry the otherwise idempotent creation.
+            self?.createSurface()
+        }
     }
 
     // MARK: - Surface Lifecycle
