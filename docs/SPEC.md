@@ -66,6 +66,7 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 8. The left sidebar MUST show Project and Workspace hierarchy, selection, Workspace type, branch when available, and Agent Status when present.
 9. A Standalone Workspace MUST allow its Workspace Root to be changed from its left-sidebar context menu.
 10. Changing a Standalone Workspace's Workspace Root MUST immediately update its Files View and Git Status Root. New Terminal tabs MUST start at the new Workspace Root without changing existing Terminal Working Directories.
+11. A Standalone Workspace row MUST show its Workspace Root beneath its display name, abbreviating the user's home directory with `~`.
 
 ## Panels, tabs, and panes
 

@@ -1,5 +1,25 @@
 import Foundation
 
+/// Formats Workspace Roots for compact presentation without losing their
+/// filesystem identity.
+enum WorkspacePathFormatter {
+    static func abbreviatedPath(
+        _ path: String,
+        homeDirectory: String = FileManager.default.homeDirectoryForCurrentUser.path
+    ) -> String {
+        let standardizedPath = URL(fileURLWithPath: path).standardizedFileURL.path
+        let standardizedHome = URL(fileURLWithPath: homeDirectory).standardizedFileURL.path
+
+        if standardizedPath == standardizedHome {
+            return "~"
+        }
+
+        let homePrefix = standardizedHome.hasSuffix("/") ? standardizedHome : "\(standardizedHome)/"
+        guard standardizedPath.hasPrefix(homePrefix) else { return standardizedPath }
+        return "~/\(standardizedPath.dropFirst(homePrefix.count))"
+    }
+}
+
 /// Git metadata shown alongside the active workspace title.
 struct TitlebarGitContext: Equatable, Sendable {
     let visibleText: String
