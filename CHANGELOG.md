@@ -2,6 +2,10 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-07-28
+
+- Standalone workspace rows now show their Workspace Root beneath the name, with the home directory abbreviated as `~`. ([4d36a31](https://github.com/jeanduplessis/argus/commit/4d36a31))
+
 ## 2026-07-27
 
 - Argus now opens on macOS 27 with visible icons and working terminal sessions. The formatter configuration also supports the Xcode 27 toolchain. ([96b141f](https://github.com/jeanduplessis/argus/commit/96b141f))
