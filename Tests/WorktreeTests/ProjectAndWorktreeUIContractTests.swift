@@ -163,9 +163,13 @@ struct ProjectAndWorktreeUIContractTests {
                 "preferring: candidate",
                 "verified != candidate",
                 "newBranchName == candidate",
-                "Image(systemName: \"shuffle\")",
+                "Button(\"Regenerate\")",
                 "customTitle: trimmedName.isEmpty ? nil : trimmedName"
             ], "random branch name suggestion and optional display name")
+        sheet.excludes(
+            "Image(systemName:",
+            "the New Workspace sheet must not depend on vector SF Symbol rasterization"
+        )
 
         let generator = try SourceContract("Argus/Models/RandomBranchNameGenerator.swift")
         generator.containsAll(

@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct NewWorkspaceSheet: View {
+    // Keep this sheet text-only: macOS 27 can raise in CUINamedVectorGlyph
+    // while SwiftUI rasterizes an SF Symbol during sheet presentation.
     @EnvironmentObject var workspaceManager: WorkspaceManager
     @Environment(\.dismiss) private var dismiss
 
@@ -67,14 +69,10 @@ struct NewWorkspaceSheet: View {
                     Button {
                         toggleBranchMode()
                     } label: {
-                        HStack(spacing: 2) {
-                            Text(
-                                branchMode == .new
-                                    ? "Use an existing branch" : "Create a new branch instead"
-                            )
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 9, weight: .semibold))
-                        }
+                        Text(
+                            branchMode == .new
+                                ? "Use an existing branch" : "Create a new branch instead"
+                        )
                         .font(.system(size: 11, weight: .semibold))
                     }
                     .buttonStyle(.plain)
@@ -149,14 +147,12 @@ extension NewWorkspaceSheet {
         HStack(spacing: 4) {
             TextField("Branch name", text: $newBranchName)
                 .textFieldStyle(.plain)
-            Button {
+            Button("Regenerate") {
                 regenerateBranchName()
-            } label: {
-                Image(systemName: "shuffle")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.secondary)
             }
             .buttonStyle(.plain)
+            .font(.system(size: 11, weight: .medium))
+            .foregroundColor(.secondary)
             .help("Generate a new random branch name")
         }
         .padding(.horizontal, 8)
@@ -209,7 +205,9 @@ extension NewWorkspaceSheet {
                                         .truncationMode(.middle)
                                     Spacer()
                                     if selectedExistingBranch == branch {
-                                        Image(systemName: "checkmark")
+                                        Text("Selected")
+                                            .font(.system(size: 10, weight: .semibold))
+                                            .foregroundColor(.secondary)
                                     }
                                 }
                                 .contentShape(Rectangle())
