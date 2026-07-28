@@ -38,8 +38,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.argus.app
         PRODUCT_NAME: Argus
-        MARKETING_VERSION: "1.4.0"
-        CURRENT_PROJECT_VERSION: "5"
+        MARKETING_VERSION: "1.5.0"
+        CURRENT_PROJECT_VERSION: "6"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_GENERATION_MODE: GeneratedByBuildSystem
         GENERATE_INFOPLIST_FILE: YES

@@ -50,7 +50,7 @@ struct TurnCompletionUIContractTests {
         let row = try SourceContract("Argus/Views/Sidebar/SidebarView+WorkspaceRow.swift")
         let iconSelection = try row.section(
             after: "if hasAttention",
-            before: "// Title and branch"
+            before: "// Title and Workspace context"
         )
 
         let statusBranch = try #require(iconSelection.range(of: "else if let agentStatus"))
@@ -99,7 +99,10 @@ struct TurnCompletionUIContractTests {
         // Attention rendering must never drive tab or Workspace selection.
         let tabIconSelection = try tabBar.section(after: "if panel.isLoading", before: "Text(title)")
         #expect(!tabIconSelection.contains("selectPanel"))
-        let rowIconSelection = try row.section(after: "if hasAttention", before: "// Title and branch")
+        let rowIconSelection = try row.section(
+            after: "if hasAttention",
+            before: "// Title and Workspace context"
+        )
         #expect(!rowIconSelection.contains("onSelect"))
 
         try SourceContract("Argus/Models/SessionSnapshot.swift").excludes(
