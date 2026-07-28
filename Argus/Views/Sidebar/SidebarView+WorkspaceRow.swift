@@ -50,7 +50,7 @@ struct SidebarWorkspaceRow: View {
                         .accessibilityHidden(true)
                 }
 
-                // Title and branch
+                // Title and Workspace context
                 VStack(alignment: .leading, spacing: 1) {
                     Text(workspace.displayTitle)
                         .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 13)))
@@ -58,12 +58,13 @@ struct SidebarWorkspaceRow: View {
                         .lineLimit(1)
                         .truncationMode(.tail)
 
-                    if let branch = workspace.branchName {
-                        Text(branch)
+                    if let subtitle = workspaceSubtitle {
+                        Text(subtitle)
                             .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 10)))
                             .foregroundColor(isSelected ? .white.opacity(0.7) : .secondary)
                             .lineLimit(1)
                             .truncationMode(.middle)
+                            .help(workspaceSubtitleHelp)
                     }
                 }
 
@@ -116,6 +117,17 @@ struct SidebarWorkspaceRow: View {
         turnCompletionAttentionStore.workspaceHasAttention(workspace.id)
     }
 
+    private var workspaceSubtitle: String? {
+        if workspace.workspaceType == .external {
+            return WorkspacePathFormatter.abbreviatedPath(workspace.currentDirectory)
+        }
+        return workspace.branchName
+    }
+
+    private var workspaceSubtitleHelp: String {
+        workspace.workspaceType == .external ? workspace.currentDirectory : workspace.branchName ?? ""
+    }
+
     private var backgroundColor: Color {
         if isSelected {
             return Color.accentColor
@@ -134,6 +146,9 @@ struct SidebarWorkspaceRow: View {
         var parts = ["Workspace \(globalIndex)", workspace.displayTitle, workspace.workspaceType.label]
         if let branch = workspace.branchName {
             parts.append("branch \(branch)")
+        }
+        if workspace.workspaceType == .external {
+            parts.append("directory \(workspace.currentDirectory)")
         }
         if workspace.panelCount > 1 {
             parts.append("\(workspace.panelCount) tabs")

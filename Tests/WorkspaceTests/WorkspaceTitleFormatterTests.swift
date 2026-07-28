@@ -6,6 +6,25 @@ import Testing
 @Suite
 struct WorkspaceTitleFormatterTests {
     @Test
+    func workspacePathsAbbreviateTheHomeDirectory() {
+        let home = "/Users/jdp"
+
+        #expect(
+            WorkspacePathFormatter.abbreviatedPath(
+                "/Users/jdp/Development/kilo-org/on-call",
+                homeDirectory: home
+            ) == "~/Development/kilo-org/on-call"
+        )
+        #expect(WorkspacePathFormatter.abbreviatedPath(home, homeDirectory: home) == "~")
+        #expect(
+            WorkspacePathFormatter.abbreviatedPath(
+                "/Users/jdproject/work",
+                homeDirectory: home
+            ) == "/Users/jdproject/work"
+        )
+    }
+
+    @Test
     func coveredBehaviors() {
         assertEqual(
             WorkspaceTitleFormatter.title(workspaceTitle: "argus", contextName: "argus"),

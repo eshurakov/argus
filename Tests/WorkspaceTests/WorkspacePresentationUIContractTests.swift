@@ -58,4 +58,15 @@ struct WorkspacePresentationUIContractTests {
                 "notifyWorkspaceContextChanged()"
             ], "Workspace Root mutation boundary")
     }
+
+    @Test
+    func standaloneWorkspaceRowShowsItsAbbreviatedWorkspaceRoot() throws {
+        try SourceContract("Argus/Views/Sidebar/SidebarView+WorkspaceRow.swift").containsAll(
+            [
+                "if workspace.workspaceType == .external",
+                "WorkspacePathFormatter.abbreviatedPath(workspace.currentDirectory)",
+                ".help(workspaceSubtitleHelp)",
+                "parts.append(\"directory \\(workspace.currentDirectory)\")"
+            ], "Standalone Workspace Root subtitle")
+    }
 }
