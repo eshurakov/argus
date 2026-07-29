@@ -55,7 +55,11 @@ private struct SidebarHeader: View {
                         workspaceManager.addWorkspace()
                     },
                     label: {
-                        Label("New Workspace", systemImage: "terminal")
+                        Label {
+                            Text("New Workspace")
+                        } icon: {
+                            SemanticIcon(name: "terminal", pointSize: 13, weight: .regular)
+                        }
                     })
 
                 Button(
@@ -63,11 +67,14 @@ private struct SidebarHeader: View {
                         NotificationCenter.default.post(name: .showNewProjectSheet, object: nil)
                     },
                     label: {
-                        Label("New Project…", systemImage: "folder.badge.plus")
+                        Label {
+                            Text("New Project…")
+                        } icon: {
+                            SemanticIcon(name: "folder.badge.plus", pointSize: 13, weight: .regular)
+                        }
                     })
             } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 12))
+                SemanticIcon(name: "plus", pointSize: 12, weight: .regular)
                     .frame(width: 20, height: 20)
                     .background {
                         RoundedRectangle(cornerRadius: 4, style: .continuous)

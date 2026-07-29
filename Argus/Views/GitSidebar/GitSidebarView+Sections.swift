@@ -12,8 +12,7 @@ struct GitChangeDirectoryRow: View {
     var body: some View {
         Button(action: toggle) {
             HStack(spacing: 7) {
-                Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                    .font(.system(size: 9, weight: .semibold))
+                SemanticIcon(name: isExpanded ? "chevron.down" : "chevron.right", pointSize: 9, weight: .semibold)
                     .foregroundColor(.secondary)
                     .frame(width: 12)
                 Text(directory.name)
@@ -96,9 +95,11 @@ extension GitSidebarView {
                 isExpanded.wrappedValue.toggle()
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundColor(.secondary)
+                    SemanticIcon(
+                        name: isExpanded.wrappedValue ? "chevron.down" : "chevron.right", pointSize: 9,
+                        weight: .semibold
+                    )
+                    .foregroundColor(.secondary)
                     Text(section.title)
                         .font(
                             .system(size: appSettings.presentationMetrics.textSize(forBaseSize: 12), weight: .semibold))
@@ -190,7 +191,7 @@ extension GitSidebarView {
                     }
                 }
             } label: {
-                Image(systemName: "ellipsis.circle")
+                SemanticIcon(name: "ellipsis.circle", pointSize: 12, weight: .regular)
                     .frame(width: 20, height: 20)
                     .background {
                         RoundedRectangle(cornerRadius: 4, style: .continuous)

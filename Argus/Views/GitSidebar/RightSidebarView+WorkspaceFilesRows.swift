@@ -130,8 +130,7 @@ extension WorkspaceFilesView {
         isSelected: Bool
     ) -> some View {
         HStack(spacing: 7) {
-            Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                .font(.system(size: 9, weight: .semibold))
+            SemanticIcon(name: isExpanded ? "chevron.down" : "chevron.right", pointSize: 9, weight: .semibold)
                 .foregroundColor(isSelected ? .accentColor : .secondary)
                 .frame(width: 12)
             ZStack {
@@ -139,8 +138,7 @@ extension WorkspaceFilesView {
                     ProgressView()
                         .controlSize(.small)
                 } else {
-                    Image(systemName: isExpanded ? "folder.fill" : "folder")
-                        .font(.system(size: 11, weight: .semibold))
+                    SemanticIcon(name: isExpanded ? "folder.fill" : "folder", pointSize: 11, weight: .semibold)
                         .foregroundColor(isSelected ? .accentColor : .secondary)
                 }
             }
@@ -201,8 +199,7 @@ extension WorkspaceFilesView {
         isSelected: Bool
     ) -> some View {
         HStack(spacing: 7) {
-            Image(systemName: WorkspaceFileIcon.systemName(for: file.name))
-                .font(.system(size: 11, weight: .semibold))
+            SemanticIcon(name: WorkspaceFileIcon.systemName(for: file.name), pointSize: 11, weight: .semibold)
                 .foregroundColor(isSelected ? .accentColor : .secondary)
                 .frame(width: 14)
             Text(file.name)

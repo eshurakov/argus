@@ -8,19 +8,27 @@ struct SettingsView: View {
     var body: some View {
         TabView {
             general
-                .tabItem { Label("General", systemImage: "gear") }
+                .tabItem { tabLabel("General", icon: "gear") }
             appearance
-                .tabItem { Label("Appearance", systemImage: "textformat") }
+                .tabItem { tabLabel("Appearance", icon: "textformat") }
             terminal
-                .tabItem { Label("Terminal", systemImage: "terminal") }
+                .tabItem { tabLabel("Terminal", icon: "terminal") }
             filesAndChanges
-                .tabItem { Label("Files & Changes", systemImage: "doc.text") }
+                .tabItem { tabLabel("Files & Changes", icon: "doc.text") }
             browser
-                .tabItem { Label("Browser", systemImage: "globe") }
+                .tabItem { tabLabel("Browser", icon: "globe") }
             agent
-                .tabItem { Label("Agent", systemImage: "bell") }
+                .tabItem { tabLabel("Agent", icon: "bell") }
         }
         .frame(width: 560, height: 430)
+    }
+
+    private func tabLabel(_ title: String, icon: String) -> some View {
+        Label {
+            Text(title)
+        } icon: {
+            SemanticIcon(name: icon, pointSize: 13, weight: .regular)
+        }
     }
 
     private var general: some View {

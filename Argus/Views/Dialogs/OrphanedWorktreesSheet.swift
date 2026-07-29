@@ -252,7 +252,7 @@ private struct OrphanRow: View {
 
             if let failure {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Image(systemName: "exclamationmark.triangle.fill")
+                    SemanticIcon(name: "exclamationmark.triangle.fill", pointSize: 12, weight: .regular)
                         .foregroundColor(.red)
                         .accessibilityHidden(true)
 

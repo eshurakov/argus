@@ -90,8 +90,7 @@ struct TabBarView: View {
                         workspaceManager.addBrowserTab()
                     }
                 } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 11))
+                    SemanticIcon(name: "plus", pointSize: 11, weight: .regular)
                         .foregroundColor(.secondary)
                         .frame(width: 20, height: 20)
                         .background {
@@ -202,18 +201,15 @@ struct TabItemView: View {
                                 .controlSize(.mini)
                                 .accessibilityLabel("Loading \(title)")
                         } else if hasAttention {
-                            Image(systemName: "bell.fill")
-                                .font(.system(size: 10))
+                            SemanticIcon(name: "bell.fill", pointSize: 10, weight: .regular)
                                 .foregroundColor(.orange)
                                 .accessibilityHidden(true)
                         } else if let agentStatus {
-                            Image(systemName: agentStatus.state.symbolName)
-                                .font(.system(size: 10))
+                            SemanticIcon(name: agentStatus.state.symbolName, pointSize: 10, weight: .regular)
                                 .foregroundColor(agentStatus.state.color)
                                 .accessibilityHidden(true)
                         } else if let icon = panel.displayIcon {
-                            Image(systemName: icon)
-                                .font(.system(size: 10))
+                            SemanticIcon(name: icon, pointSize: 10, weight: .regular)
                                 .foregroundColor(isActive ? .primary : .secondary)
                         }
                     }
@@ -246,8 +242,7 @@ struct TabItemView: View {
             }
 
             Button(action: onClose) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 8, weight: .bold))
+                SemanticIcon(name: "xmark", pointSize: 8, weight: .bold)
                     .foregroundColor(.secondary)
                     .frame(width: 20, height: 20)
                     .background {

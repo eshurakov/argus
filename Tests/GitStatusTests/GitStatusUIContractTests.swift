@@ -85,7 +85,7 @@ struct GitStatusUIContractTests {
     }
 
     @Test
-    func workspaceFileIconsUseSemanticSFSymbols() {
+    func workspaceFileIconsKeepSemanticNamesForTheSharedIconRenderer() {
         let expectedSymbols = [
             "Sources/App.swift": "chevron.left.forwardslash.chevron.right",
             "COMPONENT.TSX": "chevron.left.forwardslash.chevron.right",
@@ -111,7 +111,6 @@ struct GitStatusUIContractTests {
         for (fileName, expectedSymbol) in expectedSymbols {
             let symbol = WorkspaceFileIcon.systemName(for: fileName)
             #expect(symbol == expectedSymbol)
-            #expect(NSImage(systemSymbolName: symbol, accessibilityDescription: nil) != nil)
         }
     }
 

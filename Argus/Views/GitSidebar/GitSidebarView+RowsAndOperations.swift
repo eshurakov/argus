@@ -95,8 +95,7 @@ extension GitSidebarView {
 
     func notRepositoryContent(rootPath: String, message: String? = nil) -> some View {
         VStack(spacing: 10) {
-            Image(systemName: "folder.badge.questionmark")
-                .font(.system(size: 24))
+            SemanticIcon(name: "folder.badge.questionmark", pointSize: 24, weight: .regular)
                 .foregroundColor(.secondary.opacity(0.5))
             Text("Not a git repository")
                 .font(.system(size: 13, weight: .medium))
@@ -128,7 +127,7 @@ extension GitSidebarView {
 
     func operationFailureContent(_ message: String) -> some View {
         VStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle")
+            SemanticIcon(name: "exclamationmark.triangle", pointSize: 12, weight: .regular)
                 .foregroundColor(.orange)
             Text("Git file operation failed")
                 .font(.system(size: 13, weight: .medium))
@@ -151,8 +150,7 @@ extension GitSidebarView {
 
     func emptyMessage(_ text: String, systemImage: String) -> some View {
         VStack(spacing: 8) {
-            Image(systemName: systemImage)
-                .font(.system(size: 24))
+            SemanticIcon(name: systemImage, pointSize: 24, weight: .regular)
                 .foregroundColor(.secondary.opacity(0.5))
             Text(text)
                 .font(.system(size: 13, weight: .medium))
@@ -312,8 +310,7 @@ private struct GitChangeFileRow: View {
     private var statusIndicator: some View {
         Group {
             if let systemImage = file.status.systemImage {
-                Image(systemName: systemImage)
-                    .font(.system(size: 10, weight: .semibold))
+                SemanticIcon(name: systemImage, pointSize: 10, weight: .semibold)
                     .frame(width: 14)
                     .accessibilityHidden(true)
             } else {
@@ -349,7 +346,7 @@ private struct GitChangeFileRow: View {
                     Button {
                         perform(action)
                     } label: {
-                        Image(systemName: action.systemImage)
+                        SemanticIcon(name: action.systemImage, pointSize: 12, weight: .regular)
                             .frame(width: 20, height: 20)
                             .background {
                                 RoundedRectangle(cornerRadius: 4, style: .continuous)

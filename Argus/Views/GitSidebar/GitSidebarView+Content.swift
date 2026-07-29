@@ -5,8 +5,7 @@ extension GitSidebarView {
         let canRefresh = !viewModel.isRefreshing && selectedSnapshotOwner != nil
 
         return HStack(spacing: 8) {
-            Image(systemName: "arrow.triangle.branch")
-                .font(.system(size: 15, weight: .semibold))
+            SemanticIcon(name: "arrow.triangle.branch", pointSize: 15, weight: .semibold)
                 .foregroundColor(.secondary)
                 .frame(width: 18)
             Text("Changes")
@@ -24,7 +23,7 @@ extension GitSidebarView {
                     guard let owner = selectedSnapshotOwner else { return }
                     Task { await refresh(owner: owner) }
                 } label: {
-                    Image(systemName: "arrow.clockwise")
+                    SemanticIcon(name: "arrow.clockwise", pointSize: 12, weight: .regular)
                         .frame(width: 20, height: 20)
                         .background {
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
@@ -87,7 +86,7 @@ extension GitSidebarView {
             operationFailureContent(message)
         case .error(_, let message):
             VStack(spacing: 8) {
-                Image(systemName: "exclamationmark.triangle")
+                SemanticIcon(name: "exclamationmark.triangle", pointSize: 12, weight: .regular)
                     .foregroundColor(.orange)
                 Text("Git status failed")
                     .font(.system(size: 13, weight: .medium))
@@ -105,11 +104,15 @@ extension GitSidebarView {
             branchBar(summary)
 
             if summary.isClean {
-                Label("Working tree clean", systemImage: "checkmark.circle.fill")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.green)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 10)
+                Label {
+                    Text("Working tree clean")
+                } icon: {
+                    SemanticIcon(name: "checkmark.circle.fill", pointSize: 12, weight: .medium)
+                }
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.green)
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
             }
 
             if summary.isFileDisplayCapped {
@@ -170,7 +173,7 @@ extension GitSidebarView {
         let actionName = allCollapsed ? "Expand all file sections" : "Collapse all file sections"
 
         return HStack(spacing: 6) {
-            Image(systemName: "arrow.triangle.branch")
+            SemanticIcon(name: "arrow.triangle.branch", pointSize: 12, weight: .regular)
             Text(summary.branchName ?? "Detached HEAD")
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -219,10 +222,12 @@ extension GitSidebarView {
             Button {
                 setAllSectionsExpanded(allCollapsed, summary: summary)
             } label: {
-                Image(
-                    systemName: allCollapsed
+                SemanticIcon(
+                    name: allCollapsed
                         ? "arrow.up.and.line.horizontal.and.arrow.down"
-                        : "arrow.down.and.line.horizontal.and.arrow.up"
+                        : "arrow.down.and.line.horizontal.and.arrow.up",
+                    pointSize: 12,
+                    weight: .regular
                 )
                 .frame(width: 20, height: 20)
                 .background {

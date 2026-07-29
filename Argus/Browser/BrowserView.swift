@@ -115,8 +115,7 @@ struct BrowserView: View {
         let isSecure = panel.currentURL?.scheme?.lowercased() == "https"
         let label = isSecure ? "Secure HTTPS connection" : "Connection is not HTTPS"
 
-        return Image(systemName: isSecure ? "lock.fill" : "lock.open")
-            .font(.system(size: 9, weight: .semibold))
+        return SemanticIcon(name: isSecure ? "lock.fill" : "lock.open", pointSize: 9, weight: .semibold)
             .foregroundColor(isSecure ? .secondary : .secondary.opacity(0.7))
             .frame(width: 18, height: 20)
             .help(label)
@@ -188,8 +187,7 @@ struct BrowserView: View {
     ) -> some View {
         HoverStateView { isHovered in
             Button(action: action) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 10, weight: .semibold))
+                SemanticIcon(name: systemImage, pointSize: 10, weight: .semibold)
                     .foregroundColor(enabled ? .secondary : .secondary.opacity(0.35))
                     .frame(width: 20, height: 20)
                     .background {

@@ -70,7 +70,7 @@ extension WorkspaceFilesView {
 
     private func fileTreeRootBar(_ snapshot: WorkspaceFileTreeSnapshot) -> some View {
         HStack(spacing: 7) {
-            Image(systemName: "folder")
+            SemanticIcon(name: "folder", pointSize: 12, weight: .regular)
             Text((snapshot.rootPath as NSString).lastPathComponent)
                 .lineLimit(1)
                 .truncationMode(.tail)

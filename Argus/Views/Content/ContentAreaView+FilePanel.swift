@@ -136,8 +136,7 @@ struct FilePanelContentView: View {
 extension FilePanelContentView {
     private var fileHeader: some View {
         HStack(spacing: 8) {
-            Image(systemName: fileIcon)
-                .font(.system(size: 12, weight: .semibold))
+            SemanticIcon(name: fileIcon, pointSize: 12, weight: .semibold)
                 .foregroundColor(.secondary)
             Text(panel.relativePath)
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
@@ -234,8 +233,7 @@ extension FilePanelContentView {
                 lineWrapEnabled.toggle()
             } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: "arrow.turn.down.left")
-                        .font(.system(size: 10, weight: .medium))
+                    SemanticIcon(name: "arrow.turn.down.left", pointSize: 10, weight: .medium)
                     Text("Wrap")
                         .font(.system(size: 11, weight: .medium))
                 }
@@ -268,8 +266,7 @@ extension FilePanelContentView {
             Button {
                 displayMode = mode
             } label: {
-                Image(systemName: mode.systemImage(isSVG: isSVGFile))
-                    .font(.system(size: 11, weight: .medium))
+                SemanticIcon(name: mode.systemImage(isSVG: isSVGFile), pointSize: 11, weight: .medium)
                     .foregroundColor(isSelected ? .primary : .secondary)
                     .frame(width: 20, height: 20)
                     .background {
@@ -390,8 +387,7 @@ extension FilePanelContentView {
 
     private func fileMessage(_ message: String, systemImage: String) -> some View {
         VStack(spacing: 8) {
-            Image(systemName: systemImage)
-                .font(.system(size: 24))
+            SemanticIcon(name: systemImage, pointSize: 24, weight: .regular)
                 .foregroundColor(.secondary.opacity(0.5))
             Text(message)
                 .font(.system(size: 13, weight: .medium))

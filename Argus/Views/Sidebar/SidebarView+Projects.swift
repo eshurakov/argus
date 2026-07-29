@@ -192,8 +192,7 @@ private struct ProjectHeaderRow: View {
                 }
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 9, weight: .semibold))
+                    SemanticIcon(name: "chevron.right", pointSize: 9, weight: .semibold)
                         .foregroundColor(.secondary)
                         .rotationEffect(.degrees(project.isExpanded ? 90 : 0))
                         .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: project.isExpanded)
@@ -242,8 +241,7 @@ private struct ProjectHeaderRow: View {
                     }
                 },
                 label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 10))
+                    SemanticIcon(name: "plus", pointSize: 10, weight: .regular)
                         .frame(width: 20, height: 20)
                         .background {
                             RoundedRectangle(cornerRadius: 4, style: .continuous)

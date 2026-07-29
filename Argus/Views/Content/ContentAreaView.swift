@@ -20,8 +20,7 @@ extension ContentAreaView {
     private var emptyState: some View {
         VStack(spacing: 8) {
             Spacer()
-            Image(systemName: "terminal")
-                .font(.system(size: 32))
+            SemanticIcon(name: "terminal", pointSize: 32, weight: .regular)
                 .foregroundColor(.secondary.opacity(0.5))
             Text("No panels open")
                 .font(.system(size: 13))

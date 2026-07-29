@@ -70,7 +70,7 @@ private struct WorkspaceDeletionProgressView: View {
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(WorkspaceDeletionStage.allCases, id: \.self) { item in
                     HStack(spacing: 8) {
-                        Image(systemName: stageIcon(for: item))
+                        SemanticIcon(name: stageIcon(for: item), pointSize: 12, weight: .medium)
                             .frame(width: 16)
                             .foregroundStyle(
                                 item.rawValue <= stage.rawValue ? Color.accentColor : Color.secondary

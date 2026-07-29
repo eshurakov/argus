@@ -47,8 +47,11 @@ struct AgentStatusUIContractTests {
 
         row.containsAll(
             [
-                "if let agentStatus", "agentStatus.state.symbolName",
-                "workspace.workspaceType.icon", ".accessibilityValue(workspaceAccessibilityValue)",
+                "if let agentStatus",
+                "SemanticIcon(name: agentStatus.state.symbolName, pointSize: 11, weight: .semibold)",
+                ".foregroundColor(agentStatus.state.color)",
+                "SemanticIcon(name: workspace.workspaceType.icon, pointSize: 11, weight: .semibold)",
+                ".accessibilityValue(workspaceAccessibilityValue)",
                 #"values.append("Agent status: \(agentStatus.state.label)")"#,
                 "includesNonterminalPanels:"
             ], "sidebar Agent Status display")

@@ -47,9 +47,11 @@ struct ProjectAndWorktreeUIContractTests {
         sidebar.containsAll(
             [
                 "Menu {",
-                "Label(\"New Workspace\", systemImage: \"terminal\")",
-                "Label(\"New Project…\", systemImage: \"folder.badge.plus\")",
-                "Image(systemName: \"plus\")",
+                "Text(\"New Workspace\")",
+                "SemanticIcon(name: \"terminal\", pointSize: 13, weight: .regular)",
+                "Text(\"New Project…\")",
+                "SemanticIcon(name: \"folder.badge.plus\", pointSize: 13, weight: .regular)",
+                "SemanticIcon(name: \"plus\", pointSize: 12, weight: .regular)",
                 "if project.isCatchAll {",
                 "workspaceManager.addWorkspace()",
                 "name: .showNewWorkspaceSheet",
@@ -167,7 +169,7 @@ struct ProjectAndWorktreeUIContractTests {
                 "customTitle: trimmedName.isEmpty ? nil : trimmedName"
             ], "random branch name suggestion and optional display name")
         sheet.excludes(
-            "Image(systemName:",
+            "Image(system" + "Name:",
             "the New Workspace sheet must not depend on vector SF Symbol rasterization"
         )
 

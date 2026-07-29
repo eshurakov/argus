@@ -75,8 +75,7 @@ extension WorkspaceFilesView {
 
     func fileTreeError(title: String, path: String, message: String?) -> some View {
         VStack(spacing: 8) {
-            Image(systemName: "folder.badge.questionmark")
-                .font(.system(size: 24))
+            SemanticIcon(name: "folder.badge.questionmark", pointSize: 24, weight: .regular)
                 .foregroundColor(.secondary.opacity(0.5))
             Text(title)
                 .font(.system(size: 13, weight: .medium))
@@ -116,7 +115,7 @@ extension WorkspaceFilesView {
         let isLoading = viewModel.loadingDirectoryPaths.contains(directory.path)
 
         return HStack(spacing: 7) {
-            Image(systemName: "exclamationmark.triangle")
+            SemanticIcon(name: "exclamationmark.triangle", pointSize: 12, weight: .regular)
                 .foregroundColor(.orange)
             Text(error.message)
                 .lineLimit(1)
@@ -153,8 +152,7 @@ extension WorkspaceFilesView {
 
     func emptyMessage(_ text: String, systemImage: String) -> some View {
         VStack(spacing: 8) {
-            Image(systemName: systemImage)
-                .font(.system(size: 24))
+            SemanticIcon(name: systemImage, pointSize: 24, weight: .regular)
                 .foregroundColor(.secondary.opacity(0.5))
             Text(text)
                 .font(.system(size: 13, weight: .medium))
