@@ -2,6 +2,10 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-07-30
+
+- Terminal tabs now let Kilo and other terminal programs paste images from the system clipboard with Cmd+V. Text paste and modified paste shortcuts keep their existing behavior. ([557e8b9](https://github.com/jeanduplessis/argus/commit/557e8b9))
+
 ## 2026-07-28
 
 - Standalone workspace rows now show their Workspace Root beneath the name, with the home directory abbreviated as `~`. ([4d36a31](https://github.com/jeanduplessis/argus/commit/4d36a31))
