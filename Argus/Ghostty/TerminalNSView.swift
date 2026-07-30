@@ -188,6 +188,15 @@ extension TerminalNSView {
             return
         }
 
+        // Ghostty's Cmd+V binding can paste only text. Let a running TUI
+        // inspect an image-only system clipboard using its Ctrl+V behavior.
+        if let fallback = terminalImagePasteFallback(for: event) {
+            fallback.withCString { pointer in
+                ghostty_surface_text(ghosttySurface, pointer, UInt(fallback.utf8.count))
+            }
+            return
+        }
+
         var keyInput = ghosttyKeyEvent(
             from: event,
             action: event.isARepeat ? GHOSTTY_ACTION_REPEAT : GHOSTTY_ACTION_PRESS

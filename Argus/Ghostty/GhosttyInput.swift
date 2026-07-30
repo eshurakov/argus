@@ -4,6 +4,9 @@
 // AppKit-to-Ghostty keyboard and mouse input translation.
 
 import AppKit
+import UniformTypeIdentifiers
+
+private let terminalControlV = "\u{16}"
 
 private let ghosttyKeyMap: [UInt16: ghostty_input_key_e] = [
     // Main keyboard
@@ -161,6 +164,21 @@ func ghosttyKeyEvent(
     keyInput.composing = false
     keyInput.text = nil
     return keyInput
+}
+
+func terminalImagePasteFallback(
+    for event: NSEvent,
+    pasteboard: NSPasteboard = .general
+) -> String? {
+    let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+    guard event.type == .keyDown,
+        event.charactersIgnoringModifiers?.lowercased() == "v",
+        modifiers == .command,
+        pasteboard.string(forType: .string) == nil,
+        pasteboard.canReadItem(withDataConformingToTypes: [UTType.image.identifier])
+    else { return nil }
+
+    return terminalControlV
 }
 
 func isModifierPress(event: NSEvent) -> Bool {

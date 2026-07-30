@@ -103,6 +103,7 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 8. Terminal title and working-directory callbacks MUST update their Terminal Panel state on the main thread.
 9. Inactive terminal surfaces SHOULD remain mounted during Top-level Tab changes. They MUST be occluded and prevented from stealing focus or accessibility interaction.
 10. Terminal Working Directory MUST remain distinct from Workspace Root and Git Status Root.
+11. Cmd+V with an image-only system clipboard MUST reach the running terminal program as Ctrl+V. Text-capable clipboard contents MUST retain Ghostty's normal paste behavior.
 
 ## Right Sidebar
 
