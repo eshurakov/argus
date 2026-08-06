@@ -76,7 +76,8 @@ struct ReleaseNotesTests {
             [
                 "MarkdownRenderedView(",
                 ".environment(",
-                "\\.openURL, OpenURLAction",
+                "\\.openURL,",
+                "OpenURLAction { url in",
                 "openLink(url)"
             ],
             "release notes render Markdown and handle links"
