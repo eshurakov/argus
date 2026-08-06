@@ -75,7 +75,8 @@ struct ReleaseNotesTests {
         try SourceContract("Argus/Views/Content/ReleaseNotesPanelView.swift").containsAll(
             [
                 "MarkdownRenderedView(",
-                ".environment(\\.openURL, OpenURLAction",
+                ".environment(",
+                "\\.openURL, OpenURLAction",
                 "openLink(url)"
             ],
             "release notes render Markdown and handle links"
