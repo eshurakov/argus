@@ -138,7 +138,8 @@ extension FilePanelContentView {
         HStack(spacing: 8) {
             Image(systemName: fileIcon)
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text(panel.relativePath)
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                 .lineLimit(1)
@@ -236,6 +237,8 @@ extension FilePanelContentView {
                 HStack(spacing: 4) {
                     Image(systemName: "arrow.turn.down.left")
                         .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(lineWrapEnabled ? Color.primary : Color.secondary)
+                        .accessibilityHidden(true)
                     Text("Wrap")
                         .font(.system(size: 11, weight: .medium))
                 }
@@ -270,7 +273,8 @@ extension FilePanelContentView {
             } label: {
                 Image(systemName: mode.systemImage(isSVG: isSVGFile))
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(isSelected ? .primary : .secondary)
+                    .foregroundStyle(isSelected ? Color.primary : Color.secondary)
+                    .accessibilityHidden(true)
                     .frame(width: 20, height: 20)
                     .background {
                         RoundedRectangle(cornerRadius: 4)
@@ -391,8 +395,9 @@ extension FilePanelContentView {
     private func fileMessage(_ message: String, systemImage: String) -> some View {
         VStack(spacing: 8) {
             Image(systemName: systemImage)
-                .font(.system(size: 24))
-                .foregroundColor(.secondary.opacity(0.5))
+                .font(.system(size: 24, weight: .regular))
+                .foregroundStyle(.secondary.opacity(0.5))
+                .accessibilityHidden(true)
             Text(message)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.secondary)

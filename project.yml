@@ -27,10 +27,13 @@ targets:
           - "**/.DS_Store"
           - "Resources/ArgusTerminalTheme.ghostty"
           - "Resources/ArgusKiloTurnCompletionPlugin.js"
+          - "Resources/ArgusPiAgentStatusPlugin.js"
           - "Resources/pierre-diffs-bundle.js"
       - path: Argus/Resources/ArgusTerminalTheme.ghostty
         buildPhase: resources
       - path: Argus/Resources/ArgusKiloTurnCompletionPlugin.js
+        buildPhase: resources
+      - path: Argus/Resources/ArgusPiAgentStatusPlugin.js
         buildPhase: resources
       - path: Argus/Resources/pierre-diffs-bundle.js
         buildPhase: resources

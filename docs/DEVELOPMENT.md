@@ -120,12 +120,26 @@ for ownership and runtime boundaries.
 
 Normal builds use the vendored `Frameworks/GhosttyKit.xcframework`. Rebuilding the framework is a maintainer task and is separate from the normal application workflow. See `Frameworks/README.md` and `scripts/build-ghosttykit.sh` before changing it.
 
+## Agent integrations
+
+Argus installs integrations only when enabled from Settings. Kilo owns its
+managed JSON/JSONC declaration and completion extension. Pi owns
+`extensions/argus-agent-status.js` under the effective `PI_CODING_AGENT_DIR`
+(or `~/.pi/agent` when the variable is unset). Existing files owned by another
+program are never replaced or removed.
+
+Restart Kilo sessions after changing the Kilo integration. Restart Pi or use
+`/reload` after changing the Pi integration. Both integrations send requests to
+the app-owned `~/.argus/argus.sock` endpoint. The socket accepts
+`agent.turnCompleted`, `agent.statusChanged`, and `agent.statusCleared`; it is
+not a Companion CLI command transport.
+
 ## Local state
 
 Argus writes user state outside the repository:
 
 - Session Snapshot: `~/Library/Application Support/Argus/session.json`
 - Managed Worktrees: `~/.argus/worktrees/<project-uuid>/<branch-slug>/`
-- Reserved socket path: `~/.argus/argus.sock`
+- App-owned socket: `~/.argus/argus.sock`
 
 Set `ARGUS_DISABLE_SESSION_RESTORE=1` to launch without restoring the previous Session Snapshot.

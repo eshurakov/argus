@@ -32,20 +32,20 @@ struct SidebarWorkspaceRow: View {
 
                 if hasAttention {
                     Image(systemName: "bell.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(.orange)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.orange)
                         .frame(width: 14)
                         .accessibilityHidden(true)
                 } else if let agentStatus {
                     Image(systemName: agentStatus.state.symbolName)
-                        .font(.system(size: 11))
-                        .foregroundColor(agentStatus.state.color)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(agentStatus.state.color)
                         .frame(width: 14)
                         .accessibilityHidden(true)
                 } else {
                     Image(systemName: workspace.workspaceType.icon)
-                        .font(.system(size: 11))
-                        .foregroundColor(isSelected ? .white : .secondary)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(isSelected ? Color.white : Color.secondary)
                         .frame(width: 14)
                         .accessibilityHidden(true)
                 }

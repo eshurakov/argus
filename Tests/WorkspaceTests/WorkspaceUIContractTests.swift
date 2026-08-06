@@ -240,7 +240,7 @@ struct WorkspaceTabAndChromeUIContractTests {
                 "let title: String",
                 "Text(title)",
                 ".contextMenu {",
-                "Button(\"Close\", role: .destructive, action: onClose)",
+                "Button(\"Close\", action: onClose)",
                 "Button(\"Rename\", action: onRename)",
                 "workspace.renameTerminalPanel(renamePanelId, title: renameText)",
                 "workspaceManager.requestCloseTab(panelId, in: workspace.id)",
@@ -295,6 +295,29 @@ struct WorkspaceTabAndChromeUIContractTests {
                 ".background(ChromeColors.shellBackground)",
                 ".environment(\\.colorScheme, ghosttyApp.chromePalette.isDark ? .dark : .light)"
             ], "black window shell with Ghostty-derived appearance")
+    }
+
+    @Test
+    func terminalSurfaceCreationRequiresItsRenderingHost() throws {
+        let surface = try SourceContract("Argus/Ghostty/TerminalSurface.swift")
+        let creation = try surface.section(
+            after: "func createSurface()",
+            before: "/// Build the environment variables"
+        )
+        for fragment in [
+            "guard let hostedView = _hostedView else { return }",
+            "nsview: Unmanaged.passUnretained(hostedView).toOpaque()"
+        ] {
+            #expect(creation.contains(fragment))
+        }
+        #expect(!creation.contains("if let view = _hostedView"))
+        surface.containsAll(
+            [
+                "self?.createSurface()",
+                "guard let hostedView = _hostedView else { return }"
+            ],
+            "restored Terminal Surfaces must wait for their retained TerminalNSView"
+        )
     }
 
     @Test
@@ -353,36 +376,6 @@ struct WorkspaceTabAndChromeUIContractTests {
                 "Text(\"Initialize Git Repository\")",
                 "Text(\"Refresh Changes\")"
             ], "verb-object Changes labels")
-    }
-
-    @Test
-    func browserAndAgentStatusUseNormalAccessibleTabLifecycle() throws {
-        try SourceContract("Argus/Models/Panel.swift").containsAll(
-            [
-                "case browser",
-                "var isLoading: Bool { get }"
-            ], "Browser Panel participates in shared Panel state")
-        try SourceContract("Argus/Models/Workspace.swift").containsAll(
-            [
-                "func addBrowserPanel(",
-                "insertAfterActiveTab(panel.id)",
-                "panelOrder.insert(panelId, at: activeIndex + 1)",
-                "selectPanel(panel.id)",
-                "observeBrowserPanel(panel)"
-            ], "Browser Panel insertion and observation")
-        try SourceContract("Argus/Views/Content/ContentAreaView.swift").containsAll(
-            [
-                "case .browser:",
-                "BrowserView(panel: browserPanel, isActive: isActive)"
-            ], "Browser Panel center-tab routing")
-        try SourceContract("Argus/Views/Content/TabBarView.swift").containsAll(
-            [
-                "Button(\"New Browser Tab\")",
-                "if panel.isLoading",
-                "else if let agentStatus",
-                "else if let icon = panel.displayIcon",
-                "values.append(\"Agent status: \\(agentStatus.state.label)\")"
-            ], "loading, Agent Status, and default tab icon precedence")
     }
 
 }

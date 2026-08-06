@@ -119,7 +119,8 @@ struct TitlebarView: View {
             Button(action: action) {
                 Image(systemName: systemImage)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(isVisible ? .primary : .secondary)
+                    .foregroundStyle(isVisible ? Color.primary : Color.secondary)
+                    .accessibilityHidden(true)
                     .frame(width: 24, height: 24)
                     .background {
                         RoundedRectangle(cornerRadius: 4)

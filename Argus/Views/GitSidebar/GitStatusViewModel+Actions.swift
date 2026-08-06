@@ -49,14 +49,11 @@ final class AlertGitStatusFileOperationConfirmer: GitStatusFileOperationConfirmi
 
     @MainActor
     private func runAlert(operation: GitStatusFileOperation, informativeText: String) -> Bool {
-        let alert = NSAlert()
-        alert.messageText = operation.confirmationTitle
-        alert.informativeText = informativeText
-        alert.alertStyle = .warning
-        let destructiveButton = alert.addButton(withTitle: operation.confirmationButtonTitle)
-        destructiveButton.hasDestructiveAction = operation.requiresConfirmation
-        alert.addButton(withTitle: "Cancel")
-        return alert.runModal() == .alertFirstButtonReturn
+        confirmDestructiveAction(
+            title: operation.confirmationTitle,
+            message: informativeText,
+            confirmTitle: operation.confirmationButtonTitle
+        )
     }
 }
 

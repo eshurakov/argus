@@ -236,8 +236,7 @@ extension WorkspaceFilesViewModel {
         relativePathClipboard.copyRelativePath(path)
     }
 
-    func deleteFileWithConfirmation(request: WorkspaceFileTreeRequest, path: String) async -> Bool {
-        guard filePrompter.confirmDelete(path: path) else { return false }
+    func deleteFile(request: WorkspaceFileTreeRequest, path: String) async -> Bool {
         do {
             try await fileOperator.deleteFile(rootPath: request.rootPath, path: path)
             guard activeRequest == request else { return true }

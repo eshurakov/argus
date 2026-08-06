@@ -86,6 +86,53 @@ struct SessionSnapshotTests {
         assertFutureSchemaIsIncompatible(project: project, workspace: workspace, workspaceId: workspaceId)
     }
 
+    @Test
+    @MainActor
+    func workspaceMetadataIsCheckpointedBeforeTermination() throws {
+        let defaults = try #require(UserDefaults(suiteName: "ArgusTests.WorkspaceMetadataCheckpoint"))
+        let snapshotURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("argus-session-\(UUID().uuidString).json")
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("argus-workspace-root-\(UUID().uuidString)", isDirectory: true)
+        defaults.removePersistentDomain(forName: "ArgusTests.WorkspaceMetadataCheckpoint")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer {
+            defaults.removePersistentDomain(forName: "ArgusTests.WorkspaceMetadataCheckpoint")
+            try? FileManager.default.removeItem(at: snapshotURL)
+            try? FileManager.default.removeItem(at: root)
+        }
+
+        let settings = AppSettings(defaults: defaults)
+        let manager = WorkspaceManager(
+            settings: settings,
+            sessionSnapshotURL: snapshotURL,
+            environment: ["ARGUS_DISABLE_SESSION_RESTORE": "1"]
+        )
+        let workspace = try #require(manager.selectedWorkspace)
+
+        manager.renameWorkspace(workspace.id, title: "Crash-safe Workspace")
+
+        // Constructing a new manager models relaunch after a crash: no normal
+        // termination callback is invoked between the mutation and restore.
+        let restoredAfterRename = WorkspaceManager(
+            settings: settings,
+            sessionSnapshotURL: snapshotURL,
+            environment: [:]
+        )
+        let renamedWorkspace = try #require(restoredAfterRename.selectedWorkspace)
+        #expect(renamedWorkspace.customTitle == "Crash-safe Workspace")
+
+        #expect(manager.setStandaloneWorkspaceRoot(workspace.id, directoryURL: root))
+        let restoredAfterRootChange = WorkspaceManager(
+            settings: settings,
+            sessionSnapshotURL: snapshotURL,
+            environment: [:]
+        )
+        let restoredWorkspace = try #require(restoredAfterRootChange.selectedWorkspace)
+        #expect(restoredWorkspace.customTitle == "Crash-safe Workspace")
+        #expect(restoredWorkspace.currentDirectory == root.standardizedFileURL.path)
+    }
+
     private func assertFutureSchemaIsIncompatible(
         project: ProjectSnapshot,
         workspace: WorkspaceSnapshot,

@@ -2,7 +2,7 @@
 
 ## Status
 
-Stable v1 baseline, updated 2026-07-23.
+Stable v1 baseline, updated 2026-08-06.
 
 This document defines behavior implemented by the current Argus application. Future work belongs under `docs/proposals/` until it is implemented and incorporated here.
 
@@ -12,7 +12,7 @@ The words "MUST", "MUST NOT", "SHOULD", "SHOULD NOT", and "MAY" are normative.
 
 Argus is a personal macOS terminal workspace manager built on Ghostty. It organizes terminal, browser, file, and Git preview content into Workspaces; groups repository-backed Workspaces into Projects; manages Git worktrees; shows Workspace files and Git changes; and restores durable session state.
 
-Argus is a single-user, single-machine application. It has one main Workspace window and a separate native Settings surface. It does not provide a working external control API in v1.
+Argus is a single-user, single-machine application. It has one main Workspace window and a separate native Settings surface. It does not provide a general external control API in v1; the local socket is limited to the agent integration events specified below.
 
 ## Application shell
 
@@ -65,8 +65,9 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 7. Cmd+1 through Cmd+8 MUST select Workspaces by global left-sidebar order. Cmd+9 MUST select the last Workspace.
 8. The left sidebar MUST show Project and Workspace hierarchy, selection, Workspace type, branch when available, and Agent Status when present.
 9. A Standalone Workspace MUST allow its Workspace Root to be changed from its left-sidebar context menu.
-10. Changing a Standalone Workspace's Workspace Root MUST immediately update its Files View and Git Status Root. New Terminal tabs MUST start at the new Workspace Root without changing existing Terminal Working Directories.
-11. A Standalone Workspace row MUST show its Workspace Root beneath its display name, abbreviating the user's home directory with `~`.
+10. The Workspace Root change workflow MUST support both directory browsing and direct path entry. An entered path MUST resolve to an existing directory.
+11. Changing a Standalone Workspace's Workspace Root MUST immediately update its Files View and Git Status Root. New Terminal tabs MUST start at the new Workspace Root without changing existing Terminal Working Directories.
+12. A Standalone Workspace row MUST show its Workspace Root beneath its display name, abbreviating the user's home directory with `~`.
 
 ## Panels, tabs, and panes
 
@@ -152,7 +153,7 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 
 1. Staged changes MUST offer unstage, diff, blame, and copy-path actions.
 2. Unstaged changes MUST offer stage, discard, diff, blame, and copy-path actions.
-3. Untracked changes MUST offer stage, delete, diff, and copy-path actions.
+3. Untracked changes MUST offer stage, delete, diff, copy-path, and add-to-`.gitignore` actions. The add-to-`.gitignore` action MUST support untracked file paths and displayed untracked directory paths.
 4. Applicable Section Operations MUST include stage all, unstage all, discard all, and delete all.
 5. Discard and delete operations MUST require confirmation.
 6. A completed Git Mutation MUST refresh the Git Status Snapshot.
@@ -205,14 +206,17 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 5. Per-panel Agent Status MUST override Workspace-level Agent Status for that Terminal Surface.
 6. A loading indicator MUST take precedence over Agent Status in a Top-level Tab. Agent Status MUST take precedence over the default icon.
 7. Agent Status Entries MUST remain ephemeral and MUST NOT be restored.
-8. Argus MUST host a user-local Unix Domain Socket for the implemented `agent.turnCompleted` method. The Socket Server MUST use bounded newline-delimited JSON frames, restrictive permissions, structured responses, and current Workspace/Terminal Surface ownership validation without activating the app or changing focus.
-9. A successful Turn Completion Event for an unviewed Top-level Tab MUST create runtime-only Turn Completion Attention on that tab and summarize it on the Workspace row. A completion in the Active Tab of the Selected Workspace while the main window is key MUST create neither attention nor sound.
-10. Top-level Tab icon precedence MUST be loading, Turn Completion Attention, Agent Status, then the default icon. Workspace icon precedence MUST be Turn Completion Attention, Agent Status, then the Workspace-type icon.
-11. Turn Completion Attention MUST clear when its Top-level Tab becomes viewed, and MUST be discarded when its tab or Workspace closes. It MUST NOT be restored from the Session Snapshot.
-12. Agent settings MUST include an Agent completion sound preference that defaults to enabled and remains independent of Terminal audible bell behavior.
-13. Kilo integration MUST be installed or removed only through explicit Settings controls. Argus MUST preserve unrelated Kilo JSON/JSONC configuration, own only its declaration and plugin file, surface setup errors, and require running Kilo sessions to restart after a change.
-14. The Kilo TUI plugin MUST use public extension points only, accept successful root-turn completion after conservative non-synthetic, non-compaction user-turn filtering, ignore child, failed, interrupted, and idle-only events, and remain silent on delivery failure.
-15. V1 still does not include functional Companion CLI commands, live external Agent Status updates, PID tracking, TTS, notification history, or macOS Notification Center notifications.
+8. Argus MUST host a user-local Unix Domain Socket for the implemented `agent.turnCompleted`, `agent.statusChanged`, and `agent.statusCleared` methods. The Socket Server MUST use bounded newline-delimited JSON frames, restrictive permissions, structured responses, and current Workspace/Terminal Surface ownership validation without activating the app or changing focus.
+9. Agent Status Socket Requests MUST identify an Agent Key, Workspace ID, reporting session ID, and positive sequence number. A status update MAY identify a Terminal Surface; when supplied, that Surface MUST belong to the supplied Workspace. Older or duplicate updates from the same reporting session MUST be accepted idempotently without changing the Agent Status Entry.
+10. `agent.statusChanged` MUST set one ephemeral Agent Status Entry, and `agent.statusCleared` MUST remove only the exact entry reported by that session and scope. Status ordering and Socket connections MUST remain process-local and MUST NOT be persisted.
+11. A successful Turn Completion Event for an unviewed Top-level Tab MUST create runtime-only Turn Completion Attention on that tab and summarize it on the Workspace row. A completion in the Active Tab of the Selected Workspace while the main window is key MUST create neither attention nor sound.
+12. Top-level Tab icon precedence MUST be loading, Turn Completion Attention, Agent Status, then the default icon. Workspace icon precedence MUST be Turn Completion Attention, Agent Status, then the Workspace-type icon.
+13. Turn Completion Attention MUST clear when its Top-level Tab becomes viewed, and MUST be discarded when its tab or Workspace closes. It MUST NOT be restored from the Session Snapshot.
+14. Agent settings MUST include an Agent completion sound preference that defaults to enabled and remains independent of Terminal audible bell behavior.
+15. Kilo integration MUST be installed or removed only through explicit Settings controls. Argus MUST preserve unrelated Kilo JSON/JSONC configuration, own only its declaration and plugin file, surface setup errors, and require running Kilo sessions to restart after a change.
+16. The Kilo TUI plugin MUST use public extension points only, accept successful root-turn completion after conservative non-synthetic, non-compaction user-turn filtering, ignore child, failed, interrupted, and idle-only events, and remain silent on delivery failure.
+17. Pi integration MUST be installed or removed only through explicit Settings controls. It MUST own only its extension file under the effective Pi agent directory, preserve unrelated files, use public lifecycle events to report running, idle, and error states, clear its status on session shutdown, and remain silent on delivery failure. Running Pi sessions MUST be restarted or reloaded after a change.
+18. V1 still does not include functional Companion CLI commands, Agent PID tracking, TTS, notification history, or macOS Notification Center notifications.
 
 ## Session persistence
 
@@ -224,8 +228,8 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 6. Workspace snapshots MUST include Workspace identity and type, Project association, branch and worktree metadata, Workspace Root, display title, the count used to reconstruct Terminal Panels, terminal custom titles, and per-terminal Terminal Working Directories.
 7. Restored Terminal Panels MUST use their last observed Terminal Working Directory as the initial directory.
 8. File Panels, Git Preview Panels, Browser Panels, split layouts, Active Tab, Focused Pane, Git Status Snapshots, and Agent Status Entries are runtime-only in v1.
-9. Argus MUST synchronously save the Session Snapshot during normal application termination.
-10. V1 does not provide periodic autosave. Work that requires a stronger durability boundary MUST add and verify it explicitly.
+9. Argus MUST synchronously save the Session Snapshot during normal application termination. It MUST also synchronously checkpoint after a user commits a Workspace display-name or Workspace Root change, so those changes survive an application crash.
+10. V1 does not provide periodic autosave. Event-driven checkpoints for explicitly user-authored durable changes do not constitute periodic autosave.
 11. Restore MUST be skipped when disabled in Settings or by the supported test/restore environment overrides.
 
 ## Build and local installation
@@ -241,8 +245,9 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 
 ## Known v1 limitations
 
-- The Companion CLI is a versioned scaffold and has no socket-backed commands; the application socket currently implements only `agent.turnCompleted`.
+- The Companion CLI is a versioned scaffold and has no socket-backed commands; the application socket implements only the agent turn-completion and live Agent Status methods described above.
+- Pi has no generic public lifecycle event for `needsInput`; the Pi integration reports idle while waiting for the next prompt.
 - Kilo's public extension API cannot prove that every ordinary non-synthetic user message was authored interactively by a person, so completion provenance uses conservative best-effort filtering.
 - Nonterminal Panels, split layout, and current tab/focus state are not restored.
-- Session persistence occurs on normal application termination; there is no periodic autosave.
+- Session persistence occurs on normal application termination and after committed Workspace display-name or Workspace Root changes; there is no periodic autosave.
 - Worktree ownership is not represented independently from Workspace type.

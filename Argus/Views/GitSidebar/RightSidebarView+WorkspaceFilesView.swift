@@ -71,6 +71,9 @@ extension WorkspaceFilesView {
     private func fileTreeRootBar(_ snapshot: WorkspaceFileTreeSnapshot) -> some View {
         HStack(spacing: 7) {
             Image(systemName: "folder")
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(.primary)
+                .accessibilityHidden(true)
             Text((snapshot.rootPath as NSString).lastPathComponent)
                 .lineLimit(1)
                 .truncationMode(.tail)

@@ -37,6 +37,36 @@ struct BrowserPanelUIContractTests {
     }
 
     @Test
+    func browserAndAgentStatusUseNormalAccessibleTabLifecycle() throws {
+        try SourceContract("Argus/Models/Panel.swift").containsAll(
+            [
+                "case browser",
+                "var isLoading: Bool { get }"
+            ], "Browser Panel participates in shared Panel state")
+        try SourceContract("Argus/Models/Workspace.swift").containsAll(
+            [
+                "func addBrowserPanel(",
+                "insertAfterActiveTab(panel.id)",
+                "panelOrder.insert(panelId, at: activeIndex + 1)",
+                "selectPanel(panel.id)",
+                "observeBrowserPanel(panel)"
+            ], "Browser Panel insertion and observation")
+        try SourceContract("Argus/Views/Content/ContentAreaView.swift").containsAll(
+            [
+                "case .browser:",
+                "BrowserView(panel: browserPanel, isActive: isActive)"
+            ], "Browser Panel center-tab routing")
+        try SourceContract("Argus/Views/Content/TabBarView.swift").containsAll(
+            [
+                "Button(\"New Browser Tab\")",
+                "if panel.isLoading",
+                "else if let agentStatus",
+                "else if let icon = panel.displayIcon",
+                "values.append(\"Agent status: \\(agentStatus.state.label)\")"
+            ], "loading, Agent Status, and default tab icon precedence")
+    }
+
+    @Test
     func browserChromeFindAndMenusStayWired() throws {
         let browserView = try SourceContract("Argus/Browser/BrowserView.swift")
         browserView.containsAll(

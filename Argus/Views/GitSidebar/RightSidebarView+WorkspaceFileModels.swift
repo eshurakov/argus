@@ -310,23 +310,12 @@ final class FileManagerWorkspaceFileOperator: WorkspaceFileOperating {
 
 @MainActor
 protocol WorkspaceFileOperationPrompting: AnyObject {
-    func confirmDelete(path: String) -> Bool
     func promptRename(currentName: String) -> String?
     func showFailure(title: String, message: String)
 }
 
 @MainActor
 final class AlertWorkspaceFileOperationPrompter: WorkspaceFileOperationPrompting {
-    func confirmDelete(path: String) -> Bool {
-        let alert = NSAlert()
-        alert.messageText = "Delete Item?"
-        alert.informativeText = "This will permanently delete \(path) from disk."
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: "Delete")
-        alert.addButton(withTitle: "Cancel")
-        return alert.runModal() == .alertFirstButtonReturn
-    }
-
     func promptRename(currentName: String) -> String? {
         let alert = NSAlert()
         alert.messageText = "Rename Item"

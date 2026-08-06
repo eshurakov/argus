@@ -55,7 +55,7 @@ Human-facing setup and repository orientation live in `README.md` and `docs/DEVE
 
 Single-process app with two build targets:
 
-1. **Argus** (app) — Xcode project target with Obj-C bridging header for GhosttyKit and a process-wide Socket Server implementing only `agent.turnCompleted`
+1. **Argus** (app) — Xcode project target with Obj-C bridging header for GhosttyKit and a process-wide Socket Server implementing agent turn-completion and live Agent Status methods
 2. **argus** (Companion CLI) — SwiftPM-based scaffold; it has no socket-backed commands
 
 ```
@@ -64,7 +64,8 @@ Argus/
   Views/        MainWindowView, Sidebar/, Content/, GitSidebar/, Titlebar/
   Models/       Project, Workspace, Terminal/Browser/File/Git Preview Panels
   Services/     WorkspaceManager, WorktreeService, GitStatus services,
-                AgentStatusStore, AgentSocketServer, KiloIntegrationService
+                AgentStatusStore, AgentStatusRuntime, AgentSocketServer,
+                KiloIntegrationService, PiIntegrationService
   Ghostty/      GhosttyApp, TerminalSurface, TerminalView, GhosttyConfig
   Browser/      BrowserPanel, BrowserView
 ArgusCLI/
@@ -77,6 +78,6 @@ ArgusCLI/
 - **Workspace** — User work context with one Workspace Root and ordered Top-level Tabs. A Standalone Workspace need not be a git repository.
 - **Panel** — Content model for Terminal, Browser, File, or Git Preview content. Only Terminal Panels own a Surface ID.
 - **Worktrees** stored at `~/.argus/worktrees/<project-uuid>/<branch-slug>/`
-- **Socket Server** — process-wide, app-owned listener at `~/.argus/argus.sock`; it implements only `agent.turnCompleted`
+- **Socket Server** — process-wide, app-owned listener at `~/.argus/argus.sock`; it implements `agent.turnCompleted`, `agent.statusChanged`, and `agent.statusCleared`
 - **Kilo integration** — explicitly installed or removed through Settings; the Companion CLI remains independent and scaffolded
 - **Environment variables** injected into shells: `ARGUS_SOCKET_PATH`, `ARGUS_WORKSPACE_ID`, `ARGUS_SURFACE_ID`

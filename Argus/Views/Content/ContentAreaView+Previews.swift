@@ -87,8 +87,9 @@ struct FileImagePreview: View {
         } else {
             VStack(spacing: 8) {
                 Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 24))
-                    .foregroundColor(.secondary.opacity(0.5))
+                    .font(.system(size: 24, weight: .regular))
+                    .foregroundStyle(.secondary.opacity(0.5))
+                    .accessibilityHidden(true)
                 Text("Image preview is unavailable")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.secondary)
@@ -167,7 +168,8 @@ struct MarkdownRenderedView: View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "quote.opening")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
                 .padding(.top, 3)
             Text(content)
                 .font(.system(size: documentTextSize + 2))

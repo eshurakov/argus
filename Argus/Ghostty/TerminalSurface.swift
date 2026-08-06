@@ -160,6 +160,11 @@ final class TerminalSurface: ObservableObject, Identifiable {
     /// Creates the Ghostty surface. Called when the NSView is added to a window.
     func createSurface() {
         guard surface == nil, !surfaceCreated else { return }
+        // Restored Terminal Panels are constructed before every Workspace has
+        // mounted its retained TerminalNSView. The process-wide startup
+        // notification reaches all of them, so defer creation until this
+        // surface has an actual rendering host.
+        guard let hostedView = _hostedView else { return }
         guard GhosttyApp.shared.app != nil else {
             NSLog("TerminalSurface: Cannot create surface — GhosttyApp not initialized")
             return
@@ -172,13 +177,11 @@ final class TerminalSurface: ObservableObject, Identifiable {
         config.platform_tag = GHOSTTY_PLATFORM_MACOS
 
         // Set the platform NSView
-        if let view = _hostedView {
-            config.platform = ghostty_platform_u(
-                macos: ghostty_platform_macos_s(
-                    nsview: Unmanaged.passUnretained(view).toOpaque()
-                )
+        config.platform = ghostty_platform_u(
+            macos: ghostty_platform_macos_s(
+                nsview: Unmanaged.passUnretained(hostedView).toOpaque()
             )
-        }
+        )
 
         // Set userdata to this surface instance so callbacks can find us
         config.userdata = Unmanaged.passUnretained(self).toOpaque()
@@ -304,10 +307,20 @@ final class TerminalSurface: ObservableObject, Identifiable {
 
     /// Tear down and free the Ghostty surface.
     func teardownSurface() {
-        if let surface {
-            ghostty_surface_free(surface)
-        }
+        let surfaceToFree = surface
         self.surface = nil
+
+        guard let surfaceToFree else { return }
+
+        // Workspace closure mutates the SwiftUI hierarchy that still hosts this
+        // surface. Freeing it synchronously can re-enter Ghostty and AppKit while
+        // that mutation is in progress. Defer the runtime teardown until the next
+        // main-actor turn, retaining the Surface and its platform NSView until
+        // libghostty has finished with their unretained callback pointers.
+        Task { @MainActor [self] in
+            ghostty_surface_free(surfaceToFree)
+            _ = self
+        }
     }
 
     /// Whether the shell process has exited.

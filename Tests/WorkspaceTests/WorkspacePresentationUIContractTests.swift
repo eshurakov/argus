@@ -25,6 +25,22 @@ struct WorkspacePresentationUIContractTests {
     }
 
     @Test
+    func terminalSurfaceTeardownIsNonReentrantAndRetainsCallbackOwners() throws {
+        let surface = try SourceContract("Argus/Ghostty/TerminalSurface.swift")
+        let teardown = try surface.section(
+            after: "func teardownSurface()",
+            before: "/// Whether the shell process has exited"
+        )
+
+        #expect(teardown.contains("let surfaceToFree = surface"))
+        #expect(teardown.contains("self.surface = nil"))
+        #expect(teardown.contains("Task { @MainActor [self] in"))
+        #expect(teardown.contains("ghostty_surface_free(surfaceToFree)"))
+        #expect(teardown.contains("_ = self"))
+        #expect(!teardown.contains("ghostty_surface_free(surface)"))
+    }
+
+    @Test
     func commandVForImageOnlyClipboardForwardsControlVToTerminalProgram() throws {
         let pasteboard = NSPasteboard(name: .init("ArgusTests.TerminalImageClipboard"))
         pasteboard.clearContents()

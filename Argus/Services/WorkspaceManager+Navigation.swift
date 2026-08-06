@@ -42,6 +42,20 @@ extension WorkspaceManager {
         if selectedWorkspaceId == workspaceId {
             notifyWorkspaceContextChanged()
         }
+        // Workspace names are user-authored durable state. Save the mutation
+        // before returning so it survives a later application crash.
+        saveSession()
+    }
+
+    @discardableResult
+    func setStandaloneWorkspaceRoot(_ workspaceId: UUID, path: String) -> Bool {
+        let trimmedPath = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedPath.isEmpty else { return false }
+        let expandedPath = NSString(string: trimmedPath).expandingTildeInPath
+        return setStandaloneWorkspaceRoot(
+            workspaceId,
+            directoryURL: URL(fileURLWithPath: expandedPath)
+        )
     }
 
     @discardableResult
@@ -61,6 +75,9 @@ extension WorkspaceManager {
         if selectedWorkspaceId == workspaceId {
             notifyWorkspaceContextChanged()
         }
+        // The Workspace Root is user-authored durable state. Save it
+        // synchronously before returning so it survives a later crash.
+        saveSession()
         return true
     }
 
@@ -191,6 +208,10 @@ extension WorkspaceManager {
         }
 
         turnCompletionRuntime?.removeAttention(workspaceId: workspaceId, tabId: tabId)
+        for surfaceId in workspace.layout(for: tabId).leaves
+        where workspace.panels[surfaceId]?.panelType == .terminal {
+            agentStatusRuntime?.removeStatus(workspaceId: workspaceId, surfaceId: surfaceId)
+        }
         workspace.closeTab(tabId)
         if workspace.panelOrder.isEmpty {
             removeWorkspace(workspace.id)
@@ -284,6 +305,9 @@ extension WorkspaceManager {
             turnCompletionRuntime?.removeAttention(workspaceId: workspace.id, tabId: tabId)
         } else if panelId == tabId, let replacement = layout.removingLeaf(panelId)?.leaves.first {
             turnCompletionRuntime?.migrateAttention(workspaceId: workspace.id, from: tabId, to: replacement)
+        }
+        if workspace.panels[panelId]?.panelType == .terminal {
+            agentStatusRuntime?.removeStatus(workspaceId: workspace.id, surfaceId: panelId)
         }
         workspace.closePane(panelId)
     }

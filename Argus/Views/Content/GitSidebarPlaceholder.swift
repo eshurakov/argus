@@ -11,8 +11,9 @@ struct GitSidebarPlaceholder: View {
         VStack(spacing: 6) {
             Spacer()
             Image(systemName: "arrow.triangle.branch")
-                .font(.system(size: 24))
-                .foregroundColor(.secondary.opacity(0.5))
+                .font(.system(size: 24, weight: .regular))
+                .foregroundStyle(.secondary.opacity(0.5))
+                .accessibilityHidden(true)
             Text("Changes")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.secondary)

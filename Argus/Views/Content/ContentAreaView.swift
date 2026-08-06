@@ -21,8 +21,9 @@ extension ContentAreaView {
         VStack(spacing: 8) {
             Spacer()
             Image(systemName: "terminal")
-                .font(.system(size: 32))
-                .foregroundColor(.secondary.opacity(0.5))
+                .font(.system(size: 32, weight: .regular))
+                .foregroundStyle(.secondary.opacity(0.5))
+                .accessibilityHidden(true)
             Text("No panels open")
                 .font(.system(size: 13))
                 .foregroundColor(.secondary)

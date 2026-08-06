@@ -17,7 +17,7 @@ V1 includes:
 - session restore for Projects, Workspaces, and Terminal Panels;
 - process-local Agent Status presentation.
 
-The Companion CLI is a scaffold and has no socket-backed commands. Argus supports Kilo turn-completion attention through an app-owned local socket and an explicitly installed TUI plugin. V1 does not include live external Agent Status updates, PID tracking, notification history, macOS notifications, or TTS. Future work is kept under `docs/proposals/`.
+The Companion CLI is a scaffold and has no socket-backed commands. Argus supports Kilo turn-completion attention and Pi live Agent Status through an app-owned local socket and explicitly installed extensions. V1 does not include agent PID tracking, notification history, macOS notifications, or TTS. Future work is kept under `docs/proposals/`.
 
 ## Requirements
 
@@ -82,4 +82,4 @@ Package.swift   SwiftPM definition for the CLI target
 - Managed Worktrees: `~/.argus/worktrees/<project-uuid>/<branch-slug>/`
 - Reserved socket path: `~/.argus/argus.sock`
 
-The socket path is injected into Terminal Panels for forward compatibility, but no process listens there in v1.
+The app-owned Socket Server listens on this path and accepts the implemented agent turn-completion and live Agent Status methods. It does not provide Companion CLI commands.

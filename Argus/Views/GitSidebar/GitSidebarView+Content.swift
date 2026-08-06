@@ -7,7 +7,8 @@ extension GitSidebarView {
         return HStack(spacing: 8) {
             Image(systemName: "arrow.triangle.branch")
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(.secondary)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
                 .frame(width: 18)
             Text("Changes")
                 .font(.system(size: 14, weight: .semibold))
@@ -25,6 +26,9 @@ extension GitSidebarView {
                     Task { await refresh(owner: owner) }
                 } label: {
                     Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(.primary)
+                        .accessibilityHidden(true)
                         .frame(width: 20, height: 20)
                         .background {
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
@@ -88,7 +92,9 @@ extension GitSidebarView {
         case .error(_, let message):
             VStack(spacing: 8) {
                 Image(systemName: "exclamationmark.triangle")
-                    .foregroundColor(.orange)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(.orange)
+                    .accessibilityHidden(true)
                 Text("Git status failed")
                     .font(.system(size: 13, weight: .medium))
                 Text(message)
@@ -105,11 +111,18 @@ extension GitSidebarView {
             branchBar(summary)
 
             if summary.isClean {
-                Label("Working tree clean", systemImage: "checkmark.circle.fill")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.green)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 10)
+                Label {
+                    Text("Working tree clean")
+                } icon: {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.green)
+                        .accessibilityHidden(true)
+                }
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.green)
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
             }
 
             if summary.isFileDisplayCapped {
@@ -171,6 +184,9 @@ extension GitSidebarView {
 
         return HStack(spacing: 6) {
             Image(systemName: "arrow.triangle.branch")
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(.primary)
+                .accessibilityHidden(true)
             Text(summary.branchName ?? "Detached HEAD")
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -224,6 +240,9 @@ extension GitSidebarView {
                         ? "arrow.up.and.line.horizontal.and.arrow.down"
                         : "arrow.down.and.line.horizontal.and.arrow.up"
                 )
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(.primary)
+                .accessibilityHidden(true)
                 .frame(width: 20, height: 20)
                 .background {
                     RoundedRectangle(cornerRadius: 4, style: .continuous)

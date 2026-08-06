@@ -160,6 +160,7 @@ enum GitFileRowAction: String, Identifiable {
     case unstage
     case discard
     case delete
+    case addToGitignore
     case diff
     case blame
     case copyPath
@@ -176,6 +177,8 @@ enum GitFileRowAction: String, Identifiable {
             return "Discard Changes"
         case .delete:
             return "Delete File"
+        case .addToGitignore:
+            return "Add to .gitignore"
         case .diff:
             return "View Diff"
         case .blame:
@@ -195,6 +198,8 @@ enum GitFileRowAction: String, Identifiable {
             return "arrow.uturn.backward.circle"
         case .delete:
             return "trash"
+        case .addToGitignore:
+            return "line.3.horizontal.decrease.circle"
         case .diff:
             return "doc.text.magnifyingglass"
         case .blame:
@@ -214,6 +219,8 @@ enum GitFileRowAction: String, Identifiable {
             return .discard
         case .delete:
             return .delete
+        case .addToGitignore:
+            return .addToGitignore
         case .diff, .blame, .copyPath:
             return nil
         }

@@ -239,6 +239,8 @@ struct GitStatusActionsUIContractTests {
         #expect(fileRow.contains(".accessibilityHidden(!revealsActions)"))
         #expect(fileRow.contains(".focusable()"))
         #expect(fileRow.contains("canPerformActions && hoveredAction == action"))
+        #expect(fileRow.contains("Image(systemName: action.systemImage)"))
+        #expect(fileRow.contains(".foregroundStyle(.primary)"))
         #expect(fileRow.contains(".cursor(canPerformActions ? .pointingHand : .arrow)"))
         #expect(fileRow.contains("if canPerformActions && isHovering"))
 
@@ -325,6 +327,22 @@ struct GitStatusActionsUIContractTests {
     }
 
     @Test
+    func untrackedRowsOfferGitignoreActionsForFilesAndDirectories() throws {
+        let view = try SourceContract("Argus/Views/GitSidebar/GitSidebarView.swift")
+        view.containsAll(
+            [
+                "case addToGitignore",
+                "return \"Add to .gitignore\"",
+                "private func fileContextActions(for file: GitFileChange)",
+                "return fileActions(for: file) + [.addToGitignore]",
+                "allowsGitignore: sectionKey == \"untracked\"",
+                "onAddToGitignore: addToGitignore",
+                "Button(\"Add to .gitignore\", action: onAddToGitignore)"
+            ], "untracked Gitignore context actions"
+        )
+    }
+
+    @Test
     func destructiveAndBulkActionsRequireConfirmation() throws {
         let view = try SourceContract("Argus/Views/GitSidebar/GitSidebarView.swift")
         view.containsAll(
@@ -338,10 +356,18 @@ struct GitStatusActionsUIContractTests {
                 "await confirmAndPerformSectionFileOperation(",
                 "performSectionAction(",
                 "sectionKey: section.sectionKey",
-                "pathCount: section.count",
-                "role: .destructive"
+                "pathCount: section.count"
             ], "destructive and bulk git actions")
         view.excludes("files.map(\\.path)", "bulk actions must not be limited to displayed rows")
+        view.excludes("role: .destructive", "Git actions avoid SwiftUI destructive-role rendering")
+
+        let confirmation = try SourceContract("Argus/Views/GitSidebar/GitStatusViewModel+Actions.swift")
+        confirmation.containsAll(
+            [
+                "confirmDestructiveAction(",
+                "title: operation.confirmationTitle",
+                "confirmTitle: operation.confirmationButtonTitle"
+            ], "destructive Git confirmation uses the safe shared presenter")
 
         let viewModel = try SourceContract("Argus/Views/GitSidebar/GitStatusViewModel.swift")
         viewModel.containsAll(

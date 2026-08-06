@@ -117,7 +117,8 @@ struct BrowserView: View {
 
         return Image(systemName: isSecure ? "lock.fill" : "lock.open")
             .font(.system(size: 9, weight: .semibold))
-            .foregroundColor(isSecure ? .secondary : .secondary.opacity(0.7))
+            .foregroundStyle(isSecure ? Color.secondary : Color.secondary.opacity(0.7))
+            .accessibilityHidden(true)
             .frame(width: 18, height: 20)
             .help(label)
             .accessibilityLabel(label)
@@ -190,7 +191,8 @@ struct BrowserView: View {
             Button(action: action) {
                 Image(systemName: systemImage)
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(enabled ? .secondary : .secondary.opacity(0.35))
+                    .foregroundStyle(enabled ? Color.secondary : Color.secondary.opacity(0.35))
+                    .accessibilityHidden(true)
                     .frame(width: 20, height: 20)
                     .background {
                         RoundedRectangle(cornerRadius: 4)
