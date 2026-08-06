@@ -2,6 +2,12 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-08-06
+
+- Pi can now report live Agent Status through the app-owned socket, with explicit integration controls in Settings and ordered, ephemeral status updates. ([0146419](https://github.com/jeanduplessis/argus/commit/0146419))
+- Standalone Workspace roots now support direct path entry, and committed Workspace names and roots are saved immediately. Workspace closing, worktree deletion, and destructive Files and Changes actions now use clearer in-view confirmations. ([0146419](https://github.com/jeanduplessis/argus/commit/0146419))
+- The Changes View can add untracked files and displayed directories to `.gitignore`. Settings, icons, and terminal cleanup were also hardened against macOS 27 crashes. ([5474ae3](https://github.com/jeanduplessis/argus/commit/5474ae3), [0146419](https://github.com/jeanduplessis/argus/commit/0146419))
+
 ## 2026-07-30
 
 - Terminal tabs now let Kilo and other terminal programs paste images from the system clipboard with Cmd+V. Text paste and modified paste shortcuts keep their existing behavior. ([557e8b9](https://github.com/jeanduplessis/argus/commit/557e8b9))
