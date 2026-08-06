@@ -93,6 +93,14 @@ final class GhosttyApp: ObservableObject {
         let argc = CommandLine.argc
         let argv = CommandLine.unsafeArgv
         let result = ghostty_init(UInt(argc), argv)
+
+        // libghostty applies the environment locale process-wide. A non-dot
+        // decimal separator breaks C numeric parsing in AppKit on macOS 27,
+        // including SF Symbol metrics. Ghostty still retains its UTF-8 LC_CTYPE.
+        guard setlocale(LC_NUMERIC, "C") != nil else {
+            fatalError("GhosttyApp: failed to restore the C numeric locale after ghostty_init")
+        }
+
         guard result == GHOSTTY_SUCCESS else {
             NSLog("GhosttyApp: ghostty_init failed with code \(result)")
             return

@@ -85,7 +85,7 @@ struct GitStatusUIContractTests {
     }
 
     @Test
-    func workspaceFileIconsKeepSemanticNamesForTheSharedIconRenderer() {
+    func workspaceFileIconsKeepSemanticSFSymbolNames() {
         let expectedSymbols = [
             "Sources/App.swift": "chevron.left.forwardslash.chevron.right",
             "COMPONENT.TSX": "chevron.left.forwardslash.chevron.right",
@@ -260,7 +260,7 @@ struct WorkspaceFilesUIContractTests {
         try SourceContract("Argus/Views/MainWindowView.swift").containsAll(
             [
                 "RightSidebarView()",
-                "right side panel"
+                "// Right side panel"
             ], "right sidebar host")
     }
 
@@ -336,6 +336,15 @@ struct WorkspaceFilesUIContractTests {
         let rightView = try SourceContract("Argus/Views/GitSidebar/RightSidebarView.swift")
         assertWorkspaceFileRows(in: rightView)
         assertWorkspaceFileOperations(in: rightView)
+        let confirmation = try SourceContract(
+            "Argus/Views/GitSidebar/WorkspaceItemDeletionConfirmation.swift"
+        )
+        confirmation.containsAll(
+            ["Button(\"Delete\", action: onConfirm)", ".foregroundStyle(.red)"],
+            "in-view Workspace Item deletion confirmation"
+        )
+        confirmation.excludes("NSAlert", "Workspace Item deletion must not open an AppKit alert")
+        confirmation.excludes("runModal()", "Workspace Item deletion must not start a modal run loop")
         try assertFilePanelIntegration()
     }
 
@@ -365,12 +374,14 @@ struct WorkspaceFilesUIContractTests {
                 "Button(\"Open Folder\")",
                 "Button(\"Copy Folder\")",
                 "Button(\"Copy Relative Path\")",
-                "Button(\"Delete Folder\", role: .destructive)",
+                "Button(\"Delete Folder\")",
                 "Button(\"Rename Folder\")",
                 "Button(\"Open File\")",
                 "Button(\"Copy File\")",
-                "Button(\"Delete File\", role: .destructive)",
+                "Button(\"Delete File\")",
                 "Button(\"Rename File\")",
+                "requestWorkspaceItemDeletion(",
+                "WorkspaceItemDeletionConfirmation(",
                 "copyWorkspaceItem(file, rootPath: rootPath)",
                 "copyWorkspaceItemRelativePath(file)",
                 "$0.id == initiatingRequest.workspaceId",
@@ -387,9 +398,8 @@ struct WorkspaceFilesUIContractTests {
                 "WorkspaceRelativePathCopying",
                 "PasteboardWorkspaceRelativePathClipboard",
                 "NSPasteboard.general",
-                "confirmDelete(path: String)",
                 "promptRename(currentName: String)",
-                "func deleteFileWithConfirmation(request: WorkspaceFileTreeRequest, path: String)",
+                "func deleteFile(request: WorkspaceFileTreeRequest, path: String)",
                 "func renameFileWithPrompt(request: WorkspaceFileTreeRequest, path: String)",
                 "activeRequest == request",
                 "viewModel.isCurrent(initiatingRequest)",

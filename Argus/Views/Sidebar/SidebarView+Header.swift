@@ -58,7 +58,10 @@ private struct SidebarHeader: View {
                         Label {
                             Text("New Workspace")
                         } icon: {
-                            SemanticIcon(name: "terminal", pointSize: 13, weight: .regular)
+                            Image(systemName: "terminal")
+                                .font(.system(size: 13, weight: .regular))
+                                .foregroundStyle(.primary)
+                                .accessibilityHidden(true)
                         }
                     })
 
@@ -70,11 +73,17 @@ private struct SidebarHeader: View {
                         Label {
                             Text("New Project…")
                         } icon: {
-                            SemanticIcon(name: "folder.badge.plus", pointSize: 13, weight: .regular)
+                            Image(systemName: "folder.badge.plus")
+                                .font(.system(size: 13, weight: .regular))
+                                .foregroundStyle(.primary)
+                                .accessibilityHidden(true)
                         }
                     })
             } label: {
-                SemanticIcon(name: "plus", pointSize: 12, weight: .regular)
+                Image(systemName: "plus")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
                     .frame(width: 20, height: 20)
                     .background {
                         RoundedRectangle(cornerRadius: 4, style: .continuous)

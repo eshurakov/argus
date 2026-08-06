@@ -147,6 +147,27 @@ struct WorkspaceTabNavigationTests {
 
     @Test
     @MainActor
+    func changingStandaloneWorkspaceRootAcceptsAnEnteredPath() throws {
+        let defaults = try #require(UserDefaults(suiteName: "ArgusTests.EnteredWorkspaceRootPath"))
+        defaults.removePersistentDomain(forName: "ArgusTests.EnteredWorkspaceRootPath")
+        defer { defaults.removePersistentDomain(forName: "ArgusTests.EnteredWorkspaceRootPath") }
+        let manager = WorkspaceManager(
+            settings: AppSettings(defaults: defaults),
+            sessionSnapshotURL: temporarySnapshotURL(),
+            environment: ["ARGUS_DISABLE_SESSION_RESTORE": "1"]
+        )
+        let workspace = try #require(manager.selectedWorkspace)
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("argus-entered-workspace-root-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        #expect(manager.setStandaloneWorkspaceRoot(workspace.id, path: root.path))
+        #expect(workspace.currentDirectory == root.standardizedFileURL.path)
+    }
+
+    @Test
+    @MainActor
     func workspaceRootMutationRejectsNonStandaloneWorkspacesAndMissingDirectories() throws {
         let defaults = try #require(UserDefaults(suiteName: "ArgusTests.WorkspaceRootValidation"))
         defaults.removePersistentDomain(forName: "ArgusTests.WorkspaceRootValidation")

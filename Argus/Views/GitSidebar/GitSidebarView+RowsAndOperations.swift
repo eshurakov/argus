@@ -2,13 +2,26 @@
 import SwiftUI
 
 extension GitSidebarView {
-    func directoryRow(_ directory: GitFileTreeNode, depth: Int) -> some View {
+    func directoryRow(
+        _ directory: GitFileTreeNode,
+        depth: Int,
+        owner: GitStatusSnapshotOwner,
+        allowsGitignore: Bool
+    ) -> some View {
         let isExpanded = !collapsedDirectoryIds.contains(directory.id)
+        let canPerformActions = viewModel.canPerformActions(for: owner)
+        let addToGitignore: (() -> Void)? =
+            allowsGitignore
+            ? {
+                performAddToGitignore(path: directory.path, owner: owner)
+            } : nil
 
         return GitChangeDirectoryRow(
             directory: directory,
             depth: depth,
-            isExpanded: isExpanded
+            isExpanded: isExpanded,
+            canPerformActions: canPerformActions,
+            onAddToGitignore: addToGitignore
         ) {
             if collapsedDirectoryIds.contains(directory.id) {
                 collapsedDirectoryIds.remove(directory.id)
@@ -31,6 +44,7 @@ extension GitSidebarView {
             name: name,
             depth: depth,
             actions: fileActions(for: file),
+            contextActions: fileContextActions(for: file),
             canPerformActions: canPerformActions,
             accessibilityValue: fileAccessibilityValue(file)
         ) { action in
@@ -51,6 +65,11 @@ extension GitSidebarView {
         }
     }
 
+    private func fileContextActions(for file: GitFileChange) -> [GitFileRowAction] {
+        guard file.sectionKey == "untracked" else { return fileActions(for: file) }
+        return fileActions(for: file) + [.addToGitignore]
+    }
+
     private func perform(
         _ action: GitFileRowAction,
         for file: GitFileChange,
@@ -62,6 +81,8 @@ extension GitSidebarView {
             Task { await performFileOperation(action.operation, path: file.path, owner: owner) }
         case .discard, .delete:
             Task { await confirmAndPerformFileOperation(action.operation, paths: [file.path], owner: owner) }
+        case .addToGitignore:
+            performAddToGitignore(path: file.path, owner: owner)
         case .diff:
             Task { await showPreview(kind: .diff, file: file, owner: owner) }
         case .blame:
@@ -69,6 +90,11 @@ extension GitSidebarView {
         case .copyPath:
             viewModel.copyPath(file.path)
         }
+    }
+
+    private func performAddToGitignore(path: String, owner: GitStatusSnapshotOwner) {
+        guard selectedSnapshotOwner == owner, viewModel.canPerformActions(for: owner) else { return }
+        Task { await performFileOperation(.addToGitignore, path: path, owner: owner) }
     }
 
     private func fileAccessibilityValue(_ file: GitFileChange) -> String {
@@ -95,8 +121,10 @@ extension GitSidebarView {
 
     func notRepositoryContent(rootPath: String, message: String? = nil) -> some View {
         VStack(spacing: 10) {
-            SemanticIcon(name: "folder.badge.questionmark", pointSize: 24, weight: .regular)
-                .foregroundColor(.secondary.opacity(0.5))
+            Image(systemName: "folder.badge.questionmark")
+                .font(.system(size: 24, weight: .regular))
+                .foregroundStyle(.secondary.opacity(0.5))
+                .accessibilityHidden(true)
             Text("Not a git repository")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.secondary)
@@ -127,8 +155,10 @@ extension GitSidebarView {
 
     func operationFailureContent(_ message: String) -> some View {
         VStack(spacing: 8) {
-            SemanticIcon(name: "exclamationmark.triangle", pointSize: 12, weight: .regular)
-                .foregroundColor(.orange)
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
             Text("Git file operation failed")
                 .font(.system(size: 13, weight: .medium))
             Text(message)
@@ -150,8 +180,10 @@ extension GitSidebarView {
 
     func emptyMessage(_ text: String, systemImage: String) -> some View {
         VStack(spacing: 8) {
-            SemanticIcon(name: systemImage, pointSize: 24, weight: .regular)
-                .foregroundColor(.secondary.opacity(0.5))
+            Image(systemName: systemImage)
+                .font(.system(size: 24, weight: .regular))
+                .foregroundStyle(.secondary.opacity(0.5))
+                .accessibilityHidden(true)
             Text(text)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.secondary)
@@ -253,6 +285,7 @@ private struct GitChangeFileRow: View {
     let name: String
     let depth: Int
     let actions: [GitFileRowAction]
+    let contextActions: [GitFileRowAction]
     let canPerformActions: Bool
     let accessibilityValue: String
     let perform: (GitFileRowAction) -> Void
@@ -294,7 +327,7 @@ private struct GitChangeFileRow: View {
         .accessibilityLabel(file.path)
         .accessibilityValue(accessibilityValue)
         .accessibilityActions {
-            ForEach(actions) { action in
+            ForEach(contextActions) { action in
                 Button(action.title) {
                     perform(action)
                 }
@@ -310,7 +343,9 @@ private struct GitChangeFileRow: View {
     private var statusIndicator: some View {
         Group {
             if let systemImage = file.status.systemImage {
-                SemanticIcon(name: systemImage, pointSize: 10, weight: .semibold)
+                Image(systemName: systemImage)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(file.status.tintColor)
                     .frame(width: 14)
                     .accessibilityHidden(true)
             } else {
@@ -346,7 +381,10 @@ private struct GitChangeFileRow: View {
                     Button {
                         perform(action)
                     } label: {
-                        SemanticIcon(name: action.systemImage, pointSize: 12, weight: .regular)
+                        Image(systemName: action.systemImage)
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundStyle(.primary)
+                            .accessibilityHidden(true)
                             .frame(width: 20, height: 20)
                             .background {
                                 RoundedRectangle(cornerRadius: 4, style: .continuous)
@@ -380,9 +418,9 @@ private struct GitChangeFileRow: View {
 
     @ViewBuilder
     private var contextMenu: some View {
-        ForEach(actions) { action in
+        ForEach(contextActions) { action in
             if action == .discard || action == .delete {
-                Button(action.title, role: .destructive) {
+                Button(action.title) {
                     perform(action)
                 }
                 .disabled(!canPerformActions)

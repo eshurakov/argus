@@ -86,8 +86,10 @@ struct FileImagePreview: View {
                 .accessibilityLabel(accessibilityLabel)
         } else {
             VStack(spacing: 8) {
-                SemanticIcon(name: "exclamationmark.triangle", pointSize: 24, weight: .regular)
-                    .foregroundColor(.secondary.opacity(0.5))
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 24, weight: .regular))
+                    .foregroundStyle(.secondary.opacity(0.5))
+                    .accessibilityHidden(true)
                 Text("Image preview is unavailable")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.secondary)
@@ -164,8 +166,10 @@ struct MarkdownRenderedView: View {
 
     private func quoteView(_ content: AttributedString) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            SemanticIcon(name: "quote.opening", pointSize: 11, weight: .semibold)
-                .foregroundColor(.secondary)
+            Image(systemName: "quote.opening")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
                 .padding(.top, 3)
             Text(content)
                 .font(.system(size: documentTextSize + 2))

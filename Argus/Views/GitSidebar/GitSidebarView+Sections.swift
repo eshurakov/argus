@@ -4,6 +4,8 @@ struct GitChangeDirectoryRow: View {
     let directory: GitFileTreeNode
     let depth: Int
     let isExpanded: Bool
+    let canPerformActions: Bool
+    let onAddToGitignore: (() -> Void)?
     let toggle: () -> Void
     @EnvironmentObject private var appSettings: AppSettings
 
@@ -12,8 +14,10 @@ struct GitChangeDirectoryRow: View {
     var body: some View {
         Button(action: toggle) {
             HStack(spacing: 7) {
-                SemanticIcon(name: isExpanded ? "chevron.down" : "chevron.right", pointSize: 9, weight: .semibold)
-                    .foregroundColor(.secondary)
+                Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
                     .frame(width: 12)
                 Text(directory.name)
                     .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 11)))
@@ -39,6 +43,18 @@ struct GitChangeDirectoryRow: View {
         .help("\(isExpanded ? "Collapse" : "Expand") directory \(directory.path)")
         .accessibilityLabel("\(isExpanded ? "Collapse" : "Expand") directory \(directory.path)")
         .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+        .accessibilityActions {
+            if let onAddToGitignore {
+                Button("Add to .gitignore", action: onAddToGitignore)
+                    .disabled(!canPerformActions)
+            }
+        }
+        .contextMenu {
+            if let onAddToGitignore {
+                Button("Add to .gitignore", action: onAddToGitignore)
+                    .disabled(!canPerformActions)
+            }
+        }
     }
 
     private var treeRowLeadingPadding: CGFloat {
@@ -58,7 +74,7 @@ extension GitSidebarView {
             fileSectionHeader(section, isExpanded: isExpanded, actions: actions, owner: owner)
 
             if isExpanded.wrappedValue {
-                fileSectionRows(section.files, owner: owner)
+                fileSectionRows(section.files, sectionKey: section.sectionKey, owner: owner)
             }
         }
         .contextMenu {
@@ -95,11 +111,10 @@ extension GitSidebarView {
                 isExpanded.wrappedValue.toggle()
             } label: {
                 HStack(spacing: 6) {
-                    SemanticIcon(
-                        name: isExpanded.wrappedValue ? "chevron.down" : "chevron.right", pointSize: 9,
-                        weight: .semibold
-                    )
-                    .foregroundColor(.secondary)
+                    Image(systemName: isExpanded.wrappedValue ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                     Text(section.title)
                         .font(
                             .system(size: appSettings.presentationMetrics.textSize(forBaseSize: 12), weight: .semibold))
@@ -181,7 +196,7 @@ extension GitSidebarView {
         return HoverStateView { isHovered in
             Menu {
                 ForEach(actions) { action in
-                    Button(action.title, role: .destructive) {
+                    Button(action.title) {
                         performSectionAction(
                             action.operation,
                             sectionKey: section.sectionKey,
@@ -191,7 +206,10 @@ extension GitSidebarView {
                     }
                 }
             } label: {
-                SemanticIcon(name: "ellipsis.circle", pointSize: 12, weight: .regular)
+                Image(systemName: "ellipsis.circle")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(.primary)
+                    .accessibilityHidden(true)
                     .frame(width: 20, height: 20)
                     .background {
                         RoundedRectangle(cornerRadius: 4, style: .continuous)
@@ -216,6 +234,7 @@ extension GitSidebarView {
     @ViewBuilder
     private func fileSectionRows(
         _ files: [GitFileChange],
+        sectionKey: String,
         owner: GitStatusSnapshotOwner
     ) -> some View {
         ForEach(
@@ -226,7 +245,12 @@ extension GitSidebarView {
         ) { row in
             switch row.content {
             case .directory(let directory):
-                directoryRow(directory, depth: row.depth)
+                directoryRow(
+                    directory,
+                    depth: row.depth,
+                    owner: owner,
+                    allowsGitignore: sectionKey == "untracked"
+                )
             case .file(let file):
                 fileRow(file, name: row.name, depth: row.depth, owner: owner)
             }
@@ -241,7 +265,7 @@ extension GitSidebarView {
     ) -> some View {
         ForEach(actions) { action in
             if action.isDestructive {
-                Button(action.title, role: .destructive) {
+                Button(action.title) {
                     performSectionAction(
                         action.operation,
                         sectionKey: section.sectionKey,

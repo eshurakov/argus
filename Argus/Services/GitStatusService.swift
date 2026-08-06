@@ -136,6 +136,10 @@ private func performOperationSynchronously(
         for path in paths {
             try deletePath(rootPath: rootPath, path: path)
         }
+    case .addToGitignore:
+        for path in paths {
+            try addPathToGitignore(rootPath: rootPath, path: path)
+        }
     }
 }
 
@@ -241,6 +245,61 @@ private func deletePath(rootPath: String, path: String) throws {
         throw GitStatusServiceError.commandFailed("Refusing to delete a path outside the repository root")
     }
     try FileManager.default.removeItem(at: targetURL)
+}
+
+private func addPathToGitignore(rootPath: String, path: String) throws {
+    guard !path.isEmpty,
+        !path.hasPrefix("/"),
+        !path.contains("\n"),
+        !path.contains("\r"),
+        !path.contains("\0")
+    else {
+        throw GitStatusServiceError.commandFailed("Refusing to add an invalid path to .gitignore")
+    }
+
+    let rootURL = URL(fileURLWithPath: rootPath).standardizedFileURL
+    let relativePath = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    let targetURL = rootURL.appendingPathComponent(relativePath).standardizedFileURL
+    let rootPathWithSlash = rootURL.path.hasSuffix("/") ? rootURL.path : rootURL.path + "/"
+    guard targetURL.path.hasPrefix(rootPathWithSlash), targetURL.path != rootURL.path else {
+        throw GitStatusServiceError.commandFailed("Refusing to add a path outside the repository root")
+    }
+
+    var isDirectory = ObjCBool(false)
+    guard FileManager.default.fileExists(atPath: targetURL.path, isDirectory: &isDirectory) else {
+        throw GitStatusServiceError.commandFailed("The untracked path no longer exists")
+    }
+
+    let entry = isDirectory.boolValue ? "\(relativePath)/" : relativePath
+    let gitignoreURL = rootURL.appendingPathComponent(".gitignore")
+    let existing: String
+    if FileManager.default.fileExists(atPath: gitignoreURL.path) {
+        do {
+            existing = try String(contentsOf: gitignoreURL, encoding: .utf8)
+        } catch {
+            throw GitStatusServiceError.commandFailed("Unable to read .gitignore: \(error.localizedDescription)")
+        }
+    } else {
+        existing = ""
+    }
+
+    let existingEntries = existing.split(whereSeparator: { character in
+        character == "\n" || character == "\r"
+    })
+    guard !existingEntries.contains(where: { String($0) == entry }) else { return }
+
+    var updated = existing
+    if !updated.isEmpty && !updated.hasSuffix("\n") && !updated.hasSuffix("\r") {
+        updated.append("\n")
+    }
+    updated.append(entry)
+    updated.append("\n")
+
+    do {
+        try updated.write(to: gitignoreURL, atomically: true, encoding: .utf8)
+    } catch {
+        throw GitStatusServiceError.commandFailed("Unable to update .gitignore: \(error.localizedDescription)")
+    }
 }
 
 private struct GitCommandResult: Sendable {

@@ -13,6 +13,7 @@ actor AgentSocketServer {
     private let path: String
     private let maximumFrameBytes: Int
     private let deliver: @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult
+    private let deliverStatus: @MainActor @Sendable (AgentStatusEvent) -> AgentStatusDeliveryResult
 
     private var listener: Int32?
     private let clients = AgentSocketClientRegistry()
@@ -21,11 +22,15 @@ actor AgentSocketServer {
     init(
         path: String,
         maximumFrameBytes: Int = AgentSocketServer.defaultMaximumFrameBytes,
-        deliver: @escaping @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult
+        deliver: @escaping @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult,
+        deliverStatus: @escaping @MainActor @Sendable (AgentStatusEvent) -> AgentStatusDeliveryResult = { _ in
+            .rejected(code: .unavailable, message: "Agent Status delivery is unavailable")
+        }
     ) {
         self.path = path
         self.maximumFrameBytes = maximumFrameBytes
         self.deliver = deliver
+        self.deliverStatus = deliverStatus
     }
 
     deinit {
@@ -67,12 +72,14 @@ actor AgentSocketServer {
             let clients = clients
             let maximumFrameBytes = maximumFrameBytes
             let deliver = deliver
+            let deliverStatus = deliverStatus
             Task.detached {
                 Self.acceptConnections(
                     on: socket,
                     clients: clients,
                     maximumFrameBytes: maximumFrameBytes,
-                    deliver: deliver
+                    deliver: deliver,
+                    deliverStatus: deliverStatus
                 )
             }
         } catch {
@@ -157,7 +164,8 @@ actor AgentSocketServer {
         on listener: Int32,
         clients: AgentSocketClientRegistry,
         maximumFrameBytes: Int,
-        deliver: @escaping @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult
+        deliver: @escaping @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult,
+        deliverStatus: @escaping @MainActor @Sendable (AgentStatusEvent) -> AgentStatusDeliveryResult
     ) {
         while true {
             let client = Darwin.accept(listener, nil, nil)
@@ -174,7 +182,8 @@ actor AgentSocketServer {
                     client: client,
                     clients: clients,
                     maximumFrameBytes: maximumFrameBytes,
-                    deliver: deliver
+                    deliver: deliver,
+                    deliverStatus: deliverStatus
                 )
             }
         }
@@ -184,7 +193,8 @@ actor AgentSocketServer {
         client: Int32,
         clients: AgentSocketClientRegistry,
         maximumFrameBytes: Int,
-        deliver: @escaping @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult
+        deliver: @escaping @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult,
+        deliverStatus: @escaping @MainActor @Sendable (AgentStatusEvent) -> AgentStatusDeliveryResult
     ) async {
         defer {
             Darwin.close(client)
@@ -206,7 +216,11 @@ actor AgentSocketServer {
                         .failure(id: nil, code: .frameTooLarge, message: "Frame exceeds maximum size"), to: client)
                     return
                 }
-                let response = await handle(frame: Data(frame), deliver: deliver)
+                let response = await handle(
+                    frame: Data(frame),
+                    deliver: deliver,
+                    deliverStatus: deliverStatus
+                )
                 writeResponse(response, to: client)
             }
 
@@ -218,64 +232,6 @@ actor AgentSocketServer {
         }
     }
 
-    private nonisolated static func handle(
-        frame: Data,
-        deliver: @escaping @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult
-    ) async -> AgentSocketResponse {
-        let request: AgentSocketRequest
-        do {
-            request = try JSONDecoder().decode(AgentSocketRequest.self, from: frame)
-        } catch {
-            return .failure(id: nil, code: .malformedRequest, message: "Malformed JSON request")
-        }
-
-        guard request.version == Self.protocolVersion else {
-            return .failure(id: request.id, code: .unsupportedVersion, message: "Unsupported protocol version")
-        }
-        guard request.method == "agent.turnCompleted" else {
-            return .failure(id: request.id, code: .unknownMethod, message: "Unknown method")
-        }
-        guard let params = request.params,
-            Self.isBounded(params.agentKey, maximumLength: 128),
-            Self.isBounded(params.eventId, maximumLength: 512),
-            let workspaceId = UUID(uuidString: params.workspaceId),
-            let surfaceId = UUID(uuidString: params.surfaceId)
-        else {
-            return .failure(id: request.id, code: .invalidParameters, message: "Invalid turn completion parameters")
-        }
-
-        let event = TurnCompletionEvent(
-            agentKey: params.agentKey,
-            workspaceId: workspaceId,
-            surfaceId: surfaceId,
-            eventId: params.eventId
-        )
-        let result = await deliver(event)
-        switch result {
-        case .accepted(let requiresAttention):
-            return .success(id: request.id, requiresAttention: requiresAttention)
-        case .rejected(let code, let message):
-            return .failure(id: request.id, code: .unknownTerminalSurface, message: message + " (\(code.rawValue))")
-        }
-    }
-
-    private nonisolated static func isBounded(_ value: String, maximumLength: Int) -> Bool {
-        !value.isEmpty && value.utf8.count <= maximumLength
-    }
-
-    private nonisolated static func writeResponse(_ response: AgentSocketResponse, to socket: Int32) {
-        guard var data = try? JSONEncoder().encode(response) else { return }
-        data.append(0x0A)
-        data.withUnsafeBytes { bytes in
-            guard let baseAddress = bytes.baseAddress else { return }
-            var written = 0
-            while written < data.count {
-                let result = Darwin.send(socket, baseAddress.advanced(by: written), data.count - written, 0)
-                guard result > 0 else { return }
-                written += result
-            }
-        }
-    }
 }
 
 private final class AgentSocketClientRegistry: @unchecked Sendable {
@@ -304,61 +260,4 @@ enum AgentSocketServerError: Error, Equatable {
     case pathAlreadyExists
     case liveListener
     case systemCall(String)
-}
-
-private struct AgentSocketRequest: Decodable {
-    let version: Int
-    let id: String?
-    let method: String
-    let params: AgentSocketTurnCompletedParameters?
-}
-
-private struct AgentSocketTurnCompletedParameters: Decodable {
-    let agentKey: String
-    let workspaceId: String
-    let surfaceId: String
-    let eventId: String
-}
-
-private struct AgentSocketResponse: Encodable {
-    let id: String?
-    let isSuccessful: Bool
-    let result: Result?
-    let error: Failure?
-
-    struct Result: Encodable {
-        let accepted: Bool
-        let requiresAttention: Bool
-    }
-
-    struct Failure: Encodable {
-        let code: AgentSocketErrorCode
-        let message: String
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case id
-        case isSuccessful = "ok"
-        case result
-        case error
-    }
-
-    static func success(id: String?, requiresAttention: Bool) -> Self {
-        Self(
-            id: id, isSuccessful: true, result: Result(accepted: true, requiresAttention: requiresAttention), error: nil
-        )
-    }
-
-    static func failure(id: String?, code: AgentSocketErrorCode, message: String) -> Self {
-        Self(id: id, isSuccessful: false, result: nil, error: Failure(code: code, message: message))
-    }
-}
-
-private enum AgentSocketErrorCode: String, Encodable {
-    case malformedRequest = "malformed_request"
-    case unsupportedVersion = "unsupported_version"
-    case unknownMethod = "unknown_method"
-    case invalidParameters = "invalid_parameters"
-    case unknownTerminalSurface = "unknown_terminal_surface"
-    case frameTooLarge = "frame_too_large"
 }

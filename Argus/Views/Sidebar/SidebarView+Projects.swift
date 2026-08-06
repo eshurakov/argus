@@ -56,6 +56,13 @@ struct ProjectSection: View {
                                 Button("Change Working Directory…") {
                                     chooseWorkspaceRoot(for: workspace)
                                 }
+                                Button("Enter Path Directly…") {
+                                    NotificationCenter.default.post(
+                                        name: .showChangeWorkspaceRootSheet,
+                                        object: nil,
+                                        userInfo: ["workspaceId": workspace.id]
+                                    )
+                                }
                             }
                             Button("Move Up") {
                                 moveWorkspaceUp(workspace.id)
@@ -165,7 +172,6 @@ private struct ProjectHeaderRow: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isHovered = false
     @State private var isAddHovered = false
-    @State private var showRemoveConfirmation = false
     @State private var isRemovingProject = false
     @FocusState private var focusedControl: FocusedControl?
 
@@ -192,8 +198,10 @@ private struct ProjectHeaderRow: View {
                 }
             } label: {
                 HStack(spacing: 6) {
-                    SemanticIcon(name: "chevron.right", pointSize: 9, weight: .semibold)
-                        .foregroundColor(.secondary)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                         .rotationEffect(.degrees(project.isExpanded ? 90 : 0))
                         .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: project.isExpanded)
                         .frame(width: 12)
@@ -241,7 +249,10 @@ private struct ProjectHeaderRow: View {
                     }
                 },
                 label: {
-                    SemanticIcon(name: "plus", pointSize: 10, weight: .regular)
+                    Image(systemName: "plus")
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                         .frame(width: 20, height: 20)
                         .background {
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
@@ -292,22 +303,28 @@ private struct ProjectHeaderRow: View {
                     )
                 }
                 Divider()
-                Button("Remove Project", role: .destructive) {
-                    showRemoveConfirmation = true
+                Button("Remove Project") {
+                    confirmProjectRemoval()
                 }
                 .disabled(isRemovingProject)
             }
         }
-        .alert("Remove Project \"\(project.displayName)\"?", isPresented: $showRemoveConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Remove Project", role: .destructive) {
-                isRemovingProject = true
-                Task {
-                    await workspaceManager.removeProject(project.id)
-                }
-            }
-        } message: {
-            Text(projectRemovalMessage)
+    }
+
+    private func confirmProjectRemoval() {
+        guard !isRemovingProject else { return }
+
+        guard
+            confirmDestructiveAction(
+                title: "Remove Project \"\(project.displayName)\"?",
+                message: projectRemovalMessage,
+                confirmTitle: "Remove Project"
+            )
+        else { return }
+
+        isRemovingProject = true
+        Task {
+            await workspaceManager.removeProject(project.id)
         }
     }
 

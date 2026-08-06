@@ -48,10 +48,10 @@ struct ProjectAndWorktreeUIContractTests {
             [
                 "Menu {",
                 "Text(\"New Workspace\")",
-                "SemanticIcon(name: \"terminal\", pointSize: 13, weight: .regular)",
+                "Image(systemName: \"terminal\")",
                 "Text(\"New Project…\")",
-                "SemanticIcon(name: \"folder.badge.plus\", pointSize: 13, weight: .regular)",
-                "SemanticIcon(name: \"plus\", pointSize: 12, weight: .regular)",
+                "Image(systemName: \"folder.badge.plus\")",
+                "Image(systemName: \"plus\")",
                 "if project.isCatchAll {",
                 "workspaceManager.addWorkspace()",
                 "name: .showNewWorkspaceSheet",
@@ -256,15 +256,15 @@ struct ProjectAndWorktreeUIContractTests {
         )
         try SourceContract("Argus/Views/MainWindowView.swift").containsAll(
             [
-                ".alert(\"Close Workspace?\", isPresented: $showCloseWorkspaceConfirmation)",
-                "closeWorkspaceCanDeleteWorktree ? \"Close Only\" : \"Close Workspace\"",
-                "Button(\"Delete Worktree and Close\", role: .destructive)",
+                "@State private var closeWorkspaceRequest: CloseWorkspaceRequest?",
+                "CloseWorkspaceConfirmationView(",
+                "onCloseOnly: { closeWorkspace(closeWorkspaceRequest) }",
+                "onDeleteWorktree: { deleteWorktreeAndCloseWorkspace(closeWorkspaceRequest.id) }",
                 "WorkspaceDeletionProgressView(stage: workspaceDeletionStage)",
                 "Git is unregistering the worktree and deleting its files.",
                 "Closing terminal panels and updating workspace state.",
                 "workspaceDeletionStage = .removingWorktree",
                 "workspaceDeletionStage = nil",
-                "if !removed",
                 ".alert(\"Could Not Delete Worktree\", isPresented: $showWorkspaceDeletionError)"
             ], "worktree close choices")
     }

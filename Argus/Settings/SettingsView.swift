@@ -1,34 +1,52 @@
 import AppKit
 import SwiftUI
 
+enum SettingsSection: CaseIterable, Identifiable {
+    case general
+    case appearance
+    case terminal
+    case filesAndChanges
+    case browser
+    case agent
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .general: "General"
+        case .appearance: "Appearance"
+        case .terminal: "Terminal"
+        case .filesAndChanges: "Files & Changes"
+        case .browser: "Browser"
+        case .agent: "Agent"
+        }
+    }
+}
+
+@MainActor
+final class SettingsNavigationModel: ObservableObject {
+    @Published var section: SettingsSection = .general
+}
+
 struct SettingsView: View {
+    @ObservedObject var navigation: SettingsNavigationModel
+
     @EnvironmentObject private var settings: AppSettings
     @EnvironmentObject private var kiloIntegration: KiloIntegrationModel
+    @EnvironmentObject private var piIntegration: PiIntegrationModel
 
     var body: some View {
-        TabView {
-            general
-                .tabItem { tabLabel("General", icon: "gear") }
-            appearance
-                .tabItem { tabLabel("Appearance", icon: "textformat") }
-            terminal
-                .tabItem { tabLabel("Terminal", icon: "terminal") }
-            filesAndChanges
-                .tabItem { tabLabel("Files & Changes", icon: "doc.text") }
-            browser
-                .tabItem { tabLabel("Browser", icon: "globe") }
-            agent
-                .tabItem { tabLabel("Agent", icon: "bell") }
+        Group {
+            switch navigation.section {
+            case .general: general
+            case .appearance: appearance
+            case .terminal: terminal
+            case .filesAndChanges: filesAndChanges
+            case .browser: browser
+            case .agent: agent
+            }
         }
-        .frame(width: 560, height: 430)
-    }
-
-    private func tabLabel(_ title: String, icon: String) -> some View {
-        Label {
-            Text(title)
-        } icon: {
-            SemanticIcon(name: icon, pointSize: 13, weight: .regular)
-        }
+        .frame(width: 560, height: 520)
     }
 
     private var general: some View {
@@ -66,16 +84,16 @@ struct SettingsView: View {
 
     private var appearance: some View {
         Form {
-            Stepper(
-                "Interface text size: \(Int(settings.interfaceTextSize))",
-                value: $settings.interfaceTextSize,
-                in: 10...14
-            )
-            Stepper(
-                "Document text size: \(Int(settings.documentTextSize))",
-                value: $settings.documentTextSize,
-                in: 10...24
-            )
+            Picker("Interface text size", selection: $settings.interfaceTextSize) {
+                ForEach(10...14, id: \.self) { size in
+                    Text("\(size) pt").tag(Double(size))
+                }
+            }
+            Picker("Document text size", selection: $settings.documentTextSize) {
+                ForEach(10...24, id: \.self) { size in
+                    Text("\(size) pt").tag(Double(size))
+                }
+            }
             Picker("Interface density", selection: $settings.interfaceDensity) {
                 ForEach(AppSettings.InterfaceDensity.allCases) { density in
                     Text(density.title).tag(density)
@@ -150,12 +168,11 @@ struct SettingsView: View {
                         Text(provider.title).tag(provider)
                     }
                 }
-                Stepper(
-                    "Default zoom: \(Int(settings.defaultZoom * 100))%",
-                    value: $settings.defaultZoom,
-                    in: 0.5...2,
-                    step: 0.1
-                )
+                Picker("Default zoom", selection: $settings.defaultZoom) {
+                    ForEach(5...20, id: \.self) { zoomStep in
+                        Text("\(zoomStep * 10)%").tag(Double(zoomStep) / 10)
+                    }
+                }
                 Toggle("Enable Web Inspector", isOn: $settings.webInspectorEnabled)
                 Picker("Data store", selection: $settings.browserDataStore) {
                     ForEach(BrowserPanelConfiguration.DataStore.allCases) { dataStore in
@@ -197,6 +214,29 @@ struct SettingsView: View {
                 )
                 .foregroundStyle(.secondary)
             }
+
+            Section("Pi Integration") {
+                LabeledContent("Status") { Text(piStatusTitle) }
+                LabeledContent("Managed extension") {
+                    Text(piIntegration.managedExtensionPath)
+                        .font(.system(.body, design: .monospaced))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .help(piIntegration.managedExtensionPath)
+                }
+                HStack {
+                    Button("Enable") { piIntegration.enable() }
+                        .disabled(piIntegration.status == .busy || piIntegration.status == .installed)
+                    Button("Disable") { piIntegration.disable() }
+                        .disabled(piIntegration.status == .busy)
+                    if piIntegration.status == .busy { ProgressView().controlSize(.small) }
+                }
+                if case .failed(let error) = piIntegration.status {
+                    Text(error).foregroundStyle(.red)
+                }
+                Text("Restart running Pi sessions or use /reload after changing this integration.")
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
         .padding()
@@ -206,6 +246,15 @@ struct SettingsView: View {
         switch kiloIntegration.status {
         case .unavailable: "Not enabled"
         case .installed: "Enabled — restart Kilo sessions required"
+        case .busy: "Updating"
+        case .failed: "Configuration error"
+        }
+    }
+
+    private var piStatusTitle: String {
+        switch piIntegration.status {
+        case .unavailable: "Not enabled"
+        case .installed: "Enabled — restart or reload Pi sessions required"
         case .busy: "Updating"
         case .failed: "Configuration error"
         }

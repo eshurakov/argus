@@ -74,7 +74,10 @@ struct RightSidebarView: View {
                 Button {
                     Task { await refreshSelectedPanel() }
                 } label: {
-                    SemanticIcon(name: "arrow.clockwise", pointSize: 12, weight: .regular)
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(.primary)
+                        .accessibilityHidden(true)
                         .frame(width: 20, height: 20)
                         .background {
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
@@ -104,7 +107,10 @@ struct RightSidebarView: View {
             selectedPanel = panel
         } label: {
             HStack(spacing: 8) {
-                SemanticIcon(name: panel.systemImage, pointSize: 15, weight: .semibold)
+                Image(systemName: panel.systemImage)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(isSelected ? Color.primary : Color.secondary)
+                    .accessibilityHidden(true)
                     .frame(width: 18)
                 Text(panel.title)
                     .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 14), weight: .semibold))

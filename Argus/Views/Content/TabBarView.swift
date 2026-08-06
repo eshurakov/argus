@@ -90,8 +90,10 @@ struct TabBarView: View {
                         workspaceManager.addBrowserTab()
                     }
                 } label: {
-                    SemanticIcon(name: "plus", pointSize: 11, weight: .regular)
-                        .foregroundColor(.secondary)
+                    Image(systemName: "plus")
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                         .frame(width: 20, height: 20)
                         .background {
                             RoundedRectangle(cornerRadius: 4)
@@ -201,16 +203,20 @@ struct TabItemView: View {
                                 .controlSize(.mini)
                                 .accessibilityLabel("Loading \(title)")
                         } else if hasAttention {
-                            SemanticIcon(name: "bell.fill", pointSize: 10, weight: .regular)
-                                .foregroundColor(.orange)
+                            Image(systemName: "bell.fill")
+                                .font(.system(size: 10, weight: .regular))
+                                .foregroundStyle(.orange)
                                 .accessibilityHidden(true)
                         } else if let agentStatus {
-                            SemanticIcon(name: agentStatus.state.symbolName, pointSize: 10, weight: .regular)
-                                .foregroundColor(agentStatus.state.color)
+                            Image(systemName: agentStatus.state.symbolName)
+                                .font(.system(size: 10, weight: .regular))
+                                .foregroundStyle(agentStatus.state.color)
                                 .accessibilityHidden(true)
                         } else if let icon = panel.displayIcon {
-                            SemanticIcon(name: icon, pointSize: 10, weight: .regular)
-                                .foregroundColor(isActive ? .primary : .secondary)
+                            Image(systemName: icon)
+                                .font(.system(size: 10, weight: .regular))
+                                .foregroundStyle(isActive ? Color.primary : Color.secondary)
+                                .accessibilityHidden(true)
                         }
                     }
                     .frame(width: 14, height: 14)
@@ -242,8 +248,10 @@ struct TabItemView: View {
             }
 
             Button(action: onClose) {
-                SemanticIcon(name: "xmark", pointSize: 8, weight: .bold)
-                    .foregroundColor(.secondary)
+                Image(systemName: "xmark")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
                     .frame(width: 20, height: 20)
                     .background {
                         RoundedRectangle(cornerRadius: 4)
@@ -266,7 +274,7 @@ struct TabItemView: View {
         .contentShape(Rectangle())
         .onHover { isHovered = $0 }
         .contextMenu {
-            Button("Close", role: .destructive, action: onClose)
+            Button("Close", action: onClose)
             if let onRename {
                 Button("Rename", action: onRename)
             }

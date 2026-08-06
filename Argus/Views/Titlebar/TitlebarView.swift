@@ -117,8 +117,10 @@ struct TitlebarView: View {
 
         return HoverStateView { isHovered in
             Button(action: action) {
-                SemanticIcon(name: systemImage, pointSize: 13, weight: .medium)
-                    .foregroundColor(isVisible ? .primary : .secondary)
+                Image(systemName: systemImage)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(isVisible ? Color.primary : Color.secondary)
+                    .accessibilityHidden(true)
                     .frame(width: 24, height: 24)
                     .background {
                         RoundedRectangle(cornerRadius: 4)

@@ -7,7 +7,7 @@
 - Last reviewed: 2026-07-24
 - Stable-contract target: `docs/SPEC.md`
 
-This proposal records the design implemented in the stable application contract. `docs/SPEC.md` is authoritative for shipped behavior.
+This proposal records the turn-completion design implemented in the stable application contract. `docs/SPEC.md` is authoritative for shipped behavior. Live Agent Status and Pi lifecycle reporting are documented separately in `docs/adrs/0003-live-agent-status-through-app-owned-ipc.md`. They do not change this proposal's completion-attention rules.
 
 ## Summary
 

@@ -17,7 +17,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 | **Files and Changes** | Right-sidebar navigation, workspace file tree, Git status snapshot, change actions, filesystem item actions, and file/preview loading | `Argus/Views/GitSidebar/`, `Argus/Models/GitStatus.swift`, `Argus/Services/GitStatus*`, `Argus/Services/GitPreviewService.swift` | Git Status Root never follows a terminal's live working directory. |
 | **User interface** | Single-window surface placement, tab behavior, interaction affordances, chrome, and accessibility contract | `Argus/Views/`, `docs/UI_DESIGN_PRINCIPLES.md` | Inspectable content belongs in Workspace tabs, not independent windows. |
 | **Session persistence** | Session snapshots, restore validation, Project/Workspace reconciliation, and sidebar preferences | `Argus/Models/SessionSnapshot.swift`, `Argus/Services/WorkspaceManager.swift`, `Argus/Views/Sidebar/SidebarState.swift` | Durable state and ephemeral runtime state must remain distinct. |
-| **Agent status and integrations** | In-process Agent Status display, Turn Completion Attention, Socket Server routing, and external integration setup | `Argus/Services/AgentStatusStore.swift`, `Argus/Services/TurnCompletionAttentionStore.swift`, `Argus/Services/AgentSocketServer.swift`, `ArgusCLI/` | The Socket Server implements only `agent.turnCompleted`; the Companion CLI remains a scaffold. |
+| **Agent status and integrations** | In-process Agent Status display, Turn Completion Attention, Socket Server routing, and external integration setup | `Argus/Services/AgentStatusStore.swift`, `Argus/Services/AgentStatusRuntime.swift`, `Argus/Services/TurnCompletionAttentionStore.swift`, `Argus/Services/AgentSocketServer.swift`, `Argus/Services/KiloIntegrationService.swift`, `Argus/Services/PiIntegrationService.swift`, `ArgusCLI/` | The Socket Server implements only the agent turn-completion and live Agent Status methods; the Companion CLI remains a scaffold. |
 
 ## Canonical Terms
 
@@ -88,7 +88,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 | **Unix Domain Socket** | User-local transport endpoint at `~/.argus/argus.sock` used by implemented integrations. | Local integration transport. | Separate process or network service. |
 | **Socket Server** | App-owned component accepting bounded newline-delimited JSON requests over the Unix Domain Socket. | Implemented integration routing. | Separate process, daemon, or Companion CLI. |
 | **Socket Request** | Versioned newline-delimited JSON request accepted by the Socket Server. | Implemented integration wire behavior. | Inferring unsupported Companion CLI methods. |
-| **Request ID** | Proposed protocol correlation identifier unrelated to domain entity IDs. | Future Socket Request correlation. | Project ID, Workspace ID, Panel ID, or Surface ID. |
+| **Request ID** | Socket protocol correlation identifier unrelated to domain entity IDs. | Correlating responses to implemented Socket Requests. | Project ID, Workspace ID, Panel ID, or Surface ID. |
 | **Agent Key** | Unrestricted string identifying an agent in the v1 in-process Agent Status store or a future integration. | Agent Status and proposed agent-agnostic IPC. | Product-specific enum or hard-coded Kilo-only value. |
 | **Agent Integration** | External plugin or client that translates an agent process lifecycle into Socket Requests, Agent Status Entries, PID registration, and Agent Notifications. | Integration-side lifecycle and cleanup behavior. | App-owned Agent Tracker or Kilo-only behavior. |
 | **Agent Status Entry** | Ephemeral agent telemetry scoped to a Workspace or Terminal Surface. | Agent lifecycle display and cleanup. | Git Status Snapshot, Git File Status, or load state. |
@@ -101,7 +101,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 
 ## Relationships
 
-- The Argus Application owns one `WorkspaceManager`, one global `GhosttyApp`, and the process-wide Socket Server used by implemented integrations.
+- The Argus Application owns one `WorkspaceManager`, one global `GhosttyApp`, and the process-wide Socket Server used by implemented integrations. The Socket Server routes Turn Completion Events and live Agent Status updates into MainActor-owned runtime stores.
 - The Argus Application has one selected Work Mode. Code Work Mode and Review Work Mode independently own navigation selection, center tabs, Right Sidebar state, and restoration state while sharing global Settings and Named Project identity.
 - A Named Project references an ordered set of Workspaces by Workspace ID.
 - A Project may be created from Repository Identity for Review Work Mode without cloning. It appears in Code Work Mode only after a local checkout and Workspace are configured.
@@ -146,6 +146,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 - Use spawned `git` commands for git behavior and FSEvents for recursive repository watching.
 - Keep the Companion CLI transport-only; it must not read session files or own application state.
 - Socket and telemetry requests must not activate the app or change focus unless the request explicitly selects a Workspace or focuses a Panel.
+- Live Agent Status Socket Requests use a reporting session ID and positive sequence number. The Agent Status runtime ignores duplicate or older updates and keeps status/order state ephemeral.
 - Resolve environment fallbacks such as `ARGUS_SURFACE_ID` in the client or integration before sending a Socket Request.
 - Treat Agent Status Entries and agent PIDs as ephemeral; never restore them from a Session Snapshot.
 - Do not cache Surface IDs across application restarts.
@@ -178,7 +179,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 | Branch collision | Branch names and Managed Worktree storage slugs have different collision behavior. | V1 rejects duplicate branch names; only storage-path slug collisions receive numeric suffixes. |
 | Files feature authority | Files View and File Tab behavior includes global preferences whose scope must not be inferred from general Files semantics. | `docs/SPEC.md` defines both stable Files behavior and the limited scope of Files defaults. |
 | Panel persistence | Persistence requirements differ by Panel type. | V1 restores Terminal Panels and their Terminal Working Directories; Browser, File, Git Preview, split layout, and tab/focus state are runtime-only. |
-| Socket wire schema | V1 reserves a socket path but implements no wire protocol. | Do not infer a schema from planned CLI command names; define and test it in a proposal before implementation. |
+| Socket wire schema | The Socket Server implements version-one agent turn-completion and live Agent Status methods. | Keep the wire schema agent-neutral, bounded, validated against current Workspace ownership, and separate from Companion CLI command design. |
 | Agent notification | Could mean IPC event, Foundation event, macOS notification, TTS, or deferred in-app history. | Use the qualified notification terms in Canonical Terms. |
 
 ## Context Boundaries

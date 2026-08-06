@@ -240,7 +240,7 @@ struct WorkspaceTabAndChromeUIContractTests {
                 "let title: String",
                 "Text(title)",
                 ".contextMenu {",
-                "Button(\"Close\", role: .destructive, action: onClose)",
+                "Button(\"Close\", action: onClose)",
                 "Button(\"Rename\", action: onRename)",
                 "workspace.renameTerminalPanel(renamePanelId, title: renameText)",
                 "workspaceManager.requestCloseTab(panelId, in: workspace.id)",
@@ -295,6 +295,29 @@ struct WorkspaceTabAndChromeUIContractTests {
                 ".background(ChromeColors.shellBackground)",
                 ".environment(\\.colorScheme, ghosttyApp.chromePalette.isDark ? .dark : .light)"
             ], "black window shell with Ghostty-derived appearance")
+    }
+
+    @Test
+    func terminalSurfaceCreationRequiresItsRenderingHost() throws {
+        let surface = try SourceContract("Argus/Ghostty/TerminalSurface.swift")
+        let creation = try surface.section(
+            after: "func createSurface()",
+            before: "/// Build the environment variables"
+        )
+        for fragment in [
+            "guard let hostedView = _hostedView else { return }",
+            "nsview: Unmanaged.passUnretained(hostedView).toOpaque()"
+        ] {
+            #expect(creation.contains(fragment))
+        }
+        #expect(!creation.contains("if let view = _hostedView"))
+        surface.containsAll(
+            [
+                "self?.createSurface()",
+                "guard let hostedView = _hostedView else { return }"
+            ],
+            "restored Terminal Surfaces must wait for their retained TerminalNSView"
+        )
     }
 
     @Test

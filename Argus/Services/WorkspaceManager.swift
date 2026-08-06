@@ -54,6 +54,7 @@ final class WorkspaceManager: ObservableObject {
 
     let settings: AppSettings
     var turnCompletionRuntime: TurnCompletionRuntime?
+    var agentStatusRuntime: AgentStatusRuntime?
 
     // MARK: - Computed Properties
 
@@ -207,7 +208,8 @@ final class WorkspaceManager: ObservableObject {
         try data.write(to: targetURL, options: [.atomic])
     }
 
-    /// Best-effort save used by app lifecycle hooks.
+    /// Best-effort synchronous save used by app lifecycle hooks and explicit
+    /// Workspace metadata checkpoints.
     func saveSession() {
         do {
             try saveSession(to: sessionSnapshotURL)
@@ -262,6 +264,7 @@ final class WorkspaceManager: ObservableObject {
         } else if surfaceId == tabId, let replacement = layout.removingLeaf(surfaceId)?.leaves.first {
             turnCompletionRuntime?.migrateAttention(workspaceId: workspace.id, from: tabId, to: replacement)
         }
+        agentStatusRuntime?.removeStatus(workspaceId: workspace.id, surfaceId: surfaceId)
         workspace.closePane(surfaceId)
 
         // An empty workspace is equivalent to a closed workspace.
@@ -289,6 +292,9 @@ final class WorkspaceManager: ObservableObject {
         workspaces.append(workspace)
         catchAllProject.addWorkspace(workspace.id)
         selectedWorkspaceId = workspace.id
+        // Checkpoint Workspace identity and its Workspace Root immediately so
+        // an application crash cannot discard a newly created Workspace.
+        saveSession()
         return workspace
     }
 
@@ -303,6 +309,10 @@ final class WorkspaceManager: ObservableObject {
 
     func setTurnCompletionRuntime(_ runtime: TurnCompletionRuntime) {
         turnCompletionRuntime = runtime
+    }
+
+    func setAgentStatusRuntime(_ runtime: AgentStatusRuntime) {
+        agentStatusRuntime = runtime
     }
 
     func shouldConfirmWorktreeDeletionBeforeClosing(_ workspaceId: UUID) -> Bool {
@@ -320,6 +330,7 @@ final class WorkspaceManager: ObservableObject {
         let workspace = workspaces[index]
 
         turnCompletionRuntime?.removeAttention(forWorkspace: workspaceId)
+        agentStatusRuntime?.removeStatuses(forWorkspace: workspaceId)
 
         // Close all panels in the workspace before removal.
         for panelId in workspace.panelOrder {

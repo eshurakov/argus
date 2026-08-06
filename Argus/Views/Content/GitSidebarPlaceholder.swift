@@ -10,8 +10,10 @@ struct GitSidebarPlaceholder: View {
     var body: some View {
         VStack(spacing: 6) {
             Spacer()
-            SemanticIcon(name: "arrow.triangle.branch", pointSize: 24, weight: .regular)
-                .foregroundColor(.secondary.opacity(0.5))
+            Image(systemName: "arrow.triangle.branch")
+                .font(.system(size: 24, weight: .regular))
+                .foregroundStyle(.secondary.opacity(0.5))
+                .accessibilityHidden(true)
             Text("Changes")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.secondary)

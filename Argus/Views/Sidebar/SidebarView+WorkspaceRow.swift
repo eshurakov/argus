@@ -31,18 +31,21 @@ struct SidebarWorkspaceRow: View {
                     .frame(width: 16)
 
                 if hasAttention {
-                    SemanticIcon(name: "bell.fill", pointSize: 11, weight: .bold)
-                        .foregroundColor(.orange)
+                    Image(systemName: "bell.fill")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.orange)
                         .frame(width: 14)
                         .accessibilityHidden(true)
                 } else if let agentStatus {
-                    SemanticIcon(name: agentStatus.state.symbolName, pointSize: 11, weight: .semibold)
+                    Image(systemName: agentStatus.state.symbolName)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(agentStatus.state.color)
                         .frame(width: 14)
-                        .foregroundColor(agentStatus.state.color)
                         .accessibilityHidden(true)
                 } else {
-                    SemanticIcon(name: workspace.workspaceType.icon, pointSize: 11, weight: .semibold)
-                        .foregroundColor(isSelected ? .white : .secondary)
+                    Image(systemName: workspace.workspaceType.icon)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(isSelected ? Color.white : Color.secondary)
                         .frame(width: 14)
                         .accessibilityHidden(true)
                 }

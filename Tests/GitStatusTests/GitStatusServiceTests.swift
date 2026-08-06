@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 import Testing
 
@@ -15,6 +16,8 @@ struct GitStatusServiceTests {
         try await unstagesStagedFileAndRefreshesStatus()
         try await discardsUnstagedTrackedChangeAndRefreshesStatus()
         try await deletesUntrackedFileAndRefreshesStatus()
+        try await addsUntrackedFileToGitignoreAndRefreshesStatus()
+        try await addsUntrackedDirectoryToGitignoreAndRefreshesStatus()
     }
 
     private func reportsCleanRepositoryBranchSummary() async throws {
@@ -163,6 +166,67 @@ struct GitStatusServiceTests {
         assertEqual(
             FileManager.default.fileExists(atPath: fileURL.path), false,
             "delete removes untracked file from disk")
+    }
+
+    private func addsUntrackedFileToGitignoreAndRefreshesStatus() async throws {
+        let repo = try TemporaryDirectory(prefix: "argus-git-status-ignore-file")
+        defer { repo.remove() }
+        try run("/usr/bin/git", ["init", "-b", "main"], in: repo.url)
+        try "existing\n".write(
+            to: repo.url.appendingPathComponent(".gitignore"),
+            atomically: true,
+            encoding: .utf8
+        )
+        try "temporary\n".write(
+            to: repo.url.appendingPathComponent("scratch.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let state = await GitStatusService().performFileOperation(
+            .addToGitignore, rootPath: repo.url.path, path: "scratch.txt")
+
+        guard case .loaded(let summary) = state else {
+            fail("expected refreshed status after adding file to .gitignore, got \(state)")
+        }
+        assertEqual(
+            try String(contentsOf: repo.url.appendingPathComponent(".gitignore"), encoding: .utf8),
+            "existing\nscratch.txt\n",
+            "file path is appended to .gitignore without replacing existing entries"
+        )
+        assertEqual(
+            summary.untrackedFiles.map(\.path), [".gitignore"],
+            "ignored untracked file is removed from the Changes View"
+        )
+    }
+
+    private func addsUntrackedDirectoryToGitignoreAndRefreshesStatus() async throws {
+        let repo = try TemporaryDirectory(prefix: "argus-git-status-ignore-directory")
+        defer { repo.remove() }
+        try run("/usr/bin/git", ["init", "-b", "main"], in: repo.url)
+        let directoryURL = repo.url.appendingPathComponent("New Folder", isDirectory: true)
+        try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        try "temporary\n".write(
+            to: directoryURL.appendingPathComponent("child.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        let state = await GitStatusService().performFileOperation(
+            .addToGitignore, rootPath: repo.url.path, path: "New Folder")
+
+        guard case .loaded(let summary) = state else {
+            fail("expected refreshed status after adding directory to .gitignore, got \(state)")
+        }
+        assertEqual(
+            try String(contentsOf: repo.url.appendingPathComponent(".gitignore"), encoding: .utf8),
+            "New Folder/\n",
+            "directory paths receive a trailing slash in .gitignore"
+        )
+        assertEqual(
+            summary.untrackedFiles.map(\.path), [".gitignore"],
+            "ignored directory contents are removed from the Changes View"
+        )
     }
 }
 

@@ -37,6 +37,7 @@ extension WorkspaceManager {
         workspaces.append(workspace)
         project.addWorkspace(workspace.id)
         selectedWorkspaceId = workspace.id
+        saveSession()
         return project
     }
 
@@ -46,6 +47,7 @@ extension WorkspaceManager {
         else { return }
         for workspaceId in project.workspaceIds {
             guard let workspace = workspaces.first(where: { $0.id == workspaceId }) else { continue }
+            agentStatusRuntime?.removeStatuses(forWorkspace: workspaceId)
             if let worktreePath = workspace.worktreePath {
                 try? await worktreeService.removeWorktree(
                     repositoryPath: project.repositoryPath,
@@ -100,6 +102,7 @@ extension WorkspaceManager {
         workspaces.append(workspace)
         project.addWorkspace(workspace.id)
         selectedWorkspaceId = workspace.id
+        saveSession()
         return workspace
     }
 
@@ -152,6 +155,9 @@ extension WorkspaceManager {
             workspaces.append(workspace)
             project.addWorkspace(workspace.id)
             selectedWorkspaceId = workspace.id
+            // Persist an optional custom name and the new Workspace Root
+            // before a later application crash can discard them.
+            saveSession()
             return workspace
         } catch let error as WorktreeError {
             lastWorkspaceCreationError = error

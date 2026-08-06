@@ -16,6 +16,7 @@ extension Notification.Name {
     static let showNewWorkspaceSheet = Notification.Name("ArgusShowNewWorkspaceSheet")
     static let showRenameProjectSheet = Notification.Name("ArgusShowRenameProjectSheet")
     static let showRenameWorkspaceSheet = Notification.Name("ArgusShowRenameWorkspaceSheet")
+    static let showChangeWorkspaceRootSheet = Notification.Name("ArgusShowChangeWorkspaceRootSheet")
     static let showCloseWorkspaceConfirmation = Notification.Name("ArgusShowCloseWorkspaceConfirmation")
 }
 

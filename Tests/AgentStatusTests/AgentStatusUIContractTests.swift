@@ -8,7 +8,8 @@ struct AgentStatusUIContractTests {
     func oneEphemeralStoreIsInjectedFromTheApp() throws {
         try SourceContract("Argus/App/ArgusApp.swift").containsAll(
             [
-                "@StateObject private var agentStatusStore = AgentStatusStore()",
+                "@StateObject private var agentStatusStore: AgentStatusStore",
+                "_agentStatusStore = StateObject(wrappedValue: statusStore)",
                 ".environmentObject(agentStatusStore)"
             ], "process-wide Agent Status Store ownership"
         )
@@ -16,6 +17,35 @@ struct AgentStatusUIContractTests {
         try SourceContract("Argus/Models/SessionSnapshot.swift").excludes(
             "AgentStatus",
             "Session Snapshot must exclude Agent Status Entries"
+        )
+    }
+
+    @Test
+    func piIntegrationIsOwnedBySettingsAndInstalledAsAnArgusResource() throws {
+        try SourceContract("Argus/App/ArgusApp.swift").containsAll(
+            [
+                "@StateObject private var piIntegration: PiIntegrationModel",
+                "let piIntegration = PiIntegrationModel()",
+                "_piIntegration = StateObject(wrappedValue: piIntegration)",
+                "piIntegration: piIntegration"
+            ], "Pi integration app and Settings wiring"
+        )
+        try SourceContract("Argus/Settings/SettingsView.swift").containsAll(
+            [
+                "Section(\"Pi Integration\")",
+                "piIntegration.enable()",
+                "piIntegration.disable()"
+            ], "Pi integration Settings controls"
+        )
+        try SourceContract("Argus/Services/PiIntegrationService.swift").containsAll(
+            ["PI_CODING_AGENT_DIR", "argus-agent-status.js"],
+            "Pi integration path and ownership contract"
+        )
+        try SourceContract("project.yml").containsAll(
+            [
+                "Resources/ArgusPiAgentStatusPlugin.js",
+                "buildPhase: resources"
+            ], "bundled Pi extension resource"
         )
     }
 
@@ -48,9 +78,9 @@ struct AgentStatusUIContractTests {
         row.containsAll(
             [
                 "if let agentStatus",
-                "SemanticIcon(name: agentStatus.state.symbolName, pointSize: 11, weight: .semibold)",
-                ".foregroundColor(agentStatus.state.color)",
-                "SemanticIcon(name: workspace.workspaceType.icon, pointSize: 11, weight: .semibold)",
+                "Image(systemName: agentStatus.state.symbolName)",
+                ".foregroundStyle(agentStatus.state.color)",
+                "Image(systemName: workspace.workspaceType.icon)",
                 ".accessibilityValue(workspaceAccessibilityValue)",
                 #"values.append("Agent status: \(agentStatus.state.label)")"#,
                 "includesNonterminalPanels:"

@@ -141,12 +141,13 @@ enum GitStatusFileOperation: Equatable, Sendable {
     case unstage
     case discard
     case delete
+    case addToGitignore
 
     var requiresConfirmation: Bool {
         switch self {
         case .discard, .delete:
             return true
-        case .stage, .unstage:
+        case .stage, .unstage, .addToGitignore:
             return false
         }
     }
@@ -157,6 +158,8 @@ enum GitStatusFileOperation: Equatable, Sendable {
             return "Discard Changes?"
         case .delete:
             return "Delete Untracked Files?"
+        case .addToGitignore:
+            return "Add to .gitignore"
         case .stage:
             return "Stage Files?"
         case .unstage:
@@ -170,6 +173,8 @@ enum GitStatusFileOperation: Equatable, Sendable {
             return "Discard"
         case .delete:
             return "Delete"
+        case .addToGitignore:
+            return "Add to .gitignore"
         case .stage:
             return "Stage"
         case .unstage:
@@ -184,6 +189,8 @@ enum GitStatusFileOperation: Equatable, Sendable {
             return "This will permanently discard unstaged changes in \(itemText)."
         case .delete:
             return "This will permanently delete \(itemText) from disk."
+        case .addToGitignore:
+            return "Add \(itemText) to .gitignore?"
         case .stage:
             return "Stage \(itemText)?"
         case .unstage:
@@ -199,6 +206,8 @@ enum GitStatusFileOperation: Equatable, Sendable {
             return "This will permanently discard unstaged changes in:\n\n\(pathList)"
         case .delete:
             return "This will permanently delete from disk:\n\n\(pathList)"
+        case .addToGitignore:
+            return "Add to .gitignore:\n\n\(pathList)"
         case .stage:
             return "Stage:\n\n\(pathList)"
         case .unstage:

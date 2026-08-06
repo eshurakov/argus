@@ -34,7 +34,6 @@ struct OrphanedWorktreesSheet: View {
     @State private var operations: [UUID: OrphanOperation] = [:]
     @State private var failures: [UUID: OrphanOperationFailure] = [:]
     @State private var pendingDeletion: OrphanedWorktreeInfo?
-    @State private var showDeleteConfirmation = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -67,6 +66,11 @@ struct OrphanedWorktreesSheet: View {
                 }
             }
             .frame(maxHeight: 300)
+            .disabled(pendingDeletion != nil)
+
+            if let pendingDeletion {
+                deletionConfirmation(for: pendingDeletion)
+            }
 
             // Dismiss button
             HStack {
@@ -75,24 +79,11 @@ struct OrphanedWorktreesSheet: View {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
-                .disabled(!operations.isEmpty)
+                .disabled(!operations.isEmpty || pendingDeletion != nil)
             }
         }
         .padding(20)
         .frame(width: 500)
-        .alert(
-            "Delete Orphaned Worktree?",
-            isPresented: $showDeleteConfirmation,
-            presenting: pendingDeletion
-        ) { orphan in
-            Button("Cancel", role: .cancel) {}
-            Button("Delete Worktree", role: .destructive) {
-                deleteOrphan(orphan)
-            }
-            .disabled(operations[orphan.id] != nil)
-        } message: { orphan in
-            Text(deleteConfirmationMessage(for: orphan))
-        }
     }
 
     // MARK: - Actions
@@ -129,9 +120,47 @@ struct OrphanedWorktreesSheet: View {
     }
 
     private func requestDelete(_ orphan: OrphanedWorktreeInfo) {
-        guard operations[orphan.id] == nil else { return }
+        guard operations[orphan.id] == nil, pendingDeletion == nil else { return }
         pendingDeletion = orphan
-        showDeleteConfirmation = true
+    }
+
+    private func confirmPendingDeletion(_ orphan: OrphanedWorktreeInfo) {
+        guard pendingDeletion?.id == orphan.id, operations[orphan.id] == nil else { return }
+        pendingDeletion = nil
+        deleteOrphan(orphan)
+    }
+
+    @ViewBuilder
+    private func deletionConfirmation(for orphan: OrphanedWorktreeInfo) -> some View {
+        Divider()
+
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Delete Orphaned Worktree?")
+                .font(.headline)
+
+            Text(deleteConfirmationMessage(for: orphan))
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack {
+                Spacer()
+
+                Button("Cancel") {
+                    pendingDeletion = nil
+                }
+                .keyboardShortcut(.cancelAction)
+
+                // Avoid a destructive role here. On macOS 27 both SwiftUI's
+                // destructive alert and NSAlert can ask CoreUI to rasterize a
+                // generated vector glyph at zero size and terminate the app.
+                Button("Delete Worktree") {
+                    confirmPendingDeletion(orphan)
+                }
+                .foregroundStyle(.red)
+            }
+        }
+        .accessibilityElement(children: .contain)
     }
 
     private func deleteOrphan(_ orphan: OrphanedWorktreeInfo) {
@@ -226,9 +255,10 @@ private struct OrphanRow: View {
                             onAdopt()
                         }
 
-                        Button("Delete", role: .destructive) {
+                        Button("Delete") {
                             onDelete()
                         }
+                        .foregroundStyle(.red)
                     }
                     .opacity(operation == nil ? 1 : 0)
                     .disabled(operation != nil)
@@ -252,8 +282,9 @@ private struct OrphanRow: View {
 
             if let failure {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    SemanticIcon(name: "exclamationmark.triangle.fill", pointSize: 12, weight: .regular)
-                        .foregroundColor(.red)
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(.red)
                         .accessibilityHidden(true)
 
                     Text(failureMessage(failure))

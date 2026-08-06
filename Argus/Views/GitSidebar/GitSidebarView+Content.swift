@@ -5,8 +5,10 @@ extension GitSidebarView {
         let canRefresh = !viewModel.isRefreshing && selectedSnapshotOwner != nil
 
         return HStack(spacing: 8) {
-            SemanticIcon(name: "arrow.triangle.branch", pointSize: 15, weight: .semibold)
-                .foregroundColor(.secondary)
+            Image(systemName: "arrow.triangle.branch")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
                 .frame(width: 18)
             Text("Changes")
                 .font(.system(size: 14, weight: .semibold))
@@ -23,7 +25,10 @@ extension GitSidebarView {
                     guard let owner = selectedSnapshotOwner else { return }
                     Task { await refresh(owner: owner) }
                 } label: {
-                    SemanticIcon(name: "arrow.clockwise", pointSize: 12, weight: .regular)
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(.primary)
+                        .accessibilityHidden(true)
                         .frame(width: 20, height: 20)
                         .background {
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
@@ -86,8 +91,10 @@ extension GitSidebarView {
             operationFailureContent(message)
         case .error(_, let message):
             VStack(spacing: 8) {
-                SemanticIcon(name: "exclamationmark.triangle", pointSize: 12, weight: .regular)
-                    .foregroundColor(.orange)
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(.orange)
+                    .accessibilityHidden(true)
                 Text("Git status failed")
                     .font(.system(size: 13, weight: .medium))
                 Text(message)
@@ -107,7 +114,10 @@ extension GitSidebarView {
                 Label {
                     Text("Working tree clean")
                 } icon: {
-                    SemanticIcon(name: "checkmark.circle.fill", pointSize: 12, weight: .medium)
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.green)
+                        .accessibilityHidden(true)
                 }
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.green)
@@ -173,7 +183,10 @@ extension GitSidebarView {
         let actionName = allCollapsed ? "Expand all file sections" : "Collapse all file sections"
 
         return HStack(spacing: 6) {
-            SemanticIcon(name: "arrow.triangle.branch", pointSize: 12, weight: .regular)
+            Image(systemName: "arrow.triangle.branch")
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(.primary)
+                .accessibilityHidden(true)
             Text(summary.branchName ?? "Detached HEAD")
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -222,13 +235,14 @@ extension GitSidebarView {
             Button {
                 setAllSectionsExpanded(allCollapsed, summary: summary)
             } label: {
-                SemanticIcon(
-                    name: allCollapsed
+                Image(
+                    systemName: allCollapsed
                         ? "arrow.up.and.line.horizontal.and.arrow.down"
-                        : "arrow.down.and.line.horizontal.and.arrow.up",
-                    pointSize: 12,
-                    weight: .regular
+                        : "arrow.down.and.line.horizontal.and.arrow.up"
                 )
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(.primary)
+                .accessibilityHidden(true)
                 .frame(width: 20, height: 20)
                 .background {
                     RoundedRectangle(cornerRadius: 4, style: .continuous)

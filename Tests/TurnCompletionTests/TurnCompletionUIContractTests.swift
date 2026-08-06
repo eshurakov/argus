@@ -22,8 +22,8 @@ struct TurnCompletionUIContractTests {
         #expect(attentionBranch.lowerBound < statusBranch.lowerBound)
         #expect(statusBranch.lowerBound < defaultBranch.lowerBound)
 
-        #expect(iconSelection.contains(#"SemanticIcon(name: "bell.fill", pointSize: 10, weight: .regular)"#))
-        #expect(iconSelection.contains(".foregroundColor(.orange)"))
+        #expect(iconSelection.contains("Image(systemName: \"bell.fill\")"))
+        #expect(iconSelection.contains(".foregroundStyle(.orange)"))
         #expect(iconSelection.contains(".accessibilityHidden(true)"))
         tabBar.containsAll(
             [
@@ -57,8 +57,8 @@ struct TurnCompletionUIContractTests {
         let defaultBranch = try #require(iconSelection.range(of: "workspace.workspaceType.icon"))
         #expect(statusBranch.lowerBound < defaultBranch.lowerBound)
 
-        #expect(iconSelection.contains(#"SemanticIcon(name: "bell.fill", pointSize: 11, weight: .bold)"#))
-        #expect(iconSelection.contains(".foregroundColor(.orange)"))
+        #expect(iconSelection.contains("Image(systemName: \"bell.fill\")"))
+        #expect(iconSelection.contains(".foregroundStyle(.orange)"))
         #expect(iconSelection.contains(".frame(width: 14)"))
         #expect(iconSelection.contains(".accessibilityHidden(true)"))
         row.contains(

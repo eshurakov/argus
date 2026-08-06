@@ -15,15 +15,13 @@ extension WorkspaceFilesView {
         Button("Copy Relative Path") {
             copyWorkspaceItemRelativePath(directory)
         }
-        Button("Delete Folder", role: .destructive) {
+        Button("Delete Folder") {
             guard let initiatingRequest = request else { return }
-            Task {
-                await deleteWorkspaceItem(
-                    directory,
-                    rootPath: rootPath,
-                    initiatingRequest: initiatingRequest
-                )
-            }
+            requestWorkspaceItemDeletion(
+                directory,
+                rootPath: rootPath,
+                initiatingRequest: initiatingRequest
+            )
         }
         Button("Rename Folder") {
             guard let initiatingRequest = request else { return }
@@ -51,15 +49,13 @@ extension WorkspaceFilesView {
         Button("Copy Relative Path") {
             copyWorkspaceItemRelativePath(file)
         }
-        Button("Delete File", role: .destructive) {
+        Button("Delete File") {
             guard let initiatingRequest = request else { return }
-            Task {
-                await deleteWorkspaceItem(
-                    file,
-                    rootPath: rootPath,
-                    initiatingRequest: initiatingRequest
-                )
-            }
+            requestWorkspaceItemDeletion(
+                file,
+                rootPath: rootPath,
+                initiatingRequest: initiatingRequest
+            )
         }
         Button("Rename File") {
             guard let initiatingRequest = request else { return }
@@ -75,8 +71,10 @@ extension WorkspaceFilesView {
 
     func fileTreeError(title: String, path: String, message: String?) -> some View {
         VStack(spacing: 8) {
-            SemanticIcon(name: "folder.badge.questionmark", pointSize: 24, weight: .regular)
-                .foregroundColor(.secondary.opacity(0.5))
+            Image(systemName: "folder.badge.questionmark")
+                .font(.system(size: 24, weight: .regular))
+                .foregroundStyle(.secondary.opacity(0.5))
+                .accessibilityHidden(true)
             Text(title)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.secondary)
@@ -115,8 +113,10 @@ extension WorkspaceFilesView {
         let isLoading = viewModel.loadingDirectoryPaths.contains(directory.path)
 
         return HStack(spacing: 7) {
-            SemanticIcon(name: "exclamationmark.triangle", pointSize: 12, weight: .regular)
-                .foregroundColor(.orange)
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(.orange)
+                .accessibilityHidden(true)
             Text(error.message)
                 .lineLimit(1)
                 .truncationMode(.tail)
@@ -152,8 +152,10 @@ extension WorkspaceFilesView {
 
     func emptyMessage(_ text: String, systemImage: String) -> some View {
         VStack(spacing: 8) {
-            SemanticIcon(name: systemImage, pointSize: 24, weight: .regular)
-                .foregroundColor(.secondary.opacity(0.5))
+            Image(systemName: systemImage)
+                .font(.system(size: 24, weight: .regular))
+                .foregroundStyle(.secondary.opacity(0.5))
+                .accessibilityHidden(true)
             Text(text)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.secondary)

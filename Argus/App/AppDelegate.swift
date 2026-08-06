@@ -12,7 +12,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var workspaceManager: WorkspaceManager?
     private var turnCompletionRuntime: TurnCompletionRuntime?
+    private var agentStatusRuntime: AgentStatusRuntime?
     private var agentSocketServer: AgentSocketServer?
+    private var settings: AppSettings?
+    private var kiloIntegration: KiloIntegrationModel?
+    private var piIntegration: PiIntegrationModel?
+    private var settingsWindowController: SettingsWindowController?
 
     // MARK: - NSApplicationDelegate
 
@@ -21,10 +26,45 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var windowTitleObserver: NSObjectProtocol?
     private var windowKeyObservers: [NSObjectProtocol] = []
 
-    func configureTurnCompletion(workspaceManager: WorkspaceManager, runtime: TurnCompletionRuntime) {
+    func configureTurnCompletion(
+        workspaceManager: WorkspaceManager,
+        runtime: TurnCompletionRuntime,
+        agentStatusRuntime: AgentStatusRuntime
+    ) {
         self.workspaceManager = workspaceManager
         turnCompletionRuntime = runtime
+        self.agentStatusRuntime = agentStatusRuntime
         startAgentSocketIfReady()
+    }
+
+    func configureSettings(
+        settings: AppSettings,
+        kiloIntegration: KiloIntegrationModel,
+        piIntegration: PiIntegrationModel
+    ) {
+        self.settings = settings
+        self.kiloIntegration = kiloIntegration
+        self.piIntegration = piIntegration
+    }
+
+    func showSettings() {
+        if let settingsWindowController {
+            settingsWindowController.showWindow(nil)
+            settingsWindowController.window?.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        guard let settings, let kiloIntegration, let piIntegration else { return }
+
+        let controller = SettingsWindowController(
+            settings: settings,
+            kiloIntegration: kiloIntegration,
+            piIntegration: piIntegration
+        )
+        settingsWindowController = controller
+        controller.showWindow(nil)
+        controller.window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     func application(_ application: NSApplication, shouldSaveApplicationState coder: NSCoder) -> Bool {
@@ -91,9 +131,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         ]
         startAgentSocketIfReady()
 
-        // macOS 27 can fail or omit SF Symbol rendering when libghostty is
-        // initialized during AppKit's pre-visible window layout. Start it on
-        // the next main-loop turn, after the initial view hierarchy is mounted.
+        // Start Ghostty after the initial view hierarchy is mounted. GhosttyApp
+        // restores the C numeric locale synchronously before startup returns.
         DispatchQueue.main.async {
             GhosttyApp.shared.start()
         }
@@ -160,11 +199,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func startAgentSocketIfReady() {
         guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
-        guard agentSocketServer == nil, let turnCompletionRuntime else { return }
+        guard agentSocketServer == nil,
+            let turnCompletionRuntime,
+            let agentStatusRuntime
+        else { return }
         let path = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".argus/argus.sock").path
-        let server = AgentSocketServer(path: path) { event in
-            turnCompletionRuntime.receive(event)
-        }
+        let server = AgentSocketServer(
+            path: path,
+            deliver: { event in
+                turnCompletionRuntime.receive(event)
+            },
+            deliverStatus: { event in
+                agentStatusRuntime.receive(event)
+            }
+        )
         agentSocketServer = server
         Task {
             do {

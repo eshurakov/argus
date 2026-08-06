@@ -12,6 +12,7 @@ struct WorkspaceFilesView: View {
     @State private var expandedDirectoryIds: Set<String> = []
     @State private var selectedItemId: String?
     @State private var selectedItemPath: String?
+    @State private var pendingDeletion: WorkspaceItemDeletionRequest?
 
     var body: some View {
         content
@@ -21,6 +22,7 @@ struct WorkspaceFilesView: View {
                 expandedDirectoryIds = []
                 selectedItemId = nil
                 selectedItemPath = nil
+                pendingDeletion = nil
                 guard let request else {
                     autoRefreshController.stop()
                     viewModel.reset()
@@ -33,6 +35,15 @@ struct WorkspaceFilesView: View {
             }
             .onDisappear {
                 autoRefreshController.stop()
+            }
+            .overlay {
+                if let pendingDeletion {
+                    WorkspaceItemDeletionConfirmation(
+                        request: pendingDeletion,
+                        onCancel: { self.pendingDeletion = nil },
+                        onConfirm: { confirmWorkspaceItemDeletion(pendingDeletion) }
+                    )
+                }
             }
     }
 }
@@ -130,16 +141,20 @@ extension WorkspaceFilesView {
         isSelected: Bool
     ) -> some View {
         HStack(spacing: 7) {
-            SemanticIcon(name: isExpanded ? "chevron.down" : "chevron.right", pointSize: 9, weight: .semibold)
-                .foregroundColor(isSelected ? .accentColor : .secondary)
+            Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                .accessibilityHidden(true)
                 .frame(width: 12)
             ZStack {
                 if isLoading {
                     ProgressView()
                         .controlSize(.small)
                 } else {
-                    SemanticIcon(name: isExpanded ? "folder.fill" : "folder", pointSize: 11, weight: .semibold)
-                        .foregroundColor(isSelected ? .accentColor : .secondary)
+                    Image(systemName: isExpanded ? "folder.fill" : "folder")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                        .accessibilityHidden(true)
                 }
             }
             .frame(width: 14)
@@ -199,8 +214,10 @@ extension WorkspaceFilesView {
         isSelected: Bool
     ) -> some View {
         HStack(spacing: 7) {
-            SemanticIcon(name: WorkspaceFileIcon.systemName(for: file.name), pointSize: 11, weight: .semibold)
-                .foregroundColor(isSelected ? .accentColor : .secondary)
+            Image(systemName: WorkspaceFileIcon.systemName(for: file.name))
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                .accessibilityHidden(true)
                 .frame(width: 14)
             Text(file.name)
                 .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 11)))
@@ -277,14 +294,39 @@ extension WorkspaceFilesView {
         viewModel.copyRelativePath(item.path)
     }
 
+    func requestWorkspaceItemDeletion(
+        _ item: WorkspaceFileTreeNode,
+        rootPath: String,
+        initiatingRequest: WorkspaceFileTreeRequest
+    ) {
+        guard initiatingRequest.rootPath == rootPath else { return }
+        selectWorkspaceItem(item)
+        pendingDeletion = WorkspaceItemDeletionRequest(
+            item: item,
+            rootPath: rootPath,
+            initiatingRequest: initiatingRequest
+        )
+    }
+
+    private func confirmWorkspaceItemDeletion(_ deletion: WorkspaceItemDeletionRequest) {
+        guard pendingDeletion == deletion else { return }
+        pendingDeletion = nil
+        Task {
+            await deleteWorkspaceItem(
+                deletion.item,
+                rootPath: deletion.rootPath,
+                initiatingRequest: deletion.initiatingRequest
+            )
+        }
+    }
+
     func deleteWorkspaceItem(
         _ item: WorkspaceFileTreeNode,
         rootPath: String,
         initiatingRequest: WorkspaceFileTreeRequest
     ) async {
         guard initiatingRequest.rootPath == rootPath else { return }
-        selectWorkspaceItem(item)
-        let deleted = await viewModel.deleteFileWithConfirmation(
+        let deleted = await viewModel.deleteFile(
             request: initiatingRequest,
             path: item.path
         )
