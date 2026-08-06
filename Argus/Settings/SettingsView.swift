@@ -21,6 +21,17 @@ enum SettingsSection: CaseIterable, Identifiable {
         case .agent: "Agent"
         }
     }
+
+    var systemImageName: String {
+        switch self {
+        case .general: "gear"
+        case .appearance: "textformat"
+        case .terminal: "terminal"
+        case .filesAndChanges: "doc.text"
+        case .browser: "globe"
+        case .agent: "bell"
+        }
+    }
 }
 
 @MainActor

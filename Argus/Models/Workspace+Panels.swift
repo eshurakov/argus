@@ -59,6 +59,21 @@ extension Workspace {
     }
 
     @discardableResult
+    func openReleaseNotesPanel() -> ReleaseNotesPanel {
+        if let existing = panels.values.compactMap({ $0 as? ReleaseNotesPanel }).first {
+            selectPanel(existing.id)
+            return existing
+        }
+
+        let panel = ReleaseNotesPanel()
+        panels[panel.id] = panel
+        insertAfterActiveTab(panel.id)
+        tabLayouts[panel.id] = .leaf(panel.id)
+        selectPanel(panel.id)
+        return panel
+    }
+
+    @discardableResult
     func openGitPreviewPanel(rootPath: String, preview: GitPreview) -> GitPreviewPanel {
         let standardizedRootPath = URL(fileURLWithPath: rootPath).standardizedFileURL.path
         if let existing = panels.values.compactMap({ $0 as? GitPreviewPanel }).first(where: {

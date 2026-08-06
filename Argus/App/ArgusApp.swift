@@ -116,6 +116,12 @@ struct ArgusApp: App {
                 .keyboardShortcut("f", modifiers: [.command])
             }
 
+            CommandGroup(after: .help) {
+                Button("Release Notes") {
+                    workspaceManager.openReleaseNotes()
+                }
+            }
+
             // Close commands — placed after new-item group
             CommandGroup(after: .newItem) {
                 Button("Close Tab") {

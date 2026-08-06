@@ -49,7 +49,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 | **Project Repository Root** | Canonical top-level checkout path stored in `Project.repositoryPath`. | Named Project validation and Main-checkout Workspace behavior. | `.git` directory, git common directory, or repository display name. |
 | **Git Status Context** | Workspace classification and paths used to resolve the Git Status Root. | Inputs to root resolution before status or mutation work. | "git context" for loaded branch/status data. |
 | **Git Status Root** | Resolved checkout directory used for Git status, Git mutations, previews, and FSEvents. | Any repository-status operation. | Terminal Working Directory or an unqualified `rootPath`. |
-| **Panel** | UUID-identified content object with close and focus lifecycle that may back a top-level tab or a pane. | Model and lifecycle code shared by terminal, browser, file, and Git preview content. | "tab" or "pane" when layout role matters. |
+| **Panel** | UUID-identified content object with close and focus lifecycle that may back a top-level tab or a pane. | Model and lifecycle code shared by terminal, browser, file, Git preview, and release-notes content. | "tab" or "pane" when layout role matters. |
 | **Panel ID** | UUID identifying any Panel instance. | Generic Panel lookup and Workspace ownership. | Surface ID for nonterminal Panels. |
 | **Top-level Tab** | Ordered tab-bar unit represented by a root Panel ID and its tab layout. | Selection, reordering, closing, and tab-bar labels. | "Panel" when discussing tab order; `panelOrder` contains only top-level roots. |
 | **Pane** | Leaf position in one top-level tab's split layout, backed by a Panel. | Split, focused input, and pane-local close behavior. | A separate model type; every pane is backed by a Panel. |
@@ -76,6 +76,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 | **Git Mutation** | Stage, unstage, discard, or delete operation that changes index or working-tree state. | Service APIs, confirmation, and post-operation refresh. | Diff, blame, or copy path. |
 | **Section Operation** | Git Mutation applied to an entire Change Section, including entries omitted by display caps. | Stage all, unstage all, discard all, and delete all. | "bulk operation" without section scope. |
 | **File Tab** | Top-level Tab backed by a File Panel and identified within a Workspace by Workspace Root plus relative path. | Opening or reusing Workspace file content. | "file preview", independent file window. |
+| **Release Notes Tab** | Runtime-only Top-level Tab displaying Argus's bundled release notes in the Selected Workspace. | Reading the Argus application changelog opened from the Help menu. | "What's New window", independent release-notes window, or a Workspace File Tab. |
 | **Git Preview Tab** | Top-level Tab backed by a Git Preview Panel and identified within a Workspace by Git Status Root, Preview Kind, and path. | Diff or blame presentation and refresh-in-place. | "preview panel" or floating `NSPanel`. |
 | **Pull Request Review Tab** | Review Work Mode Top-level Tab identified by provider-qualified Pull Request identity and owning that Pull Request's selected file, review progress, conversations, drafts, and submission state. | Reading and operating on one Pull Request in Review Work Mode. | One tab per changed file or a local Git Preview Tab. |
 | **Review Revision** | Immutable base and head commit pair loaded by one Pull Request Review Tab and used for its changed-file set, diffs, line mappings, and draft positions. | Refresh, stale-head detection, draft reconciliation, and review submission. | Whatever Pull Request head happens to be latest during an operation. |
@@ -118,6 +119,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 - A Standalone Workspace resolves its Git Status Root from its Workspace Root.
 - A Git File Change belongs to one Change Section; one path may have separate Staged and Unstaged entries.
 - A File Tab and Git Preview Tab belong to the Workspace that initiated them and use that Workspace's normal tab lifecycle.
+- The Help menu opens or reuses one runtime-only Release Notes Tab in the Selected Workspace; the tab reads bundled application content rather than a Workspace Item.
 - A Pull Request Review Tab belongs to Review Work Mode rather than a Code Workspace. One Pull Request has at most one open review tab, and changed-file selection remains inside that tab.
 - A Pull Request Review Tab reads one Review Revision at a time. A newer remote head is announced but does not replace the loaded revision until the user explicitly updates.
 - A Pending Review belongs to one Pull Request and Review Revision. Existing-conversation replies publish separately; new inline comments publish with the Pending Review and its Review Disposition.
@@ -172,7 +174,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 | Empty Workspace | Spec says replacement is "empty" but every new Workspace starts with one Terminal Panel. | "Empty" means fresh/default Workspace, not zero Panels. |
 | Split panes | A Top-level Tab and its terminal Pane layout are distinct layers. | A Top-level Tab may own a split tree of terminal Panes. |
 | Diff/blame presentation | Git Preview content could be confused with a transient preview surface. | Use **Git Preview Tab** in the initiating Workspace. |
-| Panel taxonomy | Historical docs described Terminal/Browser only. | Treat Panel as extensible; v1 implements Terminal, Browser, File, and Git Preview Panels. |
+| Panel taxonomy | Historical docs described Terminal/Browser only. | Treat Panel as extensible; v1 implements Terminal, Browser, File, Git Preview, and Release Notes Panels. |
 | Managed path identity | Managed Worktree paths need a stable Project partition. | Project UUID is the canonical path partition: `<project-uuid>/<branch-slug>`. |
 | Catch-all membership | Fresh Standalone Workspaces may have nil `projectId`; restore reconciliation may assign Catch-all Project ID. | Unresolved data-model inconsistency; use Catch-all Project membership conceptually and do not change reference authority without a dedicated decision. |
 | Worktree ownership | `WorkspaceType.worktree` does not distinguish Managed Worktree from External Worktree, yet deletion behavior depends on ownership. | Unresolved model gap; never infer safe deletion solely from workspace type or non-nil worktree path. |

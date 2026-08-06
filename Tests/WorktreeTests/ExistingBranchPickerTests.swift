@@ -61,22 +61,25 @@ struct ExistingBranchPickerTests {
     }
 
     @Test(.timeLimit(.minutes(1)))
-    func concurrentCompletedProcessesDoNotBlockAfterExit() async throws {
-        let service = WorktreeService(gitCommandTimeout: 2)
+    func concurrentCompletedProcessesDoNotStarveOutputReaders() async throws {
+        let service = WorktreeService(gitCommandTimeout: 5)
+        let processCount = 8
 
-        async let first = service.runProcess(
-            executableURL: URL(fileURLWithPath: "/usr/bin/true"),
-            args: [],
-            commandDescription: "first completed fixture"
-        )
-        async let second = service.runProcess(
-            executableURL: URL(fileURLWithPath: "/usr/bin/true"),
-            args: [],
-            commandDescription: "second completed fixture"
-        )
+        let outputs = try await withThrowingTaskGroup(of: String.self) { group in
+            for index in 0..<processCount {
+                group.addTask {
+                    try await service.runProcess(
+                        executableURL: URL(fileURLWithPath: "/usr/bin/true"),
+                        args: [],
+                        commandDescription: "completed fixture \(index)"
+                    )
+                }
+            }
+            return try await group.reduce(into: []) { $0.append($1) }
+        }
 
-        let outputs = try await [first, second]
-        #expect(outputs == ["", ""])
+        #expect(outputs.count == processCount)
+        #expect(outputs.allSatisfy { $0.isEmpty })
     }
 
     @Test

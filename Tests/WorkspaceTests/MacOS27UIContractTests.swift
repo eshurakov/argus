@@ -58,15 +58,33 @@ struct MacOS27UIContractTests {
         controller.containsAll(
             [
                 "final class SettingsWindowController: NSWindowController, NSToolbarDelegate",
-                "toolbar.displayMode = .labelOnly",
+                "toolbar.displayMode = .iconAndLabel",
                 "toolbarSelectableItemIdentifiers",
                 "private let navigation = SettingsNavigationModel()",
                 "navigation.section = section",
+                "systemSymbolName: section.systemImageName",
+                "accessibilityDescription: section.title",
                 "item.action = #selector(selectToolbarItem(_:))"
             ],
             "AppKit owns navigation while one retained SwiftUI graph renders Settings content"
         )
-        controller.excludes("systemSymbolName", "Settings toolbar avoids vector glyphs")
+    }
+
+    @Test
+    func settingsToolbarUsesSemanticSymbols() throws {
+        let settings = try SourceContract("Argus/Settings/SettingsView.swift")
+        settings.containsAll(
+            [
+                "var systemImageName: String",
+                "case .general: \"gear\"",
+                "case .appearance: \"textformat\"",
+                "case .terminal: \"terminal\"",
+                "case .filesAndChanges: \"doc.text\"",
+                "case .browser: \"globe\"",
+                "case .agent: \"bell\""
+            ],
+            "Settings sections provide semantic toolbar symbols"
+        )
     }
 
     @Test

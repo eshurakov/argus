@@ -51,66 +51,6 @@ struct OrphanedWorktreeInfo: Identifiable, Sendable {
     let projectId: UUID
 }
 
-private final class WorktreeProcessDataBox: @unchecked Sendable {
-    var data = Data()
-}
-
-private final class WorktreeProcessOutputReader: @unchecked Sendable {
-    private let outputGroup = DispatchGroup()
-    private let stdout: Pipe
-    private let stderr: Pipe
-    private let stdoutBox = WorktreeProcessDataBox()
-    private let stderrBox = WorktreeProcessDataBox()
-
-    init(stdout: Pipe, stderr: Pipe) {
-        self.stdout = stdout
-        self.stderr = stderr
-        let stdoutDescriptor = Darwin.dup(stdout.fileHandleForReading.fileDescriptor)
-        let stderrDescriptor = Darwin.dup(stderr.fileHandleForReading.fileDescriptor)
-        outputGroup.enter()
-        DispatchQueue.global(qos: .utility).async { [stdoutBox, outputGroup] in
-            stdoutBox.data = Self.readToEnd(fileDescriptor: stdoutDescriptor)
-            outputGroup.leave()
-        }
-        outputGroup.enter()
-        DispatchQueue.global(qos: .utility).async { [stderrBox, outputGroup] in
-            stderrBox.data = Self.readToEnd(fileDescriptor: stderrDescriptor)
-            outputGroup.leave()
-        }
-    }
-    private static func readToEnd(fileDescriptor: Int32) -> Data {
-        guard fileDescriptor >= 0 else { return Data() }
-        defer { Darwin.close(fileDescriptor) }
-        var data = Data()
-        var buffer = [UInt8](repeating: 0, count: 16_384)
-        while true {
-            let count = Darwin.read(fileDescriptor, &buffer, buffer.count)
-            if count > 0 {
-                data.append(buffer, count: count)
-            } else if count == 0 {
-                return data
-            } else if errno != EINTR {
-                return data
-            }
-        }
-    }
-    var isFinished: Bool {
-        outputGroup.wait(timeout: .now()) == .success
-    }
-    func close() {
-        try? stdout.fileHandleForReading.close()
-        try? stderr.fileHandleForReading.close()
-    }
-    func readToEnd() async -> (stdout: Data, stderr: Data) {
-        await withCheckedContinuation { continuation in
-            outputGroup.notify(queue: .global(qos: .utility)) {
-                continuation.resume()
-            }
-        }
-        return (stdoutBox.data, stderrBox.data)
-    }
-}
-
 // MARK: - WorktreeService
 
 /// Manages git worktrees via the git CLI (`/usr/bin/git`).
@@ -196,21 +136,18 @@ final class WorktreeService: Sendable {
         let outputReader = WorktreeProcessOutputReader(stdout: stdout, stderr: stderr)
         let deadline = Date().addingTimeInterval(timeout ?? gitCommandTimeout)
         while (process.isRunning || !outputReader.isFinished) && Date() < deadline {
-            try? await Task.sleep(nanoseconds: 50_000_000)
+            outputReader.drain()
+            if process.isRunning || !outputReader.isFinished {
+                try? await Task.sleep(nanoseconds: 10_000_000)
+            }
         }
+        outputReader.drain()
         if process.isRunning || !outputReader.isFinished {
             await stop(process)
             outputReader.close()
             throw WorktreeError.gitCommandTimedOut(commandDescription)
         }
-        let outputDeadline = Date().addingTimeInterval(0.25)
-        while !outputReader.isFinished && Date() < outputDeadline {
-            try? await Task.sleep(nanoseconds: 25_000_000)
-        }
-        if !outputReader.isFinished {
-            outputReader.close()
-        }
-        let processOutput = await outputReader.readToEnd()
+        let processOutput = outputReader.output
 
         let output =
             String(data: processOutput.stdout, encoding: .utf8)?
@@ -228,6 +165,7 @@ final class WorktreeService: Sendable {
         }
         return output
     }
+
     private func stop(_ process: Process) async {
         if process.isRunning {
             process.terminate()

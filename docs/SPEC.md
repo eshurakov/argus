@@ -71,7 +71,7 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 
 ## Panels, tabs, and panes
 
-1. V1 supports Terminal, Browser, File, and Git Preview Panels.
+1. V1 supports Terminal, Browser, File, Git Preview, and Release Notes Panels.
 2. A Workspace MUST maintain a Panel registry and use root Panel IDs to order Top-level Tabs.
 3. New Terminal tabs MUST be appended and selected.
 4. New Browser, File, and Git Preview Tabs SHOULD be inserted after the Active Tab and selected.
@@ -218,6 +218,13 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 17. Pi integration MUST be installed or removed only through explicit Settings controls. It MUST own only its extension file under the effective Pi agent directory, preserve unrelated files, use public lifecycle events to report running, idle, and error states, clear its status on session shutdown, and remain silent on delivery failure. Running Pi sessions MUST be restarted or reloaded after a change.
 18. V1 still does not include functional Companion CLI commands, Agent PID tracking, TTS, notification history, or macOS Notification Center notifications.
 
+## Release notes
+
+1. Argus MUST bundle its application changelog and expose it through Help > Release Notes.
+2. The changelog MUST open as a runtime-only Release Notes Tab in the Selected Workspace and MUST reuse an existing Release Notes Tab in that Workspace.
+3. Release-note links MUST open in a Browser Tab in the Workspace that owns the Release Notes Tab.
+4. Argus MUST NOT open release notes automatically after an update.
+
 ## Session persistence
 
 1. Argus MUST store one JSON Session Snapshot at `~/Library/Application Support/Argus/session.json`.
@@ -227,7 +234,7 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 5. Project snapshots MUST include Project identity, repository metadata, ordering, expansion state, and optional color.
 6. Workspace snapshots MUST include Workspace identity and type, Project association, branch and worktree metadata, Workspace Root, display title, the count used to reconstruct Terminal Panels, terminal custom titles, and per-terminal Terminal Working Directories.
 7. Restored Terminal Panels MUST use their last observed Terminal Working Directory as the initial directory.
-8. File Panels, Git Preview Panels, Browser Panels, split layouts, Active Tab, Focused Pane, Git Status Snapshots, and Agent Status Entries are runtime-only in v1.
+8. File Panels, Git Preview Panels, Browser Panels, Release Notes Panels, split layouts, Active Tab, Focused Pane, Git Status Snapshots, and Agent Status Entries are runtime-only in v1.
 9. Argus MUST synchronously save the Session Snapshot during normal application termination. It MUST also synchronously checkpoint after a user commits a Workspace display-name or Workspace Root change, so those changes survive an application crash.
 10. V1 does not provide periodic autosave. Event-driven checkpoints for explicitly user-authored durable changes do not constitute periodic autosave.
 11. Restore MUST be skipped when disabled in Settings or by the supported test/restore environment overrides.

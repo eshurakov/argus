@@ -32,7 +32,7 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
 
         let toolbar = NSToolbar(identifier: "ArgusSettingsToolbar")
         toolbar.delegate = self
-        toolbar.displayMode = .labelOnly
+        toolbar.displayMode = .iconAndLabel
         toolbar.allowsUserCustomization = false
         toolbar.autosavesConfiguration = false
         toolbar.selectedItemIdentifier = toolbarIdentifier(for: .general)
@@ -69,6 +69,10 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
         item.label = section.title
         item.paletteLabel = section.title
         item.toolTip = section.title
+        item.image = NSImage(
+            systemSymbolName: section.systemImageName,
+            accessibilityDescription: section.title
+        )
         item.target = self
         item.action = #selector(selectToolbarItem(_:))
         return item

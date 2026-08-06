@@ -113,6 +113,17 @@ extension WorkspaceManager {
         selectedWorkspace?.addBrowserPanel(url: url, configuration: browserPanelConfiguration)
     }
 
+    @discardableResult
+    func openReleaseNotes() -> ReleaseNotesPanel? {
+        selectedWorkspace?.openReleaseNotesPanel()
+    }
+
+    @discardableResult
+    func openReleaseNotesLink(_ url: URL, from panelId: UUID) -> BrowserPanel? {
+        guard let workspace = workspace(containingPanel: panelId) else { return nil }
+        return workspace.addBrowserPanel(url: url, configuration: browserPanelConfiguration)
+    }
+
     func requestFindInActiveBrowser() {
         (selectedWorkspace?.activePanel as? BrowserPanel)?.requestFind()
     }

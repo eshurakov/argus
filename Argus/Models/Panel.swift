@@ -6,6 +6,7 @@ public enum PanelType: String, Codable, Sendable {
     case terminal
     case browser
     case file
+    case releaseNotes
     case gitPreview
 }
 
@@ -75,6 +76,23 @@ final class FilePanel: Panel, ObservableObject {
     func updatePath(rootPath: String, relativePath: String) {
         self.rootPath = URL(fileURLWithPath: rootPath).standardizedFileURL.path
         self.relativePath = relativePath
+    }
+
+    func close() {}
+    func focus() {}
+    func unfocus() {}
+}
+
+/// Runtime-only application release notes opened from the Help menu.
+@MainActor
+final class ReleaseNotesPanel: Panel, ObservableObject {
+    let id: UUID
+    let panelType: PanelType = .releaseNotes
+    let displayTitle = "Release Notes"
+    let displayIcon: String? = "doc.text"
+
+    init(id: UUID = UUID()) {
+        self.id = id
     }
 
     func close() {}

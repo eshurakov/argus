@@ -228,6 +228,7 @@ struct PanelContentView: View {
     var isActive: Bool = true
     var isVisible: Bool = true
     @EnvironmentObject private var appSettings: AppSettings
+    @EnvironmentObject private var workspaceManager: WorkspaceManager
 
     var body: some View {
         switch panel.panelType {
@@ -261,6 +262,20 @@ struct PanelContentView: View {
                     documentTextSize: appSettings.documentTextSize
                 )
                 .id(filePanel.id)
+            }
+        case .releaseNotes:
+            if let releaseNotesPanel = panel as? ReleaseNotesPanel {
+                ReleaseNotesPanelView(
+                    panel: releaseNotesPanel,
+                    documentTextSize: appSettings.documentTextSize,
+                    openLink: { url in
+                        workspaceManager.openReleaseNotesLink(
+                            url,
+                            from: releaseNotesPanel.id
+                        )
+                    }
+                )
+                .id(releaseNotesPanel.id)
             }
         case .gitPreview:
             if let previewPanel = panel as? GitPreviewPanel {

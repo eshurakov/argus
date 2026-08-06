@@ -37,6 +37,8 @@ targets:
         buildPhase: resources
       - path: Argus/Resources/pierre-diffs-bundle.js
         buildPhase: resources
+      - path: CHANGELOG.md
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.argus.app
