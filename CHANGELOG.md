@@ -4,6 +4,7 @@ This file records changes pushed for local Argus releases. New entries use a `YY
 
 ## 2026-08-07
 
+- The test suite now uses isolated fixtures, deterministic behavior assertions, structured protocol checks, and reliable cleanup across Git, socket, browser, session, and worktree workflows. ([08e4a92](https://github.com/jeanduplessis/argus/commit/08e4a92))
 - Double-clicking a file in the Changes View now opens its diff in a Git Preview Tab. ([d0fec1f](https://github.com/jeanduplessis/argus/commit/d0fec1f))
 
 ## 2026-08-06
