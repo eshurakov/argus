@@ -49,8 +49,12 @@ Human-facing setup and repository orientation live in `README.md` and `docs/DEVE
 - **Swift Argument Parser** for the Companion CLI scaffold
 - **FSEvents API** (`FSEventStreamCreate`) for filesystem watching — NOT `DispatchSource.makeFileSystemObjectSource`
 - **Process spawning** (`git` CLI) for all git operations — no libgit2
-- **JSON (Codable)** for persistence at `~/Library/Application Support/Argus/`
+- **JSON (Codable)** for production persistence at `~/Library/Application Support/Argus/`; test instances use a temporary per-process Session Snapshot at `FileManager.default.temporaryDirectory/Argus/TestSessions/<process-id>/session.json`
 
+Test-instance session rules:
+- A process with `XCTestConfigurationFilePath`, `ARGUS_DISABLE_SESSION_RESTORE=1`, or `ARGUS_UNDER_TEST=1` is a test instance.
+- Test instances MUST resolve their default Session Snapshot to the temporary per-process location above and MUST never use the production Session Snapshot.
+- A caller-supplied `sessionSnapshotURL` MAY override the default in tests and is the supported way to isolate or inspect a test Session Snapshot.
 ## Architecture
 
 Single-process app with two build targets:

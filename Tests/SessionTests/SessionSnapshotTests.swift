@@ -147,6 +147,77 @@ struct SessionSnapshotTests {
         assertEqual(incompatible.isCompatible, false, "future schema is incompatible")
     }
 
+    /// Test instances must persist in a temporary per-process location rather
+    /// than reading or writing the production Session Snapshot.
+    @Test
+    @MainActor
+    func testInstancesUseIsolatedSessionSnapshotLocations() throws {
+        let suiteName = "ArgusTests.TestSessionLocation.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        let productionURL = WorkspaceManager.defaultSessionSnapshotURL
+        let productionSnapshot = try? Data(contentsOf: productionURL)
+        var isolatedURLs = Set<URL>()
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+            for url in isolatedURLs {
+                try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+            }
+        }
+
+        let overrides = [
+            "XCTestConfigurationFilePath",
+            "ARGUS_DISABLE_SESSION_RESTORE",
+            "ARGUS_UNDER_TEST"
+        ]
+        for override in overrides {
+            let manager = WorkspaceManager(
+                settings: AppSettings(defaults: defaults),
+                environment: [override: "1"]
+            )
+            isolatedURLs.insert(manager.sessionSnapshotURL)
+
+            #expect(manager.sessionSnapshotURL != productionURL)
+            manager.renameWorkspace(
+                try #require(manager.selectedWorkspace).id,
+                title: "Test-run workspace"
+            )
+            manager.saveSession()
+
+            #expect(FileManager.default.fileExists(atPath: manager.sessionSnapshotURL.path))
+            #expect(
+                try? Data(contentsOf: productionURL) == productionSnapshot,
+                Comment(rawValue: "\(override) must not touch the production Session Snapshot")
+            )
+        }
+    }
+
+    /// Tests that supply their own snapshot URL must still use that location,
+    /// including when a test environment override is present.
+    @Test
+    @MainActor
+    func anExplicitSnapshotURLStillPersistsUnderTest() throws {
+        let suiteName = "ArgusTests.ExplicitSnapshotPersists.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        let snapshotURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("argus-session-\(UUID().uuidString).json")
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+            try? FileManager.default.removeItem(at: snapshotURL)
+        }
+
+        let manager = WorkspaceManager(
+            settings: AppSettings(defaults: defaults),
+            sessionSnapshotURL: snapshotURL,
+            environment: ["ARGUS_DISABLE_SESSION_RESTORE": "1"]
+        )
+        manager.renameWorkspace(
+            try #require(manager.selectedWorkspace).id,
+            title: "Persisted workspace"
+        )
+
+        #expect(FileManager.default.fileExists(atPath: snapshotURL.path))
+    }
+
     private func assertEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
         #expect(actual == expected, Comment(rawValue: message))
     }

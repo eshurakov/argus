@@ -340,7 +340,6 @@ extension WorkspaceFilesView {
             selectedItemId = nil
             selectedItemPath = nil
         }
-        expandedDirectoryIds = []
     }
 
     func renameWorkspaceItem(

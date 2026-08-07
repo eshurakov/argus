@@ -50,7 +50,10 @@ final class WorkspaceManager: ObservableObject {
     internal(set) var lastWorkspaceDeletionError: WorktreeError?
 
     /// Location of the minimal Phase 2 session snapshot.
-    private let sessionSnapshotURL: URL
+    ///
+    /// This is the production Session Snapshot location for normal app
+    /// instances and a temporary per-process location for test instances.
+    let sessionSnapshotURL: URL
 
     let settings: AppSettings
     var turnCompletionRuntime: TurnCompletionRuntime?
@@ -102,6 +105,13 @@ final class WorkspaceManager: ObservableObject {
         .homeDirectoryForCurrentUser
         .appendingPathComponent("Library/Application Support/Argus/session.json")
 
+    /// Root for session snapshots created by test instances. The process ID
+    /// keeps concurrent test-host app instances isolated from one another.
+    private static let testSessionSnapshotRootURL = FileManager.default
+        .temporaryDirectory
+        .appendingPathComponent("Argus", isDirectory: true)
+        .appendingPathComponent("TestSessions", isDirectory: true)
+
     // MARK: - Notification Observers
 
     nonisolated(unsafe) private var closeSurfaceObserver: NSObjectProtocol?
@@ -111,14 +121,17 @@ final class WorkspaceManager: ObservableObject {
 
     init(
         settings: AppSettings,
-        sessionSnapshotURL: URL = WorkspaceManager.defaultSessionSnapshotURL,
+        sessionSnapshotURL: URL? = nil,
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) {
         self.settings = settings
-        self.sessionSnapshotURL = sessionSnapshotURL
+        self.sessionSnapshotURL = Self.resolvedSessionSnapshotURL(
+            suppliedURL: sessionSnapshotURL,
+            environment: environment
+        )
 
         if !Self.shouldSkipSessionRestore(settings: settings, environment: environment),
-            restoreSessionIfAvailable(from: sessionSnapshotURL)
+            restoreSessionIfAvailable(from: self.sessionSnapshotURL)
         {
             // Restored from disk.
         } else {
@@ -162,15 +175,42 @@ final class WorkspaceManager: ObservableObject {
 
     // MARK: - Session Persistence
 
-    /// Returns true when app session restore must be skipped for tests.
+    /// Returns true when app session restore is disabled by Settings or by a
+    /// supported test/restore environment override.
     private static func shouldSkipSessionRestore(
         settings: AppSettings,
         environment: [String: String]
     ) -> Bool {
         guard settings.restorePreviousSession else { return true }
-        return environment["XCTestConfigurationFilePath"] != nil
+        return isTestInstance(environment: environment)
+    }
+
+    /// Returns true when this process is a test instance. Test instances use
+    /// isolated temporary Session Snapshot storage rather than the production
+    /// application-support location.
+    private static func isTestInstance(environment: [String: String]) -> Bool {
+        environment["XCTestConfigurationFilePath"] != nil
             || environment["ARGUS_DISABLE_SESSION_RESTORE"] == "1"
             || environment["ARGUS_UNDER_TEST"] == "1"
+    }
+
+    /// Resolves the Session Snapshot location for this process. A caller-
+    /// supplied URL takes precedence, including in tests.
+    private static func resolvedSessionSnapshotURL(
+        suppliedURL: URL?,
+        environment: [String: String]
+    ) -> URL {
+        if let suppliedURL { return suppliedURL }
+        guard isTestInstance(environment: environment) else {
+            return defaultSessionSnapshotURL
+        }
+
+        return testSessionSnapshotRootURL
+            .appendingPathComponent(
+                String(ProcessInfo.processInfo.processIdentifier),
+                isDirectory: true
+            )
+            .appendingPathComponent("session.json")
     }
 
     /// Creates a new default session with one catch-all workspace.

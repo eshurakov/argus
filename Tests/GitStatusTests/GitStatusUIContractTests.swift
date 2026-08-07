@@ -368,6 +368,21 @@ struct WorkspaceFilesUIContractTests {
         try assertFilePanelIntegration()
     }
 
+    @Test
+    func deletingWorkspaceItemsPreservesExpandedDirectories() throws {
+        let rows = try SourceContract(
+            "Argus/Views/GitSidebar/RightSidebarView+WorkspaceFilesRows.swift"
+        )
+        let deleteBody = try rows.section(
+            after: "func deleteWorkspaceItem(",
+            before: "func renameWorkspaceItem("
+        )
+        #expect(
+            !deleteBody.contains("expandedDirectoryIds = []"),
+            "deleting a Workspace Item must not collapse the Workspace File Tree"
+        )
+    }
+
     private func assertWorkspaceFileRows(in rightView: SourceContract) {
         rightView.containsAll(
             [
