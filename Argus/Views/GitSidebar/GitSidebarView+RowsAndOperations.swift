@@ -46,10 +46,14 @@ extension GitSidebarView {
             actions: fileActions(for: file),
             contextActions: fileContextActions(for: file),
             canPerformActions: canPerformActions,
-            accessibilityValue: fileAccessibilityValue(file)
-        ) { action in
-            perform(action, for: file, owner: owner)
-        }
+            accessibilityValue: fileAccessibilityValue(file),
+            perform: { action in
+                perform(action, for: file, owner: owner)
+            },
+            onDoubleClick: {
+                perform(.diff, for: file, owner: owner)
+            }
+        )
     }
 
     private func fileActions(for file: GitFileChange) -> [GitFileRowAction] {
@@ -289,6 +293,7 @@ private struct GitChangeFileRow: View {
     let canPerformActions: Bool
     let accessibilityValue: String
     let perform: (GitFileRowAction) -> Void
+    let onDoubleClick: () -> Void
     @EnvironmentObject private var appSettings: AppSettings
 
     @State private var isHovered = false
@@ -324,6 +329,14 @@ private struct GitChangeFileRow: View {
         .focusable()
         .focused($isFocused)
         .onHover { isHovered = $0 }
+        .cursor(canPerformActions ? .pointingHand : .arrow)
+        .simultaneousGesture(
+            TapGesture(count: 2).onEnded {
+                guard canPerformActions else { return }
+                onDoubleClick()
+            }
+        )
+        .help("Double-click to view diff")
         .accessibilityLabel(file.path)
         .accessibilityValue(accessibilityValue)
         .accessibilityActions {

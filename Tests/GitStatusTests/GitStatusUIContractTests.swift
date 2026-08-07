@@ -230,6 +230,26 @@ struct GitStatusUIContractTests {
 }
 
 @Suite
+struct GitChangesUIContractTests {
+    @Test
+    func changeFileRowsOpenDiffOnDoubleClick() throws {
+        let changesView = try SourceContract("Argus/Views/GitSidebar/GitSidebarView.swift")
+        changesView.containsAll(
+            [
+                "onDoubleClick: {",
+                "perform(.diff, for: file, owner: owner)",
+                "TapGesture(count: 2).onEnded {",
+                "guard canPerformActions else { return }",
+                "onDoubleClick()",
+                ".cursor(canPerformActions ? .pointingHand : .arrow)",
+                ".help(\"Double-click to view diff\")"
+            ],
+            "Changes View file rows open a Git Preview Tab on double-click"
+        )
+    }
+}
+
+@Suite
 struct WorkspaceFilesUIContractTests {
     @Test
     func rightSidebarHostsFilesAndChangesPanels() throws {
