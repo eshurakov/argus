@@ -2,6 +2,10 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-08-07
+
+- Double-clicking a file in the Changes View now opens its diff in a Git Preview Tab. ([d0fec1f](https://github.com/jeanduplessis/argus/commit/d0fec1f))
+
 ## 2026-08-06
 
 - Settings toolbar symbols are restored, and concurrent Git command output is drained without starving branch and worktree operations. ([2aa2d43](https://github.com/jeanduplessis/argus/commit/2aa2d43))
