@@ -247,19 +247,19 @@ struct AgentSocketParameters: Decodable {
     let sequence: UInt64?
 }
 
-struct AgentSocketResponse: Encodable {
+struct AgentSocketResponse: Codable {
     let id: String?
     let isSuccessful: Bool
     let result: Result?
     let error: Failure?
 
-    struct Result: Encodable {
+    struct Result: Codable {
         let accepted: Bool
         let requiresAttention: Bool?
         let applied: Bool?
     }
 
-    struct Failure: Encodable {
+    struct Failure: Codable {
         let code: AgentSocketErrorCode
         let message: String
     }
@@ -294,7 +294,7 @@ struct AgentSocketResponse: Encodable {
     }
 }
 
-enum AgentSocketErrorCode: String, Encodable {
+enum AgentSocketErrorCode: String, Codable {
     case malformedRequest = "malformed_request"
     case unsupportedVersion = "unsupported_version"
     case unknownMethod = "unknown_method"

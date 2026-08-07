@@ -6,7 +6,7 @@ import Testing
 @Suite
 struct SessionReconciliationTests {
     @Test
-    func coveredBehaviors() throws {
+    func restoreReconciliationRepairsMembershipAndIsIdempotent() throws {
         let ids = ReconciliationIDs()
         let reconciled = makeSnapshot(ids: ids).reconciledForRestore()
 

@@ -7,7 +7,7 @@ import Testing
 @Suite
 struct SidebarStatePersistenceTests {
     @Test
-    func coveredBehaviors() async throws {
+    func sidebarVisibilityAndWidthPersistAcrossInstances() async throws {
         try await MainActor.run {
             let suiteName = "com.argus.tests.sidebar-state.\(UUID().uuidString)"
             let defaults = try #require(UserDefaults(suiteName: suiteName))

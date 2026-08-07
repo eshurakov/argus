@@ -6,16 +6,7 @@ import Testing
 @Suite
 struct GitStatusParserTests {
     @Test
-    func coveredBehaviors() throws {
-        parsesBranchMetadataForCleanRepository()
-        parsesChangedFilesIntoSections()
-        parsesRenamedAndCopiedFilesWithOriginalPaths()
-        parsesTypeChangedFiles()
-        parsesUnmergedFilesWithPathSpaces()
-        capsDisplayedFileRowsAtLimit()
-    }
-
-    private func parsesBranchMetadataForCleanRepository() {
+    func parsesBranchMetadataForCleanRepository() {
         let output = """
             # branch.oid 0123456789abcdef
             # branch.head feature/git-sidebar
@@ -36,7 +27,8 @@ struct GitStatusParserTests {
         assertEqual(status.isClean, true, "clean repo is clean")
     }
 
-    private func parsesChangedFilesIntoSections() {
+    @Test
+    func parsesChangedFilesIntoSections() {
         let output = """
             # branch.head main
             1 M. N... 100644 100644 100644 aaaaaa bbbbbb staged.txt
@@ -57,7 +49,8 @@ struct GitStatusParserTests {
         assertEqual(status.isClean, false, "changed repo is dirty")
     }
 
-    private func parsesRenamedAndCopiedFilesWithOriginalPaths() {
+    @Test
+    func parsesRenamedAndCopiedFilesWithOriginalPaths() {
         let output = """
             # branch.head main
             2 R. N... 100644 100644 100644 aaaaaa bbbbbb R100 renamed folder/new file.txt	old folder/old file.txt
@@ -88,7 +81,8 @@ struct GitStatusParserTests {
             status.unstagedFiles.first?.status, .modified, "unstaged rename companion status parses")
     }
 
-    private func parsesTypeChangedFiles() {
+    @Test
+    func parsesTypeChangedFiles() {
         let output = """
             # branch.head main
             1 T. N... 100644 120000 120000 aaaaaa bbbbbb staged-symlink
@@ -109,7 +103,8 @@ struct GitStatusParserTests {
             ], "unstaged type-changed file parses")
     }
 
-    private func parsesUnmergedFilesWithPathSpaces() {
+    @Test
+    func parsesUnmergedFilesWithPathSpaces() {
         let output = """
             # branch.head feature/conflict
             u UU N... 100644 100644 100644 100644 aaaaaa bbbbbb cccccc conflict folder/file with spaces.txt
@@ -126,7 +121,8 @@ struct GitStatusParserTests {
             ], "unmerged path with spaces parses")
     }
 
-    private func capsDisplayedFileRowsAtLimit() {
+    @Test
+    func capsDisplayedFileRowsAtLimit() {
         let output = (0..<501)
             .map { "? file-\($0).txt" }
             .joined(separator: "\n")

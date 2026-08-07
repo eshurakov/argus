@@ -76,9 +76,14 @@ final class WorktreeService: Sendable {
 
     /// Path to the git binary.
     private static let gitPath = "/usr/bin/git"
+    let managedWorktreeBaseURL: URL
 
-    init(gitCommandTimeout: TimeInterval = 30) {
+    init(
+        gitCommandTimeout: TimeInterval = 30,
+        worktreeBaseURL: URL = WorktreeService.worktreeBaseURL
+    ) {
         self.gitCommandTimeout = gitCommandTimeout
+        self.managedWorktreeBaseURL = worktreeBaseURL.standardizedFileURL
     }
     // MARK: - Private Helpers
 
@@ -228,7 +233,8 @@ final class WorktreeService: Sendable {
     /// worktree directory, appending `-1`, `-2`, etc. if needed.
     func uniqueSlug(_ branchName: String, projectId: UUID) -> String {
         let base = slugify(branchName)
-        let projectDir = Self.worktreeBaseURL
+        let projectDir =
+            managedWorktreeBaseURL
             .appendingPathComponent(projectId.uuidString, isDirectory: true)
 
         let fm = FileManager.default

@@ -6,35 +6,7 @@ import Testing
 @Suite
 struct SessionSnapshotTests {
     @Test
-    func buildRunQuitsOnlyExistingArgusProcesses() throws {
-        let script = try SourceContract("scripts/build.sh")
-
-        script.containsAll(
-            [
-                "pgrep -x \"${APP_NAME}\"",
-                "NSRunningApplication.runningApplicationWithProcessIdentifier(${pid})",
-                "if (app) app.terminate",
-                "kill -0 \"${pid}\""
-            ],
-            "run and install must gracefully terminate the exact running app before replacement"
-        )
-        script.excludes(
-            "tell application \\\"${APP_NAME}\\\" to quit",
-            "name-based quit can launch another registered Argus bundle and overwrite its session"
-        )
-        let runSection = try script.section(after: "do_run() {", before: "do_install() {")
-        let runQuit = try #require(runSection.range(of: "quit_running"))
-        let runBuild = try #require(runSection.range(of: "do_build"))
-        #expect(runQuit.lowerBound < runBuild.lowerBound)
-
-        let installSection = try script.section(after: "do_install() {", before: "do_clean() {")
-        let installQuit = try #require(installSection.range(of: "quit_running"))
-        let installBuild = try #require(installSection.range(of: "do_build"))
-        #expect(installQuit.lowerBound < installBuild.lowerBound)
-    }
-
-    @Test
-    func coveredBehaviors() throws {
+    func sessionSnapshotRoundTripsCurrentSchemaAndRejectsFutureSchema() throws {
         let projectId = UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!
         let workspaceId = UUID(uuidString: "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB")!
 
@@ -185,7 +157,7 @@ struct SessionSnapshotTests {
 
             #expect(FileManager.default.fileExists(atPath: manager.sessionSnapshotURL.path))
             #expect(
-                try? Data(contentsOf: productionURL) == productionSnapshot,
+                (try? Data(contentsOf: productionURL)) == productionSnapshot,
                 Comment(rawValue: "\(override) must not touch the production Session Snapshot")
             )
         }

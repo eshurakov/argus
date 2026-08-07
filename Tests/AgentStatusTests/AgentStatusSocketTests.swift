@@ -27,7 +27,7 @@ private struct StatusRequest {
     let sequence: UInt64
 }
 
-@Suite
+@Suite(.serialized)
 struct AgentStatusSocketTests {
     @Test
     func invalidStatusRequestsAreRejectedBeforeDelivery() async throws {
@@ -38,40 +38,43 @@ struct AgentStatusSocketTests {
             deliver: { _ in .accepted(requiresAttention: false) },
             deliverStatus: { event in spy.deliver(event) }
         )
-        try await server.start()
-        defer { Task { await server.shutdown() } }
 
         let workspaceId = UUID()
         let surfaceId = UUID()
-        let invalidState = try await send(
-            statusRequest(
-                StatusRequest(
-                    id: "invalid-state",
-                    method: "agent.statusChanged",
-                    workspaceId: workspaceId,
-                    surfaceId: surfaceId,
-                    state: "waiting",
-                    sequence: 1
-                )
-            ),
-            to: path
-        )
-        let invalidSequence = try await send(
-            statusRequest(
-                StatusRequest(
-                    id: "invalid-sequence",
-                    method: "agent.statusCleared",
-                    workspaceId: workspaceId,
-                    surfaceId: surfaceId,
-                    state: nil,
-                    sequence: 0
-                )
-            ),
-            to: path
-        )
+        let responses = try await withStartedServer(server) {
+            let invalidState = try await send(
+                statusRequest(
+                    StatusRequest(
+                        id: "invalid-state",
+                        method: "agent.statusChanged",
+                        workspaceId: workspaceId,
+                        surfaceId: surfaceId,
+                        state: "waiting",
+                        sequence: 1
+                    )
+                ),
+                to: path
+            )
+            let invalidSequence = try await send(
+                statusRequest(
+                    StatusRequest(
+                        id: "invalid-sequence",
+                        method: "agent.statusCleared",
+                        workspaceId: workspaceId,
+                        surfaceId: surfaceId,
+                        state: nil,
+                        sequence: 0
+                    )
+                ),
+                to: path
+            )
+            return (invalidState, invalidSequence)
+        }
 
-        #expect(invalidState.contains("invalid_parameters"))
-        #expect(invalidSequence.contains("invalid_parameters"))
+        let invalidStateResponse = try decodeResponse(responses.0)
+        let invalidSequenceResponse = try decodeResponse(responses.1)
+        #expect(invalidStateResponse.error?.code == .invalidParameters)
+        #expect(invalidSequenceResponse.error?.code == .invalidParameters)
         #expect(spy.events.isEmpty)
     }
 
@@ -84,45 +87,35 @@ struct AgentStatusSocketTests {
             deliver: { _ in .accepted(requiresAttention: false) },
             deliverStatus: { event in spy.deliver(event) }
         )
-        try await server.start()
-        defer { Task { await server.shutdown() } }
 
         let workspaceId = UUID()
         let surfaceId = UUID()
-        let changeRequest = statusRequest(
-            StatusRequest(
-                id: "status-1",
-                method: "agent.statusChanged",
-                workspaceId: workspaceId,
-                surfaceId: surfaceId,
-                state: "running",
-                sequence: 1
-            )
-        )
-        let changeResponse = try await send(changeRequest, to: path)
-        let clearResponse = try await send(
-            statusRequest(
-                StatusRequest(
-                    id: "status-clear-1",
-                    method: "agent.statusCleared",
-                    workspaceId: workspaceId,
-                    surfaceId: surfaceId,
-                    state: nil,
-                    sequence: 2
-                )
-            ),
-            to: path
+        let responses = try await sendStatusChangeAndClear(
+            server: server,
+            path: path,
+            workspaceId: workspaceId,
+            surfaceId: surfaceId
         )
 
-        #expect(changeResponse.contains("\"id\":\"status-1\""))
-        #expect(changeResponse.contains("\"applied\":true"))
-        #expect(clearResponse.contains("\"id\":\"status-clear-1\""))
-        #expect(clearResponse.contains("\"applied\":true"))
+        let changeDecoded = try decodeResponse(responses.0)
+        let clearDecoded = try decodeResponse(responses.1)
+        #expect(changeDecoded.id == "status-1")
+        #expect(changeDecoded.isSuccessful)
+        #expect(changeDecoded.result?.accepted == true)
+        #expect(changeDecoded.result?.applied == true)
+        #expect(clearDecoded.id == "status-clear-1")
+        #expect(clearDecoded.isSuccessful)
+        #expect(clearDecoded.result?.accepted == true)
+        #expect(clearDecoded.result?.applied == true)
         #expect(
             spy.events == [
                 statusEvent(workspaceId: workspaceId, surfaceId: surfaceId, state: .running, sequence: 1),
                 statusEvent(workspaceId: workspaceId, surfaceId: surfaceId, state: nil, sequence: 2)
             ])
+    }
+
+    private func decodeResponse(_ text: String) throws -> AgentSocketResponse {
+        try JSONDecoder().decode(AgentSocketResponse.self, from: Data(text.utf8))
     }
 
     private func statusRequest(_ request: StatusRequest) -> String {
@@ -138,6 +131,43 @@ struct AgentStatusSocketTests {
             "\"method\":\"\(request.method)\",",
             "\"params\":{\(parameters)}}"
         ].joined()
+    }
+
+    private func sendStatusChangeAndClear(
+        server: AgentSocketServer,
+        path: String,
+        workspaceId: UUID,
+        surfaceId: UUID
+    ) async throws -> (String, String) {
+        try await withStartedServer(server) {
+            let changeResponse = try await send(
+                statusRequest(
+                    StatusRequest(
+                        id: "status-1",
+                        method: "agent.statusChanged",
+                        workspaceId: workspaceId,
+                        surfaceId: surfaceId,
+                        state: "running",
+                        sequence: 1
+                    )
+                ),
+                to: path
+            )
+            let clearResponse = try await send(
+                statusRequest(
+                    StatusRequest(
+                        id: "status-clear-1",
+                        method: "agent.statusCleared",
+                        workspaceId: workspaceId,
+                        surfaceId: surfaceId,
+                        state: nil,
+                        sequence: 2
+                    )
+                ),
+                to: path
+            )
+            return (changeResponse, clearResponse)
+        }
     }
 
     private func statusEvent(
@@ -177,6 +207,21 @@ struct AgentStatusSocketTests {
             guard received > 0 else { throw SocketClientError.receiveFailed }
             return String(bytes: buffer.prefix(received), encoding: .utf8) ?? ""
         }.value
+    }
+}
+
+private func withStartedServer<Value>(
+    _ server: AgentSocketServer,
+    operation: () async throws -> Value
+) async throws -> Value {
+    try await server.start()
+    do {
+        let value = try await operation()
+        await server.shutdown()
+        return value
+    } catch {
+        await server.shutdown()
+        throw error
     }
 }
 

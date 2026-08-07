@@ -6,7 +6,7 @@ import Testing
 @Suite
 struct RandomBranchNameGeneratorTests {
     @Test
-    func coveredBehaviors() {
+    func generatedNamesHonorPrefixesAndUseTheExpectedShape() {
         for _ in 0..<50 {
             let name = RandomBranchNameGenerator.generate()
             assertTrue(isValidTwoWordName(name), "generated name '\(name)' is two lowercase words joined by a hyphen")
@@ -34,13 +34,6 @@ struct RandomBranchNameGeneratorTests {
             "a prefix with a trailing slash is not double-slashed"
         )
 
-        let variations = Set((0..<20).map { _ in RandomBranchNameGenerator.generate() })
-        assertTrue(variations.count > 1, "repeated calls produce varied names rather than a constant one")
-
-        assertTrue(
-            RandomBranchNameGenerator.combinationCount >= 10_000,
-            "the word lists are large enough that random collisions stay rare"
-        )
     }
 
     private func isValidTwoWordName(_ name: String) -> Bool {

@@ -7,17 +7,8 @@ import Testing
 @Suite
 struct GitStatusViewModelTests {
     @Test
-    func coveredBehaviors() async {
-        await manualRefreshPublishesLoadingThenLoadedState()
-        await initializingRepositoryPublishesCleanRefreshedStatus()
-        await copyPathWritesDisplayedFilePathWithoutGitMutation()
-        await fileOperationUsesResolvedRootAndPublishesRefreshedStatus()
-        await canceledDestructiveFileOperationDoesNotMutateState()
-        await confirmedDestructiveFileOperationRunsAndRefreshes()
-    }
-
     @MainActor
-    private func manualRefreshPublishesLoadingThenLoadedState() async {
+    func manualRefreshPublishesLoadingThenLoadedState() async {
         let service = FakeStatusService(
             result: .loaded(
                 GitStatusSummary(
@@ -44,8 +35,9 @@ struct GitStatusViewModelTests {
         assertEqual(viewModel.state, service.result, "refresh publishes loaded state")
     }
 
+    @Test
     @MainActor
-    private func initializingRepositoryPublishesCleanRefreshedStatus() async {
+    func initializingRepositoryPublishesCleanRefreshedStatus() async {
         let loaded = GitStatusLoadState.loaded(
             GitStatusSummary(
                 rootPath: "/tmp/new-repo",
@@ -73,8 +65,9 @@ struct GitStatusViewModelTests {
         assertEqual(viewModel.state, loaded, "successful initialize publishes refreshed clean status")
     }
 
+    @Test
     @MainActor
-    private func copyPathWritesDisplayedFilePathWithoutGitMutation() async {
+    func copyPathWritesDisplayedFilePathWithoutGitMutation() async {
         let clipboard = RecordingPathClipboard()
         let service = FakeStatusService(
             result: .loaded(
@@ -95,8 +88,9 @@ struct GitStatusViewModelTests {
         assertEqual(service.requestedRoots.isEmpty, true, "copy-path does not refresh git state")
     }
 
+    @Test
     @MainActor
-    private func fileOperationUsesResolvedRootAndPublishesRefreshedStatus() async {
+    func fileOperationUsesResolvedRootAndPublishesRefreshedStatus() async {
         let refreshed = GitStatusLoadState.loaded(
             GitStatusSummary(
                 rootPath: "/tmp/worktree",
@@ -125,8 +119,9 @@ struct GitStatusViewModelTests {
         assertEqual(viewModel.state, refreshed, "file operation publishes refreshed status immediately")
     }
 
+    @Test
     @MainActor
-    private func canceledDestructiveFileOperationDoesNotMutateState() async {
+    func canceledDestructiveFileOperationDoesNotMutateState() async {
         let service = FakeStatusService(result: .idle)
         let confirmation = RecordingFileOperationConfirmer(shouldConfirm: false)
         let viewModel = GitStatusViewModel(service: service, fileOperationConfirmer: confirmation)
@@ -147,8 +142,9 @@ struct GitStatusViewModelTests {
             viewModel.state, .idle, "canceled destructive operation leaves sidebar state unchanged")
     }
 
+    @Test
     @MainActor
-    private func confirmedDestructiveFileOperationRunsAndRefreshes() async {
+    func confirmedDestructiveFileOperationRunsAndRefreshes() async {
         let refreshed = GitStatusLoadState.loaded(
             GitStatusSummary(
                 rootPath: "/tmp/repo",
@@ -182,17 +178,8 @@ struct GitStatusViewModelTests {
 @Suite
 struct GitStatusViewModelSectionAndPreviewTests {
     @Test
-    func coveredBehaviors() async {
-        await sectionBulkOperationUsesSectionScopeForCappedResults()
-        await sectionBulkOperationKeepsLoadedContentVisibleWhileRefreshing()
-        await destructiveSectionBulkOperationConfirmsTotalSectionCount()
-        await previewUsesResolvedRootAndReturnsOutput()
-        await previewFailureIsReturnedWithoutReplacingStatusState()
-        await automaticRefreshUsesSameLoadingRefreshPath()
-    }
-
     @MainActor
-    private func sectionBulkOperationUsesSectionScopeForCappedResults() async {
+    func sectionBulkOperationUsesSectionScopeForCappedResults() async {
         let refreshed = GitStatusLoadState.loaded(
             GitStatusSummary(
                 rootPath: "/tmp/repo",
@@ -222,8 +209,9 @@ struct GitStatusViewModelSectionAndPreviewTests {
         assertEqual(viewModel.state, refreshed, "section bulk operation publishes refreshed status")
     }
 
+    @Test
     @MainActor
-    private func sectionBulkOperationKeepsLoadedContentVisibleWhileRefreshing() async {
+    func sectionBulkOperationKeepsLoadedContentVisibleWhileRefreshing() async {
         let current = GitStatusLoadState.loaded(
             GitStatusSummary(
                 rootPath: "/tmp/repo",
@@ -255,8 +243,9 @@ struct GitStatusViewModelSectionAndPreviewTests {
         await operation.value
     }
 
+    @Test
     @MainActor
-    private func destructiveSectionBulkOperationConfirmsTotalSectionCount() async {
+    func destructiveSectionBulkOperationConfirmsTotalSectionCount() async {
         let service = FakeStatusService(result: .idle)
         let confirmation = RecordingFileOperationConfirmer(shouldConfirm: true)
         let viewModel = GitStatusViewModel(service: service, fileOperationConfirmer: confirmation)
@@ -281,8 +270,9 @@ struct GitStatusViewModelSectionAndPreviewTests {
             "confirmed destructive section action operates on whole section")
     }
 
+    @Test
     @MainActor
-    private func previewUsesResolvedRootAndReturnsOutput() async {
+    func previewUsesResolvedRootAndReturnsOutput() async {
         let service = FakeStatusService(result: .idle)
         let previewService = RecordingPreviewService(
             result: .loaded(
@@ -320,8 +310,9 @@ struct GitStatusViewModelSectionAndPreviewTests {
         assertEqual(viewModel.state, .idle, "preview does not replace git status state")
     }
 
+    @Test
     @MainActor
-    private func previewFailureIsReturnedWithoutReplacingStatusState() async {
+    func previewFailureIsReturnedWithoutReplacingStatusState() async {
         let current = GitStatusLoadState.loaded(
             GitStatusSummary(
                 rootPath: "/tmp/repo", branchName: "main", upstreamName: nil, aheadCount: 0, behindCount: 0)
@@ -347,8 +338,9 @@ struct GitStatusViewModelSectionAndPreviewTests {
         assertEqual(viewModel.state, current, "preview failure does not replace loaded status state")
     }
 
+    @Test
     @MainActor
-    private func automaticRefreshUsesSameLoadingRefreshPath() async {
+    func automaticRefreshUsesSameLoadingRefreshPath() async {
         let loaded = GitStatusLoadState.loaded(
             GitStatusSummary(
                 rootPath: "/tmp/worktree",

@@ -6,11 +6,10 @@ import Testing
 @Suite
 struct BranchNameSuggestionTests {
     @Test
-    func coveredBehaviors() async throws {
-        let root = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("argus-branch-suggestion-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: root) }
+    func availableBranchSuggestionsPreserveFreeCandidatesAndAvoidCollisions() async throws {
+        let temporaryDirectory = try TestTemporaryDirectory(prefix: "argus-branch-suggestion")
+        let root = temporaryDirectory.url
+        defer { temporaryDirectory.remove() }
 
         try run("git", ["init", "."], cwd: root.path)
         try run("git", ["config", "user.email", "test@example.com"], cwd: root.path)
@@ -58,26 +57,7 @@ struct BranchNameSuggestionTests {
     }
 
     private func run(_ executable: String, _ args: [String], cwd: String) throws {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/\(executable)")
-        process.arguments = args
-        process.currentDirectoryURL = URL(fileURLWithPath: cwd)
-        process.standardOutput = FileHandle.nullDevice
-        let stderr = Pipe()
-        process.standardError = stderr
-        try process.run()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else {
-            let data = stderr.fileHandleForReading.readDataToEndOfFile()
-            let detail = String(data: data, encoding: .utf8) ?? ""
-            throw NSError(
-                domain: "BranchNameSuggestionTests",
-                code: Int(process.terminationStatus),
-                userInfo: [
-                    NSLocalizedDescriptionKey: "git \(args.joined(separator: " ")) failed: \(detail)"
-                ]
-            )
-        }
+        _ = try TestGit.run(executable, args, cwd: cwd)
     }
 
     private func assertEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {

@@ -6,13 +6,7 @@ import Testing
 @Suite
 struct GitStatusRootResolverTests {
     @Test
-    func coveredBehaviors() {
-        resolvesWorktreeRootWithoutTerminalDirectory()
-        resolvesMainCheckoutToProjectRepositoryRoot()
-        resolvesStandaloneToWorkspaceDirectory()
-    }
-
-    private func resolvesWorktreeRootWithoutTerminalDirectory() {
+    func resolvesWorktreeRootWithoutTerminalDirectory() {
         let context = GitStatusRootContext(
             kind: .worktree,
             currentDirectory: "/tmp/repo/subdir/from-shell",
@@ -25,7 +19,8 @@ struct GitStatusRootResolverTests {
             "worktree root wins over shell cwd")
     }
 
-    private func resolvesMainCheckoutToProjectRepositoryRoot() {
+    @Test
+    func resolvesMainCheckoutToProjectRepositoryRoot() {
         let context = GitStatusRootContext(
             kind: .mainCheckout,
             currentDirectory: "/tmp/repo/subdir/from-shell",
@@ -38,7 +33,8 @@ struct GitStatusRootResolverTests {
             "project repository root wins for main checkout")
     }
 
-    private func resolvesStandaloneToWorkspaceDirectory() {
+    @Test
+    func resolvesStandaloneToWorkspaceDirectory() {
         let context = GitStatusRootContext(
             kind: .standalone,
             currentDirectory: "/tmp/standalone",

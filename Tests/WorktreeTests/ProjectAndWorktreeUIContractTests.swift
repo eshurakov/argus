@@ -108,47 +108,14 @@ struct ProjectAndWorktreeUIContractTests {
                 "errorMessage = error.localizedDescription"
             ], "existing branch picker")
 
-        let discovery = try SourceContract("Argus/Services/WorktreeService+Discovery.swift")
-        discovery.containsAll(
-            [
-                "func listWorkspaceBranchChoices(repositoryPath: String) async throws -> [String]",
-                "!$0.isHead"
-            ], "branch discovery and timeout behavior")
-        try SourceContract("Argus/Services/WorktreeService.swift").containsAll(
-            [
-                "timeout: TimeInterval? = nil", "Task.sleep(nanoseconds:",
-                "process.terminate()"
-            ], "git process timeout behavior")
-        let operations = try SourceContract("Argus/Services/WorktreeService+Operations.swift")
-        operations.containsAll(
-            [
-                "private func listRemoteHeadBranches", "ls-remote", "timeout: 2"
-            ], "remote branch timeout behavior")
     }
 
     @Test
-    func duplicateBranchesAreRejectedWithAVisibleError() throws {
-        let manager = try SourceContract("Argus/Services/WorkspaceManager+Projects.swift")
-        let addWorkspace = try manager.section(
-            after: "func addWorkspaceToProject(",
-            before: "private func restoreSelectionAfterRemovingWorkspaces"
+    func duplicateBranchErrorsAreShownByTheWorkspaceSheet() throws {
+        try SourceContract("Argus/Views/Dialogs/NewWorkspaceSheet.swift").contains(
+            "case .branchAlreadyExists(let branchName):",
+            "duplicate branch errors reach the Workspace creation sheet"
         )
-        #expect(!addWorkspace.contains("uniqueBranchName(branchName"))
-        #expect(addWorkspace.contains("try await worktreeService.ensureBranchNameAvailable("))
-        #expect(addWorkspace.contains("branchName,"))
-        #expect(addWorkspace.contains("repositoryPath: project.repositoryPath"))
-
-        let service = try SourceContract("Argus/Services/WorktreeService.swift")
-        service.containsAll(
-            [
-                "func ensureBranchNameAvailable(_ branchName: String, repositoryPath: String) async throws",
-                "throw WorktreeError.branchAlreadyExists(baseName)"
-            ], "duplicate branch validation")
-        try SourceContract("Argus/Views/Dialogs/NewWorkspaceSheet.swift").containsAll(
-            [
-                "case .branchAlreadyExists(let branchName):",
-                "errorMessage = \"Branch '\\(branchName)' already exists\""
-            ], "duplicate branch error")
     }
 
     @Test
@@ -173,39 +140,10 @@ struct ProjectAndWorktreeUIContractTests {
             "the New Workspace sheet must not depend on vector SF Symbol rasterization"
         )
 
-        let generator = try SourceContract("Argus/Models/RandomBranchNameGenerator.swift")
-        generator.containsAll(
-            [
-                "static func generate(prefix: String = \"\") -> String",
-                "adjectives.randomElement()",
-                "nouns.randomElement()"
-            ], "random two-word name generation")
-
-        let service = try SourceContract("Argus/Services/WorktreeService+Operations.swift")
-        service.containsAll(
-            [
-                "func suggestAvailableBranchName(",
-                "preferring candidate: String",
-                "if !existingBranches.contains(candidate) {",
-                "return try await uniqueBranchName(candidate, repositoryPath: repositoryPath)"
-            ], "random branch name suggestions avoid existing branches")
-
-        let manager = try SourceContract("Argus/Services/WorkspaceManager+Projects.swift")
-        manager.containsAll(
-            [
-                "customTitle: String? = nil",
-                "workspace.setCustomTitle(customTitle)"
-            ], "optional custom title is applied to the created workspace")
-
-        let settings = try SourceContract("Argus/Settings/AppSettings.swift")
-        settings.contains(
-            "@Published var newBranchPrefix: String {",
-            "branch prefix is a persisted setting"
+        try SourceContract("Argus/Settings/SettingsView.swift").contains(
+            "TextField(\"Branch prefix\", text: $settings.newBranchPrefix",
+            "branch prefix setting is editable"
         )
-        try SourceContract("Argus/Settings/SettingsView.swift").containsAll(
-            [
-                "TextField(\"Branch prefix\", text: $settings.newBranchPrefix"
-            ], "branch prefix setting is editable")
     }
 
     @Test

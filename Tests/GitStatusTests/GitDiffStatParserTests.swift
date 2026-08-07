@@ -6,11 +6,7 @@ import Testing
 @Suite
 struct GitDiffStatParserTests {
     @Test
-    func coveredBehaviors() {
-        parsesTextBinaryAndRenamedStats()
-    }
-
-    private func parsesTextBinaryAndRenamedStats() {
+    func parsesTextBinaryAndRenamedStats() {
         let output = """
             12	3	Sources/App.swift
             -	-	Assets/logo.png

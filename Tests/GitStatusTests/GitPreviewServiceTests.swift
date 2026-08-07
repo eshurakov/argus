@@ -6,23 +6,7 @@ import Testing
 @Suite
 struct GitPreviewServiceTests {
     @Test
-    func coveredBehaviors() async throws {
-        try await resolvesStagedModifiedContent()
-        try await resolvesStagedAddedContent()
-        try await resolvesStagedDeletedContent()
-        try await resolvesStagedRenamedContent()
-        try await resolvesUnstagedModifiedContent()
-        try await resolvesUnstagedDeletedContent()
-        try await resolvesUnstagedRenamedContent()
-        try await resolvesUntrackedContent()
-        try await returnsTextFallbackForBinaryContent()
-        try await returnsTextFallbackForLargeContent()
-        try await runsBlamePreviewWithColorizedOutput()
-        await rejectsBlameForUntrackedFiles()
-        await reportsPreviewCommandFailureWithoutThrowing()
-    }
-
-    private func resolvesStagedModifiedContent() async throws {
+    func resolvesStagedModifiedContent() async throws {
         let repo = try repository(prefix: "argus-preview-staged-modified", fileContent: "old\n")
         defer { repo.remove() }
         try "staged\n".write(to: repo.fileURL, atomically: true, encoding: .utf8)
@@ -37,7 +21,8 @@ struct GitPreviewServiceTests {
         assertEqual(diff.newContent, "staged\n", "staged modified new side comes from index")
     }
 
-    private func resolvesStagedAddedContent() async throws {
+    @Test
+    func resolvesStagedAddedContent() async throws {
         let repo = try repository(prefix: "argus-preview-staged-added")
         defer { repo.remove() }
         let fileURL = repo.url.appendingPathComponent("added.txt")
@@ -52,7 +37,8 @@ struct GitPreviewServiceTests {
         assertEqual(diff.newContent, "added\n", "staged added new side comes from index")
     }
 
-    private func resolvesStagedDeletedContent() async throws {
+    @Test
+    func resolvesStagedDeletedContent() async throws {
         let repo = try repository(prefix: "argus-preview-staged-deleted", fileContent: "old\n")
         defer { repo.remove() }
         try runGit(["rm", "file.txt"], in: repo.url)
@@ -65,7 +51,8 @@ struct GitPreviewServiceTests {
         assertEqual(diff.newContent, "", "staged deleted new side is empty")
     }
 
-    private func resolvesStagedRenamedContent() async throws {
+    @Test
+    func resolvesStagedRenamedContent() async throws {
         let repo = try repository(prefix: "argus-preview-staged-renamed", fileContent: "old\n")
         defer { repo.remove() }
         try runGit(["mv", "file.txt", "renamed.txt"], in: repo.url)
@@ -79,7 +66,8 @@ struct GitPreviewServiceTests {
         assertEqual(diff.newContent, "old\n", "staged rename reads destination path from index")
     }
 
-    private func resolvesUnstagedModifiedContent() async throws {
+    @Test
+    func resolvesUnstagedModifiedContent() async throws {
         let repo = try repository(prefix: "argus-preview-unstaged-modified", fileContent: "old\n")
         defer { repo.remove() }
         try "working\n".write(to: repo.fileURL, atomically: true, encoding: .utf8)
@@ -92,7 +80,8 @@ struct GitPreviewServiceTests {
         assertEqual(diff.newContent, "working\n", "unstaged modified new side comes from working tree")
     }
 
-    private func resolvesUnstagedDeletedContent() async throws {
+    @Test
+    func resolvesUnstagedDeletedContent() async throws {
         let repo = try repository(prefix: "argus-preview-unstaged-deleted", fileContent: "old\n")
         defer { repo.remove() }
         try FileManager.default.removeItem(at: repo.fileURL)
@@ -105,7 +94,8 @@ struct GitPreviewServiceTests {
         assertEqual(diff.newContent, "", "unstaged deleted new side is empty")
     }
 
-    private func resolvesUnstagedRenamedContent() async throws {
+    @Test
+    func resolvesUnstagedRenamedContent() async throws {
         let repo = try repository(prefix: "argus-preview-unstaged-renamed", fileContent: "old\n")
         defer { repo.remove() }
         let renamedURL = repo.url.appendingPathComponent("renamed.txt")
@@ -121,7 +111,8 @@ struct GitPreviewServiceTests {
         assertEqual(diff.newContent, "old\n", "unstaged rename reads destination from working tree")
     }
 
-    private func resolvesUntrackedContent() async throws {
+    @Test
+    func resolvesUntrackedContent() async throws {
         let repo = try repository(prefix: "argus-preview-untracked")
         defer { repo.remove() }
         let fileURL = repo.url.appendingPathComponent("scratch.txt")
@@ -135,7 +126,8 @@ struct GitPreviewServiceTests {
         assertEqual(diff.newContent, "scratch\n", "untracked new side comes from working tree")
     }
 
-    private func returnsTextFallbackForBinaryContent() async throws {
+    @Test
+    func returnsTextFallbackForBinaryContent() async throws {
         let repo = try repository(prefix: "argus-preview-binary")
         defer { repo.remove() }
         let fileURL = repo.url.appendingPathComponent("binary.dat")
@@ -154,7 +146,8 @@ struct GitPreviewServiceTests {
         assertEqual(output, "Binary file differs", "binary files bypass Pierre rendering")
     }
 
-    private func returnsTextFallbackForLargeContent() async throws {
+    @Test
+    func returnsTextFallbackForLargeContent() async throws {
         let repo = try repository(prefix: "argus-preview-large")
         defer { repo.remove() }
         let fileURL = repo.url.appendingPathComponent("large.txt")
@@ -173,7 +166,8 @@ struct GitPreviewServiceTests {
         assertEqual(output, "File is too large to preview", "large files bypass Pierre rendering")
     }
 
-    private func runsBlamePreviewWithColorizedOutput() async throws {
+    @Test
+    func runsBlamePreviewWithColorizedOutput() async throws {
         let repo = try repository(prefix: "argus-preview-blame", fileContent: "one\n")
         defer { repo.remove() }
 
@@ -190,7 +184,8 @@ struct GitPreviewServiceTests {
         assertEqual(output.contains("\u{001B}["), true, "blame output remains colorized")
     }
 
-    private func rejectsBlameForUntrackedFiles() async {
+    @Test
+    func rejectsBlameForUntrackedFiles() async {
         let result = await GitPreviewService().preview(
             kind: .blame,
             rootPath: "/tmp/repo",
@@ -203,7 +198,8 @@ struct GitPreviewServiceTests {
         assertEqual(path, "scratch.txt", "failure keeps file path")
     }
 
-    private func reportsPreviewCommandFailureWithoutThrowing() async {
+    @Test
+    func reportsPreviewCommandFailureWithoutThrowing() async {
         let result = await GitPreviewService().preview(
             kind: .blame,
             rootPath: "/tmp/not-a-real-argus-preview-repo",
@@ -228,13 +224,17 @@ struct GitPreviewServiceTests {
     }
 
     private func repository(prefix: String, fileContent: String? = nil) throws -> TestRepository {
-        let directory = try TemporaryDirectory(prefix: prefix)
+        let directory = try TestTemporaryDirectory(prefix: prefix)
         try runGit(["init", "-b", "main"], in: directory.url)
         try runGit(["config", "user.email", "argus@example.test"], in: directory.url)
         try runGit(["config", "user.name", "Argus Test"], in: directory.url)
 
         if let fileContent {
-            try fileContent.write(to: directory.fileURL, atomically: true, encoding: .utf8)
+            try fileContent.write(
+                to: directory.url.appendingPathComponent("file.txt"),
+                atomically: true,
+                encoding: .utf8
+            )
             try runGit(["add", "file.txt"], in: directory.url)
             try runGit(["commit", "-m", "initial"], in: directory.url)
         }
@@ -242,17 +242,7 @@ struct GitPreviewServiceTests {
     }
 
     private func runGit(_ arguments: [String], in directory: URL) throws {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
-        process.arguments = arguments
-        process.currentDirectoryURL = directory
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
-        try process.run()
-        process.waitUntilExit()
-        if process.terminationStatus != 0 {
-            throw NSError(domain: "GitPreviewServiceTests", code: Int(process.terminationStatus))
-        }
+        _ = try TestGit.run(arguments, in: directory)
     }
 
     private func assertEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
@@ -266,23 +256,8 @@ struct GitPreviewServiceTests {
 }
 
 private struct TestRepository {
-    let directory: TemporaryDirectory
+    let directory: TestTemporaryDirectory
     var url: URL { directory.url }
-    var fileURL: URL { directory.fileURL }
+    var fileURL: URL { directory.url.appendingPathComponent("file.txt") }
     func remove() { directory.remove() }
-}
-
-private struct TemporaryDirectory {
-    let url: URL
-    var fileURL: URL { url.appendingPathComponent("file.txt") }
-
-    init(prefix: String) throws {
-        url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("\(prefix)-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    }
-
-    func remove() {
-        try? FileManager.default.removeItem(at: url)
-    }
 }

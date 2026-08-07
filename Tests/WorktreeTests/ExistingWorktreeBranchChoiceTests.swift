@@ -6,14 +6,13 @@ import Testing
 @Suite
 struct ExistingWorktreeBranchChoiceTests {
     @Test
-    func coveredBehaviors() async throws {
-        let temp = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent(
-                "argus-existing-worktree-choice-\(UUID().uuidString)", isDirectory: true)
+    func existingExternalWorktreeBranchesRemainSelectable() async throws {
+        let temporaryDirectory = try TestTemporaryDirectory(prefix: "argus-existing-worktree-choice")
+        let temp = temporaryDirectory.url
         let repo = temp.appendingPathComponent("repo", isDirectory: true)
         let existingWorktree = temp.appendingPathComponent("existing-worktree", isDirectory: true)
         try FileManager.default.createDirectory(at: repo, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: temp) }
+        defer { temporaryDirectory.remove() }
 
         try run("git", ["init", "-b", "main", "."], cwd: repo.path)
         try run("git", ["config", "user.email", "test@example.com"], cwd: repo.path)
@@ -50,24 +49,7 @@ struct ExistingWorktreeBranchChoiceTests {
     }
 
     private func run(_ executable: String, _ args: [String], cwd: String) throws {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/\(executable)")
-        process.arguments = args
-        process.currentDirectoryURL = URL(fileURLWithPath: cwd)
-        process.standardOutput = FileHandle.nullDevice
-        let stderr = Pipe()
-        process.standardError = stderr
-        try process.run()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else {
-            let detail =
-                String(data: stderr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-            throw NSError(
-                domain: "ExistingWorktreeBranchChoiceTests", code: Int(process.terminationStatus),
-                userInfo: [
-                    NSLocalizedDescriptionKey: "git \(args.joined(separator: " ")) failed: \(detail)"
-                ])
-        }
+        _ = try TestGit.run(executable, args, cwd: cwd)
     }
 
     private func assertEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {

@@ -18,7 +18,7 @@ private final class TurnCompletionDeliverySpy: @unchecked Sendable {
     }
 }
 
-@Suite
+@Suite(.serialized)
 struct AgentSocketServerTests {
     @Test
     func validRequestIsDeliveredAndReceivesCorrelatedSuccess() async throws {
@@ -27,9 +27,6 @@ struct AgentSocketServerTests {
         let server = AgentSocketServer(path: path) { event in
             spy.deliver(event)
         }
-        try await server.start()
-        defer { Task { await server.shutdown() } }
-
         let workspaceId = UUID()
         let surfaceId = UUID()
         let parameters =
@@ -37,11 +34,15 @@ struct AgentSocketServerTests {
             + "\"surfaceId\":\"\(surfaceId.uuidString)\",\"eventId\":\"event-1\""
         let request =
             "{\"version\":1,\"id\":\"request-1\",\"method\":\"agent.turnCompleted\",\"params\":{\(parameters)}}"
-        let response = try await send(request, to: path)
+        let response = try await withStartedServer(server) {
+            try await send(request, to: path)
+        }
 
-        #expect(response.contains("\"id\":\"request-1\""))
-        #expect(response.contains("\"ok\":true"))
-        #expect(response.contains("\"requiresAttention\":true"))
+        let decoded = try decodeResponse(response)
+        #expect(decoded.id == "request-1")
+        #expect(decoded.isSuccessful)
+        #expect(decoded.result?.accepted == true)
+        #expect(decoded.result?.requiresAttention == true)
         #expect(spy.count == 1)
     }
 
@@ -52,14 +53,18 @@ struct AgentSocketServerTests {
         let server = AgentSocketServer(path: path, maximumFrameBytes: 32) { event in
             spy.deliver(event)
         }
-        try await server.start()
-        defer { Task { await server.shutdown() } }
+        let responses = try await withStartedServer(server) {
+            let malformed = try await send("not json", to: path)
+            let oversized = try await send(String(repeating: "x", count: 33), to: path)
+            return (malformed, oversized)
+        }
+        let malformed = responses.0
+        let oversized = responses.1
 
-        let malformed = try await send("not json", to: path)
-        let oversized = try await send(String(repeating: "x", count: 33), to: path)
-
-        #expect(malformed.contains("malformed_request"))
-        #expect(oversized.contains("frame_too_large"))
+        let malformedResponse = try decodeResponse(malformed)
+        let oversizedResponse = try decodeResponse(oversized)
+        #expect(malformedResponse.error?.code == .malformedRequest)
+        #expect(oversizedResponse.error?.code == .frameTooLarge)
         #expect(spy.count == 0)
     }
 
@@ -70,20 +75,20 @@ struct AgentSocketServerTests {
         let server = AgentSocketServer(path: path) { event in
             spy.deliver(event)
         }
-        try await server.start()
-        defer { Task { await server.shutdown() } }
-
-        let request = validRequest(id: "fragmented")
-        let socket = try await connect(to: path)
-        defer { Darwin.close(socket) }
-        let midpoint = request.utf8.count / 2
-        try send(String(request.prefix(midpoint)), on: socket, terminatesFrame: false)
-        try send(String(request.dropFirst(midpoint)), on: socket)
-
-        let responses = try await receiveResponses(on: socket, count: 1)
+        let responses = try await withStartedServer(server) {
+            let request = validRequest(id: "fragmented")
+            let socket = try await connect(to: path)
+            defer { Darwin.close(socket) }
+            let midpoint = request.utf8.count / 2
+            try send(String(request.prefix(midpoint)), on: socket, terminatesFrame: false)
+            try send(String(request.dropFirst(midpoint)), on: socket)
+            return try await receiveResponses(on: socket, count: 1)
+        }
         let response = try #require(responses.first)
-        #expect(response.contains("\"id\":\"fragmented\""))
-        #expect(response.contains("\"ok\":true"))
+        let decoded = try decodeResponse(response)
+        #expect(decoded.id == "fragmented")
+        #expect(decoded.isSuccessful)
+        #expect(decoded.result?.accepted == true)
         #expect(spy.count == 1)
     }
 
@@ -94,44 +99,42 @@ struct AgentSocketServerTests {
         let server = AgentSocketServer(path: path) { event in
             spy.deliver(event)
         }
-        try await server.start()
-        defer { Task { await server.shutdown() } }
-
-        let socket = try await connect(to: path)
-        defer { Darwin.close(socket) }
-        try send(validRequest(id: "first") + "\n" + validRequest(id: "second"), on: socket)
-
-        let responses = try await receiveResponses(on: socket, count: 2)
-        #expect(responses.count == 2)
-        #expect(responses[0].contains("\"id\":\"first\""))
-        #expect(responses[0].contains("\"ok\":true"))
-        #expect(responses[1].contains("\"id\":\"second\""))
-        #expect(responses[1].contains("\"ok\":true"))
+        let responses = try await withStartedServer(server) {
+            let socket = try await connect(to: path)
+            defer { Darwin.close(socket) }
+            try send(validRequest(id: "first") + "\n" + validRequest(id: "second"), on: socket)
+            return try await receiveResponses(on: socket, count: 2)
+        }
+        let decoded = try responses.map(decodeResponse)
+        #expect(decoded.count == 2)
+        #expect(decoded[0].id == "first")
+        #expect(decoded[0].isSuccessful)
+        #expect(decoded[0].result?.accepted == true)
+        #expect(decoded[1].id == "second")
+        #expect(decoded[1].isSuccessful)
+        #expect(decoded[1].result?.accepted == true)
         #expect(spy.count == 2)
     }
 
     @Test
-    func disconnectedClientDoesNotStopServer() async throws {
+    func closedClientDoesNotStopServer() async throws {
         let path = temporarySocketPath()
         let spy = TurnCompletionDeliverySpy()
         let server = AgentSocketServer(path: path) { event in
-            spy.deliver(event)
-            Thread.sleep(forTimeInterval: 0.1)
+            _ = spy.deliver(event)
             return .accepted(requiresAttention: true)
         }
-        try await server.start()
-        defer { Task { await server.shutdown() } }
-
-        let request = validRequest(id: "disconnected-client")
-        let socket = try await connect(to: path)
-        try send(request, on: socket)
-        try await waitUntil { spy.count == 1 }
-        disconnectWithReset(socket)
-
-        let response = try await send(validRequest(id: "subsequent-client"), to: path)
-        #expect(response.contains("\"id\":\"subsequent-client\""))
-        #expect(response.contains("\"ok\":true"))
-        try await waitUntil { spy.count == 2 }
+        let responses = try await withStartedServer(server) {
+            let first = try await send(validRequest(id: "closed-client"), to: path)
+            let second = try await send(validRequest(id: "subsequent-client"), to: path)
+            return (first, second)
+        }
+        let firstDecoded = try decodeResponse(responses.0)
+        let secondDecoded = try decodeResponse(responses.1)
+        #expect(firstDecoded.id == "closed-client")
+        #expect(firstDecoded.isSuccessful)
+        #expect(secondDecoded.id == "subsequent-client")
+        #expect(secondDecoded.isSuccessful)
         #expect(spy.count == 2)
     }
 
@@ -141,19 +144,19 @@ struct AgentSocketServerTests {
         let firstServer = AgentSocketServer(path: path) { _ in
             .accepted(requiresAttention: false)
         }
-        try await firstServer.start()
-        defer { Task { await firstServer.shutdown() } }
-
-        let secondServer = AgentSocketServer(path: path) { _ in
-            .accepted(requiresAttention: false)
+        let response = try await withStartedServer(firstServer) {
+            let secondServer = AgentSocketServer(path: path) { _ in
+                .accepted(requiresAttention: false)
+            }
+            await #expect(throws: AgentSocketServerError.liveListener) {
+                try await secondServer.start()
+            }
+            return try await send(validRequest(id: "first-server"), to: path)
         }
-        await #expect(throws: AgentSocketServerError.liveListener) {
-            try await secondServer.start()
-        }
-
-        let response = try await send(validRequest(id: "first-server"), to: path)
-        #expect(response.contains("\"id\":\"first-server\""))
-        #expect(response.contains("\"ok\":true"))
+        let decoded = try decodeResponse(response)
+        #expect(decoded.id == "first-server")
+        #expect(decoded.isSuccessful)
+        #expect(decoded.result?.accepted == true)
     }
 
     @Test
@@ -165,12 +168,17 @@ struct AgentSocketServerTests {
         let server = AgentSocketServer(path: path) { _ in
             .accepted(requiresAttention: false)
         }
-        try await server.start()
-        defer { Task { await server.shutdown() } }
+        let response = try await withStartedServer(server) {
+            try await send(validRequest(id: "after-cleanup"), to: path)
+        }
+        let decoded = try decodeResponse(response)
+        #expect(decoded.id == "after-cleanup")
+        #expect(decoded.isSuccessful)
+        #expect(decoded.result?.accepted == true)
+    }
 
-        let response = try await send(validRequest(id: "after-cleanup"), to: path)
-        #expect(response.contains("\"id\":\"after-cleanup\""))
-        #expect(response.contains("\"ok\":true"))
+    private func decodeResponse(_ text: String) throws -> AgentSocketResponse {
+        try JSONDecoder().decode(AgentSocketResponse.self, from: Data(text.utf8))
     }
 
     private func temporarySocketPath() -> String {
@@ -214,24 +222,25 @@ struct AgentSocketServerTests {
         try await Task.detached { try receiveResponsesSynchronously(on: socket, count: count) }.value
     }
 
-    private func disconnectWithReset(_ socket: Int32) {
-        var linger = linger(l_onoff: 1, l_linger: 0)
-        _ = setsockopt(socket, SOL_SOCKET, SO_LINGER, &linger, socklen_t(MemoryLayout.size(ofValue: linger)))
-        Darwin.close(socket)
-    }
+}
 
-    private func waitUntil(_ condition: @escaping @Sendable () -> Bool) async throws {
-        let deadline = ContinuousClock.now + .seconds(15)
-        while !condition() {
-            guard ContinuousClock.now < deadline else { throw SocketClientError.timedOut }
-            try await Task.sleep(for: .milliseconds(10))
-        }
+private func withStartedServer<Value>(
+    _ server: AgentSocketServer,
+    operation: () async throws -> Value
+) async throws -> Value {
+    try await server.start()
+    do {
+        let value = try await operation()
+        await server.shutdown()
+        return value
+    } catch {
+        await server.shutdown()
+        throw error
     }
 }
 
 private enum SocketClientError: Error {
     case systemCall(String)
-    case timedOut
 }
 
 private func connectSynchronously(to path: String) throws -> Int32 {

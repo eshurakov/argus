@@ -7,20 +7,7 @@ import Testing
 @Suite
 struct GitStatusServiceTests {
     @Test
-    func coveredBehaviors() async throws {
-        try await reportsCleanRepositoryBranchSummary()
-        try await reportsNotRepositoryState()
-        try await initializesRepositoryAndReturnsCleanStatus()
-        try await reportsRepositoryInitializationFailure()
-        try await stagesUnstagedFileAndRefreshesStatus()
-        try await unstagesStagedFileAndRefreshesStatus()
-        try await discardsUnstagedTrackedChangeAndRefreshesStatus()
-        try await deletesUntrackedFileAndRefreshesStatus()
-        try await addsUntrackedFileToGitignoreAndRefreshesStatus()
-        try await addsUntrackedDirectoryToGitignoreAndRefreshesStatus()
-    }
-
-    private func reportsCleanRepositoryBranchSummary() async throws {
+    func reportsCleanRepositoryBranchSummary() async throws {
         let repo = try TemporaryDirectory(prefix: "argus-git-status-clean")
         defer { repo.remove() }
         try run("/usr/bin/git", ["init", "-b", "main"], in: repo.url)
@@ -35,7 +22,8 @@ struct GitStatusServiceTests {
         assertEqual(summary.isClean, true, "new repository is clean")
     }
 
-    private func reportsNotRepositoryState() async throws {
+    @Test
+    func reportsNotRepositoryState() async throws {
         let directory = try TemporaryDirectory(prefix: "argus-git-status-not-repo")
         defer { directory.remove() }
 
@@ -47,7 +35,8 @@ struct GitStatusServiceTests {
         assertEqual(rootPath, directory.url.path, "not-repository state keeps root path")
     }
 
-    private func initializesRepositoryAndReturnsCleanStatus() async throws {
+    @Test
+    func initializesRepositoryAndReturnsCleanStatus() async throws {
         let directory = try TemporaryDirectory(prefix: "argus-git-status-init")
         defer { directory.remove() }
 
@@ -63,7 +52,8 @@ struct GitStatusServiceTests {
             true, "git init creates metadata")
     }
 
-    private func reportsRepositoryInitializationFailure() async throws {
+    @Test
+    func reportsRepositoryInitializationFailure() async throws {
         let missingPath = FileManager.default.temporaryDirectory
             .appendingPathComponent(
                 "argus-git-status-init-missing-\(UUID().uuidString)", isDirectory: true
@@ -79,7 +69,8 @@ struct GitStatusServiceTests {
         assertEqual(message.isEmpty, false, "initialization failure includes an actionable message")
     }
 
-    private func stagesUnstagedFileAndRefreshesStatus() async throws {
+    @Test
+    func stagesUnstagedFileAndRefreshesStatus() async throws {
         let repo = try TemporaryDirectory(prefix: "argus-git-status-stage")
         defer { repo.remove() }
         try run("/usr/bin/git", ["init", "-b", "main"], in: repo.url)
@@ -99,7 +90,8 @@ struct GitStatusServiceTests {
             summary.untrackedFiles.isEmpty, true, "stage operation removes file from untracked section")
     }
 
-    private func unstagesStagedFileAndRefreshesStatus() async throws {
+    @Test
+    func unstagesStagedFileAndRefreshesStatus() async throws {
         let repo = try TemporaryDirectory(prefix: "argus-git-status-unstage")
         defer { repo.remove() }
         try run("/usr/bin/git", ["init", "-b", "main"], in: repo.url)
@@ -125,7 +117,8 @@ struct GitStatusServiceTests {
             "unstage operation moves file into unstaged section")
     }
 
-    private func discardsUnstagedTrackedChangeAndRefreshesStatus() async throws {
+    @Test
+    func discardsUnstagedTrackedChangeAndRefreshesStatus() async throws {
         let repo = try TemporaryDirectory(prefix: "argus-git-status-discard")
         defer { repo.remove() }
         try run("/usr/bin/git", ["init", "-b", "main"], in: repo.url)
@@ -149,7 +142,8 @@ struct GitStatusServiceTests {
             "discard reverts tracked unstaged changes")
     }
 
-    private func deletesUntrackedFileAndRefreshesStatus() async throws {
+    @Test
+    func deletesUntrackedFileAndRefreshesStatus() async throws {
         let repo = try TemporaryDirectory(prefix: "argus-git-status-delete")
         defer { repo.remove() }
         try run("/usr/bin/git", ["init", "-b", "main"], in: repo.url)
@@ -168,7 +162,8 @@ struct GitStatusServiceTests {
             "delete removes untracked file from disk")
     }
 
-    private func addsUntrackedFileToGitignoreAndRefreshesStatus() async throws {
+    @Test
+    func addsUntrackedFileToGitignoreAndRefreshesStatus() async throws {
         let repo = try TemporaryDirectory(prefix: "argus-git-status-ignore-file")
         defer { repo.remove() }
         try run("/usr/bin/git", ["init", "-b", "main"], in: repo.url)
@@ -200,7 +195,8 @@ struct GitStatusServiceTests {
         )
     }
 
-    private func addsUntrackedDirectoryToGitignoreAndRefreshesStatus() async throws {
+    @Test
+    func addsUntrackedDirectoryToGitignoreAndRefreshesStatus() async throws {
         let repo = try TemporaryDirectory(prefix: "argus-git-status-ignore-directory")
         defer { repo.remove() }
         try run("/usr/bin/git", ["init", "-b", "main"], in: repo.url)
@@ -233,16 +229,7 @@ struct GitStatusServiceTests {
 @Suite
 struct GitStatusServiceBulkAndDiffTests {
     @Test
-    func coveredBehaviors() async throws {
-        try await performsBulkFileOperationsAndRefreshesStatus()
-        try await performsSectionBulkOperationBeyondDisplayedCap()
-        try await reportsFileOperationFailureAsRecoverableState()
-        try await reportsChangedFileRowsWithDiffStats()
-        try await reportsUntrackedFileRowsWithDiffStats()
-        try await expandsUntrackedDirectoriesToChildFiles()
-    }
-
-    private func performsBulkFileOperationsAndRefreshesStatus() async throws {
+    func performsBulkFileOperationsAndRefreshesStatus() async throws {
         let repo = try TemporaryDirectory(prefix: "argus-git-status-bulk")
         defer { repo.remove() }
         try run("/usr/bin/git", ["init", "-b", "main"], in: repo.url)
@@ -298,7 +285,8 @@ struct GitStatusServiceBulkAndDiffTests {
         }
     }
 
-    private func performsSectionBulkOperationBeyondDisplayedCap() async throws {
+    @Test
+    func performsSectionBulkOperationBeyondDisplayedCap() async throws {
         let repo = try TemporaryDirectory(prefix: "argus-git-status-section-bulk-cap")
         defer { repo.remove() }
         try run("/usr/bin/git", ["init", "-b", "main"], in: repo.url)
@@ -332,7 +320,8 @@ struct GitStatusServiceBulkAndDiffTests {
         assertEqual(stagedSummary.untrackedCount, 0, "section bulk stage clears all untracked files")
     }
 
-    private func reportsFileOperationFailureAsRecoverableState() async throws {
+    @Test
+    func reportsFileOperationFailureAsRecoverableState() async throws {
         let repo = try TemporaryDirectory(prefix: "argus-git-status-operation-failure")
         defer { repo.remove() }
         try run("/usr/bin/git", ["init", "-b", "main"], in: repo.url)
@@ -347,7 +336,8 @@ struct GitStatusServiceBulkAndDiffTests {
         assertEqual(message.isEmpty, false, "file operation failure includes a message")
     }
 
-    private func reportsChangedFileRowsWithDiffStats() async throws {
+    @Test
+    func reportsChangedFileRowsWithDiffStats() async throws {
         let repo = try TemporaryDirectory(prefix: "argus-git-status-changed")
         defer { repo.remove() }
         try run("/usr/bin/git", ["init", "-b", "main"], in: repo.url)
@@ -370,7 +360,8 @@ struct GitStatusServiceBulkAndDiffTests {
         assertEqual(summary.unstagedFiles.first?.deletions, 0, "unstaged deletions come from numstat")
     }
 
-    private func reportsUntrackedFileRowsWithDiffStats() async throws {
+    @Test
+    func reportsUntrackedFileRowsWithDiffStats() async throws {
         let repo = try TemporaryDirectory(prefix: "argus-git-status-untracked-stats")
         defer { repo.remove() }
         try run("/usr/bin/git", ["init", "-b", "main"], in: repo.url)
@@ -388,7 +379,8 @@ struct GitStatusServiceBulkAndDiffTests {
         assertEqual(summary.untrackedFiles.first?.deletions, 0, "untracked deletions are zero")
     }
 
-    private func expandsUntrackedDirectoriesToChildFiles() async throws {
+    @Test
+    func expandsUntrackedDirectoriesToChildFiles() async throws {
         let repo = try TemporaryDirectory(prefix: "argus-git-status-untracked-dir")
         defer { repo.remove() }
         try run("/usr/bin/git", ["init", "-b", "main"], in: repo.url)
@@ -409,17 +401,8 @@ struct GitStatusServiceBulkAndDiffTests {
 }
 
 private func run(_ executable: String, _ arguments: [String], in directory: URL) throws {
-    let process = Process()
-    process.executableURL = URL(fileURLWithPath: executable)
-    process.arguments = arguments
-    process.currentDirectoryURL = directory
-    process.standardOutput = FileHandle.nullDevice
-    process.standardError = FileHandle.nullDevice
-    try process.run()
-    process.waitUntilExit()
-    if process.terminationStatus != 0 {
-        throw NSError(domain: "GitStatusServiceTests", code: Int(process.terminationStatus))
-    }
+    #expect(executable == "/usr/bin/git", "Git status fixtures must use the system git executable")
+    _ = try TestGit.run(arguments, in: directory)
 }
 
 private func assertEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
@@ -431,16 +414,4 @@ private func fail(_ message: String) -> Never {
     fatalError(message)
 }
 
-private struct TemporaryDirectory {
-    let url: URL
-
-    init(prefix: String) throws {
-        url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("\(prefix)-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-    }
-
-    func remove() {
-        try? FileManager.default.removeItem(at: url)
-    }
-}
+private typealias TemporaryDirectory = TestTemporaryDirectory

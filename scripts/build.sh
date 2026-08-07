@@ -99,39 +99,7 @@ cli_build_path() {
 }
 
 quit_running() {
-    local pids
-    pids="$(pgrep -x "${APP_NAME}" || true)"
-    [[ -n "${pids}" ]] || return 0
-
-    log "Quitting running ${APP_NAME}..."
-    while IFS= read -r pid; do
-        # Target the process that was already running. `tell application
-        # "Argus" to quit` may launch another registered Argus bundle when
-        # the running bundle has just been replaced, and that transient app
-        # can overwrite the saved session with a fresh one.
-        osascript -l JavaScript \
-            -e 'ObjC.import("AppKit")' \
-            -e "const app = $.NSRunningApplication.runningApplicationWithProcessIdentifier(${pid});" \
-            -e 'if (app) app.terminate;' \
-            > /dev/null 2>&1 || true
-    done <<< "${pids}"
-
-    for _ in $(seq 1 5); do
-        local any_running=0
-        while IFS= read -r pid; do
-            if kill -0 "${pid}" 2>/dev/null; then
-                any_running=1
-                break
-            fi
-        done <<< "${pids}"
-        [[ ${any_running} -eq 0 ]] && return 0
-        sleep 1
-    done
-
-    while IFS= read -r pid; do
-        kill -9 "${pid}" 2>/dev/null || true
-    done <<< "${pids}"
-    sleep 0.5
+    "${SCRIPT_DIR}/quit-running.sh" "${APP_NAME}"
 }
 
 launch_app() {

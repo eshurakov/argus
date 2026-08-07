@@ -22,7 +22,8 @@ extension WorktreeService {
             createNewBranch
             ? branchName.trimmingCharacters(in: .whitespacesAndNewlines)
             : try await resolveExistingBranchForWorktree(branchName, repositoryPath: repositoryPath)
-        let worktreeURL = Self.worktreeBaseURL
+        let worktreeURL =
+            managedWorktreeBaseURL
             .appendingPathComponent(projectId.uuidString, isDirectory: true)
             .appendingPathComponent(uniqueSlug(resolvedBranchName, projectId: projectId), isDirectory: true)
         try FileManager.default.createDirectory(

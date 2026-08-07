@@ -29,11 +29,11 @@ struct ExistingBranchPickerTests {
 
     @Test(.timeLimit(.minutes(1)))
     func largeBranchListDoesNotBlockOnAFullOutputPipe() async throws {
-        let temp = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("argus-large-branch-picker-\(UUID().uuidString)", isDirectory: true)
+        let temporaryDirectory = try TestTemporaryDirectory(prefix: "argus-large-branch-picker")
+        let temp = temporaryDirectory.url
         let repo = temp.appendingPathComponent("repo", isDirectory: true)
         try FileManager.default.createDirectory(at: repo, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: temp) }
+        defer { temporaryDirectory.remove() }
 
         try run("git", ["init", "-b", "main", "."], cwd: repo.path)
         try run("git", ["config", "user.email", "test@example.com"], cwd: repo.path)
@@ -83,14 +83,14 @@ struct ExistingBranchPickerTests {
     }
 
     @Test
-    func coveredBehaviors() async throws {
-        let temp = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("argus-existing-picker-\(UUID().uuidString)", isDirectory: true)
+    func unfetchedRemoteBranchesCanBeSelectedAndOpenedInAWorktree() async throws {
+        let temporaryDirectory = try TestTemporaryDirectory(prefix: "argus-existing-picker")
+        let temp = temporaryDirectory.url
         let origin = temp.appendingPathComponent("origin.git", isDirectory: true)
         let seed = temp.appendingPathComponent("seed", isDirectory: true)
         let repo = temp.appendingPathComponent("repo", isDirectory: true)
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: temp) }
+        defer { temporaryDirectory.remove() }
 
         try createRemoteFixture(origin: origin, seed: seed, temp: temp)
 
@@ -106,7 +106,8 @@ struct ExistingBranchPickerTests {
             localBranches.contains("origin/feature/unfetched"),
             "test branch starts as an unfetched remote branch")
 
-        let service = WorktreeService()
+        let service = WorktreeService(
+            worktreeBaseURL: temp.appendingPathComponent("managed-worktrees", isDirectory: true))
         let available = try await service.listAvailableBranches(repositoryPath: repo.path)
         assertTrue(
             available.contains("origin/feature/unfetched"),
@@ -119,11 +120,11 @@ struct ExistingBranchPickerTests {
             branchName: "origin/feature/unfetched",
             createNewBranch: false
         )
-        defer { try? FileManager.default.removeItem(atPath: worktreePath) }
         let checkedOutBranch = try capture("git", ["branch", "--show-current"], cwd: worktreePath)
         assertTrue(
             checkedOutBranch == "feature/unfetched",
             "unfetched remote head opens as a local tracking branch")
+        try await service.removeWorktree(repositoryPath: repo.path, worktreePath: worktreePath)
     }
 
     private func createRemoteFixture(origin: URL, seed: URL, temp: URL) throws {
@@ -151,37 +152,7 @@ struct ExistingBranchPickerTests {
     }
 
     private func capture(_ executable: String, _ args: [String], cwd: String) throws -> String {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/\(executable)")
-        process.arguments = args
-        process.currentDirectoryURL = URL(fileURLWithPath: cwd)
-        process.environment = ProcessInfo.processInfo.environment.merging([
-            "GIT_CONFIG_COUNT": "1",
-            "GIT_CONFIG_KEY_0": "core.fsmonitor",
-            "GIT_CONFIG_VALUE_0": "false"
-        ]) { _, new in new }
-        let stdout = Pipe()
-        let stderr = Pipe()
-        process.standardOutput = stdout
-        process.standardError = stderr
-        try process.run()
-        try? stdout.fileHandleForWriting.close()
-        try? stderr.fileHandleForWriting.close()
-        process.waitUntilExit()
-        let output =
-            String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard process.terminationStatus == 0 else {
-            let detail =
-                String(data: stderr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-            throw NSError(
-                domain: "ExistingBranchPickerTests", code: Int(process.terminationStatus),
-                userInfo: [
-                    NSLocalizedDescriptionKey:
-                        "\(executable) \(args.joined(separator: " ")) failed: \(detail)"
-                ])
-        }
-        return output
+        try TestGit.run(executable, args, cwd: cwd)
     }
 
     private func assertTrue(_ condition: Bool, _ message: String) {

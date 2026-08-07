@@ -6,12 +6,12 @@ import Testing
 @Suite
 struct RepositoryRootNormalizationTests {
     @Test
-    func coveredBehaviors() async throws {
-        let root = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("argus-repo-root-\(UUID().uuidString)", isDirectory: true)
+    func canonicalizesRepositorySubdirectoriesAndRejectsNonRepositories() async throws {
+        let rootDirectory = try TestTemporaryDirectory(prefix: "argus-repo-root")
+        let root = rootDirectory.url
         let subdir = root.appendingPathComponent("Sources/App", isDirectory: true)
         try FileManager.default.createDirectory(at: subdir, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: root) }
+        defer { rootDirectory.remove() }
 
         try run("git", ["init", "."], cwd: root.path)
         let service = WorktreeService()
@@ -20,10 +20,9 @@ struct RepositoryRootNormalizationTests {
             canonicalRoot, root.resolvingSymlinksInPath().path,
             "subdirectory resolves to canonical repo root")
 
-        let outside = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("argus-not-repo-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: outside, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: outside) }
+        let outsideDirectory = try TestTemporaryDirectory(prefix: "argus-not-repo")
+        let outside = outsideDirectory.url
+        defer { outsideDirectory.remove() }
         do {
             _ = try await service.canonicalRepositoryRoot(for: outside.path)
             Issue.record("non-repository path should throw")
@@ -33,22 +32,7 @@ struct RepositoryRootNormalizationTests {
     }
 
     private func run(_ executable: String, _ args: [String], cwd: String) throws {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/\(executable)")
-        process.arguments = args
-        process.currentDirectoryURL = URL(fileURLWithPath: cwd)
-        process.standardOutput = FileHandle.nullDevice
-        let stderr = Pipe()
-        process.standardError = stderr
-        try process.run()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else {
-            let data = stderr.fileHandleForReading.readDataToEndOfFile()
-            let detail = String(data: data, encoding: .utf8) ?? ""
-            throw NSError(
-                domain: "RepositoryRootNormalizationTests", code: Int(process.terminationStatus),
-                userInfo: [NSLocalizedDescriptionKey: detail])
-        }
+        _ = try TestGit.run(executable, args, cwd: cwd)
     }
 
     private func assertEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {

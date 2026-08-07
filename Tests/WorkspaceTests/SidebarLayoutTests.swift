@@ -7,12 +7,16 @@ import Testing
 @Suite
 struct SidebarLayoutTests {
     @Test
-    func coveredBehaviors() {
+    func leftSidebarMaximumWidthRespectsWindowBounds() {
         assertEqual(
             SidebarLayout.leftMaxWidth(forWindowWidth: 1200), 396, "left max is 33 percent of wide window"
         )
         assertEqual(
             SidebarLayout.leftMaxWidth(forWindowWidth: 180), 80, "left max never drops below min width")
+    }
+
+    @Test
+    func leftSidebarWidthClampsToMinimumMaximumAndDefault() {
         assertEqual(
             SidebarLayout.clampLeftWidth(700, windowWidth: 900), 297,
             "left width clamps to live 33 percent cap")

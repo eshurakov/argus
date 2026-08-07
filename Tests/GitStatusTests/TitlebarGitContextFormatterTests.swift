@@ -6,17 +6,7 @@ import Testing
 @Suite
 struct TitlebarGitContextFormatterTests {
     @Test
-    func coveredBehaviors() {
-        loadedBranchFormatsForVisibleTitlebarAndWindowTitle()
-        dirtyStatusAddsIndicator()
-        dirtyStatusWithoutBranchStillAddsIndicator()
-        cleanStatusWithoutBranchDoesNotExposeMetadata()
-        upstreamTrackingAddsAheadBehindCounts()
-        nonLoadedStatesDoNotExposeStaleMetadata()
-        workspaceTitleIncludesGitContextForWindowTitle()
-    }
-
-    private func loadedBranchFormatsForVisibleTitlebarAndWindowTitle() {
+    func loadedBranchFormatsForVisibleTitlebarAndWindowTitle() {
         let context = TitlebarGitContextFormatter.context(
             from: .loaded(
                 GitStatusSummary(
@@ -34,7 +24,8 @@ struct TitlebarGitContextFormatterTests {
             "branch appears in macOS window title git metadata")
     }
 
-    private func dirtyStatusAddsIndicator() {
+    @Test
+    func dirtyStatusAddsIndicator() {
         let context = TitlebarGitContextFormatter.context(
             from: .loaded(
                 GitStatusSummary(
@@ -53,7 +44,8 @@ struct TitlebarGitContextFormatterTests {
             "dirty window title metadata is screen-reader friendly")
     }
 
-    private func dirtyStatusWithoutBranchStillAddsIndicator() {
+    @Test
+    func dirtyStatusWithoutBranchStillAddsIndicator() {
         let context = TitlebarGitContextFormatter.context(
             from: .loaded(
                 GitStatusSummary(
@@ -72,7 +64,8 @@ struct TitlebarGitContextFormatterTests {
             "dirty detached window title metadata is screen-reader friendly")
     }
 
-    private func cleanStatusWithoutBranchDoesNotExposeMetadata() {
+    @Test
+    func cleanStatusWithoutBranchDoesNotExposeMetadata() {
         let context = TitlebarGitContextFormatter.context(
             from: .loaded(
                 GitStatusSummary(
@@ -86,7 +79,8 @@ struct TitlebarGitContextFormatterTests {
         assertEqual(context, nil, "clean status without branch has no titlebar git metadata")
     }
 
-    private func upstreamTrackingAddsAheadBehindCounts() {
+    @Test
+    func upstreamTrackingAddsAheadBehindCounts() {
         let context = TitlebarGitContextFormatter.context(
             from: .loaded(
                 GitStatusSummary(
@@ -104,7 +98,8 @@ struct TitlebarGitContextFormatterTests {
             "window title metadata includes ahead and behind counts")
     }
 
-    private func nonLoadedStatesDoNotExposeStaleMetadata() {
+    @Test
+    func nonLoadedStatesDoNotExposeStaleMetadata() {
         assertEqual(
             TitlebarGitContextFormatter.context(from: .loading), nil,
             "loading state clears stale titlebar metadata")
@@ -116,7 +111,8 @@ struct TitlebarGitContextFormatterTests {
             "error state clears stale titlebar metadata")
     }
 
-    private func workspaceTitleIncludesGitContextForWindowTitle() {
+    @Test
+    func workspaceTitleIncludesGitContextForWindowTitle() {
         let title = WorkspaceTitleFormatter.title(
             workspaceTitle: "Feature UI",
             contextName: "Argus",

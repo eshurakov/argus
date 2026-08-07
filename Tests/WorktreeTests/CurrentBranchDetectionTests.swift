@@ -6,11 +6,10 @@ import Testing
 @Suite
 struct CurrentBranchDetectionTests {
     @Test
-    func coveredBehaviors() async throws {
-        let root = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("argus-current-branch-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: root) }
+    func detectsMainCurrentAndDetachedBranches() async throws {
+        let temporaryDirectory = try TestTemporaryDirectory(prefix: "argus-current-branch")
+        let root = temporaryDirectory.url
+        defer { temporaryDirectory.remove() }
 
         try run("git", ["init", "-b", "main", "."], cwd: root.path)
         try run("git", ["config", "user.email", "test@example.com"], cwd: root.path)
@@ -39,27 +38,7 @@ struct CurrentBranchDetectionTests {
     }
 
     private func capture(_ executable: String, _ args: [String], cwd: String) throws -> String {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/\(executable)")
-        process.arguments = args
-        process.currentDirectoryURL = URL(fileURLWithPath: cwd)
-        let stdout = Pipe()
-        let stderr = Pipe()
-        process.standardOutput = stdout
-        process.standardError = stderr
-        try process.run()
-        process.waitUntilExit()
-        let output =
-            String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard process.terminationStatus == 0 else {
-            let detail =
-                String(data: stderr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-            throw NSError(
-                domain: "CurrentBranchDetectionTests", code: Int(process.terminationStatus),
-                userInfo: [NSLocalizedDescriptionKey: detail])
-        }
-        return output
+        try TestGit.run(executable, args, cwd: cwd)
     }
 
     private func assertEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {

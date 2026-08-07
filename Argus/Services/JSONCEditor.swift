@@ -1,4 +1,7 @@
+// swiftlint:disable file_length
+
 import Foundation
+
 enum JSONCEditor {
     enum Error: LocalizedError, Equatable {
         case malformed(String)

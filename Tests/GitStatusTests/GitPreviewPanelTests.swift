@@ -6,20 +6,9 @@ import Testing
 
 @Suite
 struct GitPreviewPanelTests {
-    @MainActor
     @Test
-    func coveredBehaviors() throws {
-        modelsPreviewTabTitleAndIcon()
-        rendersANSIColorsWithoutEscapeCodes()
-        resetsANSIColorAfterSGRReset()
-        selectsRendererForPreviewContent()
-        try usesGhosttyPaletteForPreviewRendering()
-        try preservesElevenPointANSITextAtDefaultDocumentSize()
-        try argusTerminalThemeUsesBlackBackground()
-    }
-
     @MainActor
-    private func modelsPreviewTabTitleAndIcon() {
+    func modelsPreviewTabTitleAndIcon() {
         let panel = GitPreviewPanel(
             rootPath: "/tmp/repo",
             preview: GitPreview(
@@ -39,7 +28,9 @@ struct GitPreviewPanelTests {
         assertEqual(panel.displayTitle, "Blame: App.swift", "updated blame preview refreshes tab title")
     }
 
-    private func rendersANSIColorsWithoutEscapeCodes() {
+    @Test
+    @MainActor
+    func rendersANSIColorsWithoutEscapeCodes() {
         let rendered = GitPreviewANSITextRenderer.attributedString(
             for: "\u{001B}[31m-red\u{001B}[0m plain")
 
@@ -48,7 +39,9 @@ struct GitPreviewPanelTests {
         assertColor(rendered, at: 0, equals: .systemRed, "SGR red maps to visible foreground color")
     }
 
-    private func resetsANSIColorAfterSGRReset() {
+    @Test
+    @MainActor
+    func resetsANSIColorAfterSGRReset() {
         let paletteForeground = NSColor(
             srgbRed: 0.72,
             green: 0.81,
@@ -67,7 +60,9 @@ struct GitPreviewPanelTests {
             "SGR reset restores Ghostty-derived foreground color")
     }
 
-    private func selectsRendererForPreviewContent() {
+    @Test
+    @MainActor
+    func selectsRendererForPreviewContent() {
         let diff = GitPreviewContent.diff(
             GitDiffPreview(
                 fileName: "file.txt", oldContent: "old", newContent: "new"))
@@ -79,7 +74,9 @@ struct GitPreviewPanelTests {
             "blame and failure text select ANSI renderer")
     }
 
-    private func usesGhosttyPaletteForPreviewRendering() throws {
+    @Test
+    @MainActor
+    func usesGhosttyPaletteForPreviewRendering() throws {
         let darkPalette = ChromePalette(
             background: NSColor(srgbRed: 0.05, green: 0.06, blue: 0.07, alpha: 1),
             foreground: NSColor(srgbRed: 0.9, green: 0.91, blue: 0.92, alpha: 1),
@@ -118,7 +115,9 @@ struct GitPreviewPanelTests {
             ], "Ghostty configuration owns preview palette updates")
     }
 
-    private func preservesElevenPointANSITextAtDefaultDocumentSize() throws {
+    @Test
+    @MainActor
+    func preservesElevenPointANSITextAtDefaultDocumentSize() throws {
         let rendered = GitPreviewANSITextRenderer.attributedString(for: "blame", fontSize: 11)
         let font = try #require(rendered.attribute(.font, at: 0, effectiveRange: nil) as? NSFont)
         assertEqual(font.pointSize, 11, "ANSI previews preserve their original default font size")
@@ -128,8 +127,9 @@ struct GitPreviewPanelTests {
         )
     }
 
+    @Test
     @MainActor
-    private func argusTerminalThemeUsesBlackBackground() throws {
+    func argusTerminalThemeUsesBlackBackground() throws {
         let themeURL = try #require(
             Bundle.main.url(forResource: "ArgusTerminalTheme", withExtension: "ghostty"))
         let theme = try String(contentsOf: themeURL, encoding: .utf8)
@@ -265,23 +265,4 @@ struct GitStatusPreviewUIContractTests {
             ], "workspace-scoped titlebar status")
     }
 
-    @Test
-    func previewDependenciesAreCompiledIntoTheApp() throws {
-        let project = try SourceContract("Argus.xcodeproj/project.pbxproj")
-        project.containsAll(
-            [
-                "GitPreviewService.swift in Sources",
-                "GitPreviewPanel.swift in Sources",
-                "ArgusDiffView.swift in Sources",
-                "pierre-diffs-bundle.js in Resources",
-                "RightSidebarView.swift in Sources"
-            ], "preview sources in app target")
-        try SourceContract("Argus/Views/GitSidebar/GitStatusViewModel.swift").containsAll(
-            [
-                "let previewService: any GitPreviewProviding",
-                "func loadPreview("
-            ], "preview dependencies")
-        try SourceContract("Argus/Views/GitSidebar/GitStatusViewModel.swift").excludes(
-            "GitPreviewPresenting", "preview loading must not open an AppKit window")
-    }
 }

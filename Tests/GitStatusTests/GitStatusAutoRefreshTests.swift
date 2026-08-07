@@ -6,21 +6,8 @@ import Testing
 @Suite
 struct GitStatusAutoRefreshTests {
     @Test
-    func coveredBehaviors() async throws {
-        await ignoresGitInternalEvents()
-        await refreshesForCommitMetadataEvents()
-        await switchesWatchedRootWithoutStoppingBeforeFirstStart()
-        await schedulesRefreshAfterDebounceForWorktreeEvents()
-        await suppressesFilesystemEventsDuringPostRefreshCooldown()
-        await defersBranchChangeRefreshUntilCooldownExpires()
-        await refreshesWorkspaceFilesAfterDebouncedEvent()
-        try await reloadsExpandedDirectoryAfterExternalFileCreation()
-        try watchesLinkedWorktreeGitDirectory()
-        try await startsAndStopsFSEventsWatcherForRoot()
-    }
-
     @MainActor
-    private func ignoresGitInternalEvents() async {
+    func ignoresGitInternalEvents() async {
         let watcher = RecordingFileSystemEventWatcher()
         let scheduler = RecordingRefreshScheduler()
         let controller = GitStatusAutoRefreshController(
@@ -39,8 +26,9 @@ struct GitStatusAutoRefreshTests {
         assertEqual(refreshCount, 0, ".git events do not refresh")
     }
 
+    @Test
     @MainActor
-    private func refreshesForCommitMetadataEvents() async {
+    func refreshesForCommitMetadataEvents() async {
         let watcher = RecordingFileSystemEventWatcher()
         let scheduler = RecordingRefreshScheduler()
         let controller = GitStatusAutoRefreshController(
@@ -59,8 +47,9 @@ struct GitStatusAutoRefreshTests {
         assertEqual(refreshCount, 1, "commit metadata events refresh status")
     }
 
+    @Test
     @MainActor
-    private func switchesWatchedRootWithoutStoppingBeforeFirstStart() async {
+    func switchesWatchedRootWithoutStoppingBeforeFirstStart() async {
         let watcher = RecordingFileSystemEventWatcher()
         let scheduler = RecordingRefreshScheduler()
         let controller = GitStatusAutoRefreshController(
@@ -77,8 +66,9 @@ struct GitStatusAutoRefreshTests {
         assertEqual(scheduler.cancelCount, 1, "switching roots cancels pending refresh work")
     }
 
+    @Test
     @MainActor
-    private func schedulesRefreshAfterDebounceForWorktreeEvents() async {
+    func schedulesRefreshAfterDebounceForWorktreeEvents() async {
         let watcher = RecordingFileSystemEventWatcher()
         let scheduler = RecordingRefreshScheduler()
         let controller = GitStatusAutoRefreshController(
@@ -101,8 +91,9 @@ struct GitStatusAutoRefreshTests {
         assertEqual(refreshCount, 1, "scheduled debounce operation refreshes")
     }
 
+    @Test
     @MainActor
-    private func suppressesFilesystemEventsDuringPostRefreshCooldown() async {
+    func suppressesFilesystemEventsDuringPostRefreshCooldown() async {
         let watcher = RecordingFileSystemEventWatcher()
         let scheduler = RecordingRefreshScheduler()
         var currentTime = Date(timeIntervalSince1970: 100)
@@ -136,8 +127,9 @@ struct GitStatusAutoRefreshTests {
             ], "events after cooldown schedule again")
     }
 
+    @Test
     @MainActor
-    private func defersBranchChangeRefreshUntilCooldownExpires() async {
+    func defersBranchChangeRefreshUntilCooldownExpires() async {
         let watcher = RecordingFileSystemEventWatcher()
         let scheduler = RecordingRefreshScheduler()
         var currentTime = Date(timeIntervalSince1970: 100)
@@ -165,8 +157,9 @@ struct GitStatusAutoRefreshTests {
         assertEqual(refreshCount, 2, "deferred branch change refreshes the local branch status")
     }
 
+    @Test
     @MainActor
-    private func refreshesWorkspaceFilesAfterDebouncedEvent() async {
+    func refreshesWorkspaceFilesAfterDebouncedEvent() async {
         let watcher = RecordingFileSystemEventWatcher()
         let scheduler = RecordingRefreshScheduler()
         let controller = WorkspaceFilesAutoRefreshController(
@@ -187,8 +180,9 @@ struct GitStatusAutoRefreshTests {
         assertEqual(refreshCount, 1, "workspace file event refreshes the tree")
     }
 
+    @Test
     @MainActor
-    private func reloadsExpandedDirectoryAfterExternalFileCreation() async throws {
+    func reloadsExpandedDirectoryAfterExternalFileCreation() async throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("argus-files-auto-refresh-\(UUID().uuidString)", isDirectory: true)
         let sources = root.appendingPathComponent("Sources", isDirectory: true)
@@ -225,7 +219,8 @@ struct GitStatusAutoRefreshTests {
         #expect(snapshot.loadedDirectoryPaths.contains("Sources"))
     }
 
-    private func watchesLinkedWorktreeGitDirectory() throws {
+    @Test
+    func watchesLinkedWorktreeGitDirectory() throws {
         let base = FileManager.default.temporaryDirectory
             .appendingPathComponent("argus-linked-worktree-\(UUID().uuidString)", isDirectory: true)
         let worktree = base.appendingPathComponent("worktree", isDirectory: true)
@@ -242,21 +237,47 @@ struct GitStatusAutoRefreshTests {
             "linked worktrees watch their external git directory for commit metadata")
     }
 
+    @Test
     @MainActor
-    private func startsAndStopsFSEventsWatcherForRoot() async throws {
+    func fseventsWatcherReportsChangesAndStopsCleanly() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("argus-fsevents-watch-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
 
+        let recorder = FSEventTestRecorder()
         let watcher = FSEventsFileWatcher()
-        watcher.start(paths: [directory.path]) { _ in }
-        watcher.stop()
+        watcher.start(paths: [directory.path]) { paths in
+            recorder.paths.append(contentsOf: paths)
+        }
+        defer { watcher.stop() }
+
+        try "change".write(
+            to: directory.appendingPathComponent("changed.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+        let deadline = ContinuousClock.now + .seconds(3)
+        while recorder.paths.isEmpty && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+
+        #expect(!recorder.paths.isEmpty)
+        #expect(
+            recorder.paths.contains {
+                $0 == directory.standardizedFileURL.path
+                    || $0.hasSuffix("/changed.txt")
+            })
     }
 
     private func assertEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
         #expect(actual == expected, Comment(rawValue: message))
     }
+}
+
+@MainActor
+private final class FSEventTestRecorder {
+    var paths: [String] = []
 }
 
 private final class RecordingFileSystemEventWatcher: FileSystemEventWatching, @unchecked Sendable {

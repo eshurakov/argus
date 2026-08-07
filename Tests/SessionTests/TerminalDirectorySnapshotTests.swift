@@ -6,14 +6,7 @@ import Testing
 @Suite @MainActor
 struct TerminalDirectorySnapshotTests {
     @Test
-    func coveredBehaviors() throws {
-        try terminalMetadataRoundTrips()
-        try liveTerminalDirectoryIsRestored()
-        try legacySnapshotUsesWorkspaceDirectory()
-        reconciliationPreservesTerminalMetadata()
-    }
-
-    private func terminalMetadataRoundTrips() throws {
+    func terminalMetadataRoundTrips() throws {
         let projectId = UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!
         let workspaceId = UUID(uuidString: "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB")!
 
@@ -54,7 +47,8 @@ struct TerminalDirectorySnapshotTests {
         )
     }
 
-    private func legacySnapshotUsesWorkspaceDirectory() throws {
+    @Test
+    func legacySnapshotUsesWorkspaceDirectory() throws {
         let legacyJSON = Data(
             """
             {
@@ -82,7 +76,8 @@ struct TerminalDirectorySnapshotTests {
         )
     }
 
-    private func liveTerminalDirectoryIsRestored() throws {
+    @Test
+    func liveTerminalDirectoryIsRestored() throws {
         let workspace = Workspace(title: "Terminal", workingDirectory: "/repo")
         let terminal = try #require(workspace.activePanel as? TerminalPanel)
 
@@ -108,7 +103,8 @@ struct TerminalDirectorySnapshotTests {
         )
     }
 
-    private func reconciliationPreservesTerminalMetadata() {
+    @Test
+    func reconciliationPreservesTerminalMetadata() {
         let projectId = UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!
         let workspaceId = UUID(uuidString: "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB")!
         let invalidProject = UUID(uuidString: "CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC")!

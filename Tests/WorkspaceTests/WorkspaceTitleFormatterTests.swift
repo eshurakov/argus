@@ -25,7 +25,7 @@ struct WorkspaceTitleFormatterTests {
     }
 
     @Test
-    func coveredBehaviors() {
+    func workspaceTitlesOmitRedundantContextAndUseArgusFallback() {
         assertEqual(
             WorkspaceTitleFormatter.title(workspaceTitle: "argus", contextName: "argus"),
             "argus",

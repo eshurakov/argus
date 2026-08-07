@@ -18,6 +18,7 @@ enum WorkspaceDeletionStage: Int, CaseIterable, Sendable {
 /// each backed by a git repository with worktree support. The sidebar index
 /// used by Cmd+1–8 shortcuts reflects project-grouped ordering.
 @MainActor
+// swiftlint:disable:next type_body_length
 final class WorkspaceManager: ObservableObject {
 
     // MARK: - Published State
@@ -205,7 +206,8 @@ final class WorkspaceManager: ObservableObject {
             return defaultSessionSnapshotURL
         }
 
-        return testSessionSnapshotRootURL
+        return
+            testSessionSnapshotRootURL
             .appendingPathComponent(
                 String(ProcessInfo.processInfo.processIdentifier),
                 isDirectory: true
@@ -414,4 +416,6 @@ final class WorkspaceManager: ObservableObject {
             workingDirectory: workingDirectory ?? settings.defaultStandaloneWorkspaceDirectory
         )
     }
+
+    // swiftlint:disable:next file_length
 }

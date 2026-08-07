@@ -82,7 +82,8 @@ extension WorktreeService {
         projectId: UUID,
         knownWorkspacePaths: Set<String>
     ) -> [OrphanedWorktreeInfo] {
-        let projectDirectory = Self.worktreeBaseURL
+        let projectDirectory =
+            managedWorktreeBaseURL
             .appendingPathComponent(projectId.uuidString, isDirectory: true)
         guard
             let entries = try? FileManager.default.contentsOfDirectory(

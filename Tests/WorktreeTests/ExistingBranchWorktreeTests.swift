@@ -6,13 +6,13 @@ import Testing
 @Suite
 struct ExistingBranchWorktreeTests {
     @Test
-    func coveredBehaviors() async throws {
-        let temp = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("argus-existing-branch-\(UUID().uuidString)", isDirectory: true)
+    func existingRemoteBranchesCreateWorktreesAndForcedRemovalCleansUp() async throws {
+        let temporaryDirectory = try TestTemporaryDirectory(prefix: "argus-existing-branch")
+        let temp = temporaryDirectory.url
         let repo = temp.appendingPathComponent("repo", isDirectory: true)
         let origin = temp.appendingPathComponent("origin.git", isDirectory: true)
         try FileManager.default.createDirectory(at: repo, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: temp) }
+        defer { temporaryDirectory.remove() }
 
         try run("git", ["init", "--bare", origin.path], cwd: temp.path)
         try run("git", ["init", "-b", "main", "."], cwd: repo.path)
@@ -33,7 +33,8 @@ struct ExistingBranchWorktreeTests {
         try run("git", ["branch", "-D", "remote-only"], cwd: repo.path)
         try run("git", ["fetch", "origin"], cwd: repo.path)
 
-        let service = WorktreeService()
+        let service = WorktreeService(
+            worktreeBaseURL: temp.appendingPathComponent("managed-worktrees", isDirectory: true))
         let available = try await service.listAvailableBranches(repositoryPath: repo.path)
         assertFalse(available.contains("origin/main"), "remote branch for checked-out main is excluded")
         assertTrue(
@@ -47,21 +48,21 @@ struct ExistingBranchWorktreeTests {
             branchName: "origin/remote-only",
             createNewBranch: false
         )
-        defer { try? FileManager.default.removeItem(atPath: worktreePath) }
 
         let checkedOutBranch = try capture("git", ["branch", "--show-current"], cwd: worktreePath)
         assertEqual(
             checkedOutBranch, "remote-only",
             "remote-only worktree is on a local tracking branch, not detached")
+        try await service.removeWorktree(repositoryPath: repo.path, worktreePath: worktreePath)
     }
 
     @Test
     func forcedRemovalDeletesDirtyWorktreeAndRegistration() async throws {
-        let temp = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("argus-remove-worktree-\(UUID().uuidString)", isDirectory: true)
+        let temporaryDirectory = try TestTemporaryDirectory(prefix: "argus-remove-worktree")
+        let temp = temporaryDirectory.url
         let repo = temp.appendingPathComponent("repo", isDirectory: true)
         try FileManager.default.createDirectory(at: repo, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: temp) }
+        defer { temporaryDirectory.remove() }
 
         try run("git", ["init", "-b", "main", "."], cwd: repo.path)
         try run("git", ["config", "user.email", "test@example.com"], cwd: repo.path)
@@ -71,7 +72,8 @@ struct ExistingBranchWorktreeTests {
         try run("git", ["add", "README.md"], cwd: repo.path)
         try run("git", ["commit", "-m", "initial"], cwd: repo.path)
 
-        let service = WorktreeService()
+        let service = WorktreeService(
+            worktreeBaseURL: temp.appendingPathComponent("managed-worktrees", isDirectory: true))
         let worktreePath = try await service.createWorktree(
             projectId: UUID(),
             repositoryPath: repo.path,
@@ -107,30 +109,7 @@ struct ExistingBranchWorktreeTests {
     }
 
     private func capture(_ executable: String, _ args: [String], cwd: String) throws -> String {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/\(executable)")
-        process.arguments = args
-        process.currentDirectoryURL = URL(fileURLWithPath: cwd)
-        let stdout = Pipe()
-        let stderr = Pipe()
-        process.standardOutput = stdout
-        process.standardError = stderr
-        try process.run()
-        process.waitUntilExit()
-        let output =
-            String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard process.terminationStatus == 0 else {
-            let detail =
-                String(data: stderr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-            throw NSError(
-                domain: "ExistingBranchWorktreeTests", code: Int(process.terminationStatus),
-                userInfo: [
-                    NSLocalizedDescriptionKey:
-                        "\(executable) \(args.joined(separator: " ")) failed: \(detail)"
-                ])
-        }
-        return output
+        try TestGit.run(executable, args, cwd: cwd)
     }
 
     private func assertEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {

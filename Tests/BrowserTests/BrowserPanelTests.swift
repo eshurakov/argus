@@ -34,15 +34,15 @@ struct BrowserPanelTests {
     func homepageAlwaysUsesDirectURLResolution() {
         let panel = BrowserPanel(
             configuration: .init(
-                homepage: "example.com/docs",
+                homepage: "data:text/html,Argus",
                 searchProvider: .google,
                 pageZoom: 1,
                 developerToolsEnabled: false,
-                dataStore: .persistent
+                dataStore: .private
             ))
         defer { panel.close() }
 
-        #expect(panel.currentURL?.absoluteString == "https://example.com/docs")
+        #expect(panel.currentURL?.absoluteString == "data:text/html,Argus")
     }
 
     @Test
@@ -50,8 +50,14 @@ struct BrowserPanelTests {
         let id = UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!
         let panel = BrowserPanel(
             id: id,
-            pageZoom: 1.25,
-            developerToolsEnabled: true
+            currentURL: URL(string: "data:text/html,Argus"),
+            configuration: .init(
+                homepage: "",
+                searchProvider: .none,
+                pageZoom: 1.25,
+                developerToolsEnabled: true,
+                dataStore: .private
+            )
         )
         defer { panel.close() }
 
@@ -72,7 +78,16 @@ struct BrowserPanelTests {
         workspace.addTerminalPanel(workingDirectory: "/tmp/second")
         workspace.selectPanel(firstTab)
 
-        let browser = workspace.addBrowserPanel(url: URL(string: "https://example.com"))
+        let browser = workspace.addBrowserPanel(
+            url: URL(string: "data:text/html,Argus"),
+            configuration: .init(
+                homepage: "",
+                searchProvider: .none,
+                pageZoom: 1,
+                developerToolsEnabled: false,
+                dataStore: .private
+            )
+        )
         #expect(workspace.panelOrder[1] == browser.id)
         #expect(workspace.activeTabId == browser.id)
 
