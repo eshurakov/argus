@@ -4,6 +4,7 @@ import plugin, {
   environmentIsValid,
   hasFinalAgentError,
   statusEventID,
+  turnEventID,
 } from "../../Argus/Resources/ArgusPiAgentStatusPlugin.js";
 
 const environment = {
@@ -17,6 +18,7 @@ assert.equal(environmentIsValid(environment), true);
 assert.equal(hasFinalAgentError([{ role: "assistant", stopReason: "error" }]), true);
 assert.equal(hasFinalAgentError([{ role: "assistant", stopReason: "aborted" }]), false);
 assert.equal(statusEventID("session", 2), "pi:changed:session:2");
+assert.equal(turnEventID("session", 3), "pi:turnCompleted:session:3");
 
 const handlers = new Map();
 const deliveries = [];
@@ -48,6 +50,9 @@ for (const name of ["session_start", "agent_start", "agent_end", "agent_settled"
 await handlers.get("session_start")({}, context);
 await handlers.get("agent_start")({}, context);
 await handlers.get("agent_end")({ messages: [{ role: "assistant", stopReason: "error" }] }, context);
+await handlers.get("agent_settled")({}, context);
+await handlers.get("agent_start")({}, context);
+await handlers.get("agent_end")({ messages: [{ role: "assistant", stopReason: "end_turn" }] }, context);
 await handlers.get("agent_settled")({}, context);
 await handlers.get("session_shutdown")({}, context);
 
@@ -106,14 +111,60 @@ assert.deepEqual(
       socketPath: environment.ARGUS_SOCKET_PATH,
       payload: {
         version: 1,
-        id: "pi:cleared:pi-session:instance:4",
+        id: "pi:changed:pi-session:instance:4",
+        method: "agent.statusChanged",
+        params: {
+          agentKey: "pi",
+          workspaceId: environment.ARGUS_WORKSPACE_ID,
+          surfaceId: environment.ARGUS_SURFACE_ID,
+          state: "running",
+          sessionId: "pi-session:instance",
+          sequence: 4,
+        },
+      },
+    },
+    {
+      socketPath: environment.ARGUS_SOCKET_PATH,
+      payload: {
+        version: 1,
+        id: "pi:changed:pi-session:instance:5",
+        method: "agent.statusChanged",
+        params: {
+          agentKey: "pi",
+          workspaceId: environment.ARGUS_WORKSPACE_ID,
+          surfaceId: environment.ARGUS_SURFACE_ID,
+          state: "idle",
+          sessionId: "pi-session:instance",
+          sequence: 5,
+        },
+      },
+    },
+    {
+      socketPath: environment.ARGUS_SOCKET_PATH,
+      payload: {
+        version: 1,
+        id: "pi:turnCompleted:pi-session:instance:6",
+        method: "agent.turnCompleted",
+        params: {
+          agentKey: "pi",
+          workspaceId: environment.ARGUS_WORKSPACE_ID,
+          surfaceId: environment.ARGUS_SURFACE_ID,
+          eventId: "pi:turnCompleted:pi-session:instance:6",
+        },
+      },
+    },
+    {
+      socketPath: environment.ARGUS_SOCKET_PATH,
+      payload: {
+        version: 1,
+        id: "pi:cleared:pi-session:instance:7",
         method: "agent.statusCleared",
         params: {
           agentKey: "pi",
           workspaceId: environment.ARGUS_WORKSPACE_ID,
           surfaceId: environment.ARGUS_SURFACE_ID,
           sessionId: "pi-session:instance",
-          sequence: 4,
+          sequence: 7,
         },
       },
     },

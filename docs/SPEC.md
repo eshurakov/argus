@@ -2,7 +2,7 @@
 
 ## Status
 
-Stable v1 baseline, updated 2026-08-06.
+Stable v1 baseline, updated 2026-08-08.
 
 This document defines behavior implemented by the current Argus application. Future work belongs under `docs/proposals/` until it is implemented and incorporated here.
 
@@ -215,7 +215,7 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 14. Agent settings MUST include an Agent completion sound preference that defaults to enabled and remains independent of Terminal audible bell behavior.
 15. Kilo integration MUST be installed or removed only through explicit Settings controls. Argus MUST preserve unrelated Kilo JSON/JSONC configuration, own only its declaration and plugin file, surface setup errors, and require running Kilo sessions to restart after a change.
 16. The Kilo TUI plugin MUST use public extension points only, accept successful root-turn completion after conservative non-synthetic, non-compaction user-turn filtering, ignore child, failed, interrupted, and idle-only events, and remain silent on delivery failure.
-17. Pi integration MUST be installed or removed only through explicit Settings controls. It MUST own only its extension file under the effective Pi agent directory, preserve unrelated files, use public lifecycle events to report running, idle, and error states, clear its status on session shutdown, and remain silent on delivery failure. Running Pi sessions MUST be restarted or reloaded after a change.
+17. Pi integration MUST be installed or removed only through explicit Settings controls. It MUST own only its extension file under the effective Pi agent directory, preserve unrelated files, use public lifecycle events to report running, idle, and error states, emit a successful Turn Completion Event when an agent turn settles without a final error, clear its status on session shutdown, and remain silent on delivery failure. Running Pi sessions MUST be restarted or reloaded after a change.
 18. V1 still does not include functional Companion CLI commands, Agent PID tracking, TTS, notification history, or macOS Notification Center notifications.
 
 ## Release notes

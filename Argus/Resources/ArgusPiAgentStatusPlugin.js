@@ -1,4 +1,4 @@
-/* Argus-owned Pi extension for live Agent Status. */
+/* Argus-owned Pi extension for live Agent Status and turn completion. */
 const requiredEnvironment = ["ARGUS_SOCKET_PATH", "ARGUS_WORKSPACE_ID", "ARGUS_SURFACE_ID"];
 
 export function environmentIsValid(environment) {
@@ -15,6 +15,10 @@ export function hasFinalAgentError(messages) {
 
 export function statusEventID(sessionID, sequence, operation = "changed") {
   return `pi:${operation}:${sessionID}:${sequence}`;
+}
+
+export function turnEventID(sessionID, sequence) {
+  return `pi:turnCompleted:${sessionID}:${sequence}`;
 }
 
 async function send(socketPath, payload) {
@@ -80,6 +84,29 @@ export function createPlugin({ environment: suppliedEnvironment, transport = sen
       return deliveryQueue;
     }
 
+    function enqueueTurnCompletion(context) {
+      const currentSessionID = ensureSession(context);
+      const currentSequence = ++sequence;
+      const eventId = turnEventID(currentSessionID, currentSequence);
+      const payload = {
+        version: 1,
+        id: eventId,
+        method: "agent.turnCompleted",
+        params: {
+          agentKey: "pi",
+          workspaceId: environment.ARGUS_WORKSPACE_ID,
+          surfaceId: environment.ARGUS_SURFACE_ID,
+          eventId,
+        },
+      };
+      deliveryQueue = deliveryQueue
+        .then(() => transport(environment.ARGUS_SOCKET_PATH, payload))
+        .catch(() => {
+          // Delivery failures must not alter Pi's lifecycle behavior.
+        });
+      return deliveryQueue;
+    }
+
     function enqueueClear(context) {
       const currentSessionID = ensureSession(context);
       const currentSequence = ++sequence;
@@ -116,9 +143,11 @@ export function createPlugin({ environment: suppliedEnvironment, transport = sen
 
     pi.on("agent_settled", (_event, context) => {
       const state = finalAgentError ? "error" : "idle";
-      return enqueue(context, state).then(() => {
-        finalAgentError = false;
-      });
+      return enqueue(context, state)
+        .then(() => state === "idle" ? enqueueTurnCompletion(context) : undefined)
+        .then(() => {
+          finalAgentError = false;
+        });
     });
 
     pi.on("session_shutdown", (_event, context) => enqueueClear(context));
