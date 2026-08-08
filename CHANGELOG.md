@@ -2,6 +2,10 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-08-08
+
+- Completed Pi agent turns now mark the affected Top-level Tab and Workspace as needing attention until viewed. ([5c155e9](https://github.com/jeanduplessis/argus/commit/5c155e9))
+
 ## 2026-08-07
 
 - The test suite now uses isolated fixtures, deterministic behavior assertions, structured protocol checks, and reliable cleanup across Git, socket, browser, session, and worktree workflows. ([08e4a92](https://github.com/jeanduplessis/argus/commit/08e4a92))
