@@ -117,6 +117,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 - A Named Project references an ordered set of Workspaces by Workspace ID.
 - A Project may be created from Repository Identity for Review Work Mode without cloning. It appears in Code Work Mode only after a local checkout and Workspace are configured.
 - In the first Review Work Mode release, a Pull Request is hosted by GitHub and all authenticated provider operations use the active GitHub CLI authentication context; Argus does not own or persist GitHub credentials.
+- Explicit Pull Request intake in Code Work Mode's per-Named-Project New Workspace sheet may create a Worktree Workspace from a Pull Request URL or number. This intake is separate from opening a Pull Request Review Tab in Review Work Mode and does not create review state.
 - Review Work Mode discovers the active account's Review Inbox and groups Pull Requests by Project. Pull Requests with durable user intent or local review state become Saved Pull Requests and are not removed by Inbox synchronization.
 - The Catch-all Project groups Standalone Workspaces and is ordered after Named Projects.
 - A Workspace has one Workspace Root, owns all of its Panels, orders top-level Panel roots as Top-level Tabs, and stores one split layout per Top-level Tab.
@@ -205,7 +206,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 ## Context Boundaries
 
 - **Workspace organization** owns Project and Workspace identity, membership, ordering, Panel lifecycle, and selection state.
-- **Worktree management** owns repository validation, branch operations, Managed Worktree creation/removal, managed storage, and orphan cleanup; it does not own Workspace Item Operations or Git Mutations.
+- **Worktree management** owns repository validation, branch operations, explicit Code Work Mode Pull Request head preparation, Managed Worktree creation/removal, managed storage, and orphan cleanup; it does not own Workspace Item Operations or Git Mutations.
 - **Terminal runtime** owns Ghostty resources and shell state; Workspace organization references terminal runtime through Terminal Panels and IDs.
 - **Files and Changes** owns Workspace Item Operations and Git Mutations, may read Workspace context, must resolve I/O roots explicitly, and publishes inspectable content through Workspace tab APIs.
 - **User interface** owns presentation and transient interaction state, not repository, worktree, Workspace, or session truth.

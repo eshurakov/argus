@@ -78,6 +78,9 @@ selection, or existing Git Preview Tabs.
 12. A Standalone Workspace row MUST show its Workspace Root beneath its display name, abbreviating the user's home directory with `~`.
 13. When the keep-open preference is enabled, closing the final Terminal Tab MUST retain the same Workspace as an Empty Workspace with no Panels, Top-level Tabs, Active Tab, Focused Pane, or live Terminal Surfaces.
 14. An Empty Workspace MUST remain selectable and retain its Workspace Root, Project membership, sidebar order, Files View, and Changes View context.
+15. The existing per-Named-Project New Workspace sheet MUST support Pull Request intake as a third source alongside New Branch and Existing Branch. Pull Request intake MUST NOT be available from the top-level New Workspace command or the Catch-all Project.
+16. Pull Request intake MUST accept a positive Pull Request number or an HTTPS GitHub Pull Request URL, use the active GitHub CLI context, and create or select a Worktree Workspace in the initiating Named Project.
+17. A newly created Pull Request Worktree Workspace MUST use the Pull Request head branch as its local branch and derived title, and the Pull Request title as its custom title. Existing custom titles MUST be preserved when an exact Workspace is reused.
 
 ## Panels, tabs, and panes
 
@@ -227,6 +230,15 @@ selection, or existing Git Preview Tabs.
 11. If worktree removal fails, the Workspace MUST remain open and the underlying error MUST be shown.
 12. Worktree deletion progress MUST reflect actual removal and Workspace-close operation boundaries.
 13. V1 does not model Managed Worktree ownership separately from every possible external secondary worktree. Code MUST NOT infer safe deletion solely from the generic Worktree Workspace type.
+14. Pull Request intake MUST validate the Pull Request base Repository Identity against a fetch URL of the initiating Named Project. It MUST support HTTPS, SSH, and SCP-style GitHub fetch URLs, prefer `origin` when identities match multiple remotes, and MUST ignore push-only URLs.
+15. Pull Request intake MUST fetch `refs/pull/<number>/head`, resolve `FETCH_HEAD^{commit}` as the authoritative head for the attempt, and create or reuse the requested local head branch at that exact commit. Fork Pull Requests MUST work without adding a Git remote.
+16. Pull Request intake MUST reuse an exact existing branch, registered worktree, and matching Workspace. A same-name local branch at another commit MUST fail without resetting, force-updating, renaming, or deleting that branch or its worktree. Pull Request metadata and provider association remain transient; the ordinary Worktree Workspace is what the Session Snapshot restores.
+
+### GitHub CLI Pull Request boundary
+
+1. The optional `gh` executable MUST be located through the application `PATH`, then `/opt/homebrew/bin/gh`, then `/usr/local/bin/gh`. Pull Request commands MUST use argument arrays, the Project Repository Root as their working directory, bounded output, a 30-second timeout, and noninteractive prompt, pager, color, and terminal-authentication overrides.
+2. Argus MUST use the active `gh` authentication context and MUST NOT request, read, persist, or log GitHub credentials. Missing CLI, authentication, ambiguous bare-number repository selection, invalid metadata, provider timeout, and provider command failure MUST remain distinguishable actionable errors.
+3. Pull Request creation MUST resolve metadata, fetch the head, prepare the Worktree, and attach or select the Workspace as one operation. The initiating Project ID and Project Repository Root MUST be revalidated before Workspace state changes; a removed or changed Project MUST receive no Workspace.
 
 ## Browser Panels
 

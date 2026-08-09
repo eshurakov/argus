@@ -2,6 +2,14 @@
 
 Proposals describe future changes and do not override `docs/SPEC.md` until their implementation is complete and the stable contract is updated.
 
+Current proposals:
+
+No current proposals.
+
+Completed proposals:
+
+- [Pull Request Workspace creation](pull-request-workspace/spec.md) — implemented and promoted into the Projects and Workspaces and Git worktrees sections of `docs/SPEC.md`.
+
 Use these lifecycle states:
 
 - **Draft**: behavior is still being decided.

@@ -20,6 +20,23 @@ brew install xcodegen swiftlint
 
 Node.js and npm are optional. They are used only to rebuild the committed Pierre diff renderer bundle.
 
+The GitHub CLI is also optional. It is used only when creating a Worktree
+Workspace from a Pull Request in a Named Project's New Workspace sheet. Argus
+uses the active `gh` authentication context and never stores GitHub
+credentials.
+
+Install and authenticate it with:
+
+```sh
+brew install gh
+gh auth login
+```
+
+For a bare Pull Request number, run `gh repo set-default <remote>` from the
+Project Repository Root if GitHub CLI reports that the repository is ambiguous
+or unavailable. For GitHub Enterprise, authenticate the matching host with
+`gh auth login --hostname <host>`.
+
 ## Generate the Xcode project
 
 `project.yml` is the source of truth for Xcode project configuration.

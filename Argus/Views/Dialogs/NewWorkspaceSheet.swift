@@ -21,14 +21,16 @@ struct NewWorkspaceSheet: View {
     @State private var newBranchName: String = ""
     @State private var selectedExistingBranch: String?
     @State private var branchFilter: String = ""
+    @State private var pullRequestInput: String = ""
     @State private var availableBranches: [String] = []
     @State private var isLoadingBranches: Bool = false
     @State private var isCreating: Bool = false
     @State private var errorMessage: String?
 
-    enum BranchMode: String, CaseIterable {
+    enum BranchMode: String, CaseIterable, Hashable {
         case new = "New Branch"
         case existing = "Existing Branch"
+        case pullRequest = "Pull Request"
     }
 
     private static let sectionLabelFont = Font.system(size: 11, weight: .semibold)
@@ -48,35 +50,40 @@ struct NewWorkspaceSheet: View {
             .padding(.top, 20)
             .padding(.bottom, 16)
 
-            // Optional workspace name
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Workspace Name")
-                    .font(Self.sectionLabelFont)
-                    .foregroundColor(.secondary)
-                TextField("Name (optional)", text: $workspaceName)
-                    .textFieldStyle(.roundedBorder)
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 16)
-
-            // Branch section
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Branch")
+            // Optional workspace name remains a branch-source field. Pull
+            // Request titles come from GitHub and are assigned by the manager.
+            if branchMode != .pullRequest {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Workspace Name")
                         .font(Self.sectionLabelFont)
                         .foregroundColor(.secondary)
+                    TextField("Name (optional)", text: $workspaceName)
+                        .textFieldStyle(.roundedBorder)
+                        .disabled(isCreating)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+            }
+
+            // Source section
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Source")
+                        .font(Self.sectionLabelFont)
+                        .foregroundColor(.secondary)
+
                     Spacer()
-                    Button {
-                        toggleBranchMode()
-                    } label: {
-                        Text(
-                            branchMode == .new
-                                ? "Use an existing branch" : "Create a new branch instead"
-                        )
-                        .font(.system(size: 11, weight: .semibold))
+
+                    Picker("Source", selection: $branchMode) {
+                        ForEach(BranchMode.allCases, id: \.self) { mode in
+                            Text(mode.rawValue).tag(mode)
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .foregroundColor(.accentColor)
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .controlSize(.small)
+                    .fixedSize()
+                    .disabled(isCreating)
                 }
 
                 switch branchMode {
@@ -84,9 +91,13 @@ struct NewWorkspaceSheet: View {
                     newBranchInput
                 case .existing:
                     existingBranchPicker
+                case .pullRequest:
+                    TextField("URL or number", text: $pullRequestInput)
+                        .textFieldStyle(.roundedBorder)
                 }
             }
             .padding(.horizontal, 24)
+            .disabled(isCreating)
 
             // Error message
             if let errorMessage {
@@ -134,6 +145,21 @@ struct NewWorkspaceSheet: View {
             }
             if branchMode == .existing {
                 loadBranches()
+            }
+        }
+        .onChange(of: branchMode) { _, newMode in
+            guard !isCreating else { return }
+            switch newMode {
+            case .new:
+                if newBranchName.isEmpty {
+                    regenerateBranchName()
+                }
+            case .existing:
+                if availableBranches.isEmpty && !isLoadingBranches {
+                    loadBranches()
+                }
+            case .pullRequest:
+                break
             }
         }
     }
@@ -237,6 +263,8 @@ extension NewWorkspaceSheet {
             return !trimmed.isEmpty && !trimmed.contains(" ")
         case .existing:
             return selectedExistingBranch != nil
+        case .pullRequest:
+            return !pullRequestInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
 
@@ -273,13 +301,6 @@ extension NewWorkspaceSheet {
         }
     }
 
-    private func toggleBranchMode() {
-        branchMode = branchMode == .new ? .existing : .new
-        if branchMode == .existing && availableBranches.isEmpty && !isLoadingBranches {
-            loadBranches()
-        }
-    }
-
     private func loadBranches() {
         guard let project = workspaceManager.projects.first(where: { $0.id == projectId }) else { return }
         isLoadingBranches = true
@@ -303,49 +324,69 @@ extension NewWorkspaceSheet {
     }
 
     private func createWorkspace() {
-        if branchMode == .existing && selectedExistingBranch == nil {
-            return
-        }
+        guard branchMode != .existing || selectedExistingBranch != nil else { return }
         isCreating = true
         errorMessage = nil
 
         Task {
             defer { isCreating = false }
-            let branchName: String
-            let createNew: Bool
-
             switch branchMode {
-            case .new:
-                branchName = newBranchName.trimmingCharacters(in: .whitespaces)
-                createNew = true
-            case .existing:
-                guard let selected = selectedExistingBranch else {
-                    return
-                }
-                branchName = selected
-                createNew = false
+            case .pullRequest: await createPullRequestWorkspace()
+            case .new, .existing: await createBranchWorkspace()
             }
+        }
+    }
 
-            let trimmedName = workspaceName.trimmingCharacters(in: .whitespacesAndNewlines)
-            let result = await workspaceManager.addWorkspaceToProject(
-                projectId,
-                branchName: branchName,
-                createNewBranch: createNew,
-                customTitle: trimmedName.isEmpty ? nil : trimmedName
+    private func createPullRequestWorkspace() async {
+        let trimmedInput = pullRequestInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            _ = try await workspaceManager.createWorkspace(
+                fromPullRequest: trimmedInput,
+                in: projectId
             )
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 
-            if result != nil {
-                dismiss()
-            } else {
-                switch workspaceManager.lastWorkspaceCreationError {
-                case .branchAlreadyExists(let branchName):
-                    errorMessage = "Branch '\(branchName)' already exists"
-                default:
-                    errorMessage =
-                        workspaceManager.lastWorkspaceCreationError?.localizedDescription
-                        ?? "Failed to create workspace"
-                }
-            }
+    private func createBranchWorkspace() async {
+        guard let branchSelection = branchSelection else { return }
+        let trimmedName = workspaceName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let result = await workspaceManager.addWorkspaceToProject(
+            projectId,
+            branchName: branchSelection.branchName,
+            createNewBranch: branchSelection.createNewBranch,
+            customTitle: trimmedName.isEmpty ? nil : trimmedName
+        )
+
+        if result != nil {
+            dismiss()
+        } else {
+            showBranchCreationError()
+        }
+    }
+
+    private var branchSelection: (branchName: String, createNewBranch: Bool)? {
+        switch branchMode {
+        case .new:
+            return (newBranchName.trimmingCharacters(in: .whitespaces), true)
+        case .existing:
+            guard let selectedExistingBranch else { return nil }
+            return (selectedExistingBranch, false)
+        case .pullRequest:
+            return nil
+        }
+    }
+
+    private func showBranchCreationError() {
+        switch workspaceManager.lastWorkspaceCreationError {
+        case .branchAlreadyExists(let branchName):
+            errorMessage = "Branch '\(branchName)' already exists"
+        default:
+            errorMessage =
+                workspaceManager.lastWorkspaceCreationError?.localizedDescription
+                ?? "Failed to create workspace"
         }
     }
 }
