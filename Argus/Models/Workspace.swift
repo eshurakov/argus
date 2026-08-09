@@ -105,12 +105,12 @@ indirect enum PanelLayoutNode: Equatable, Sendable {
 /// A workspace containing an ordered list of tabbed panels.
 ///
 /// Each workspace maps to a single git worktree (or a standalone directory)
-/// and presents its panels as tabs in the content area. Exactly one panel
-/// is active (visible) at a time.
+/// and presents its panels as tabs in the content area. A nonempty workspace
+/// has one active panel; an intentionally empty workspace has no active panel.
 ///
 /// The spec (§Workspaces) requires:
 /// - Ordered tabbed panels with tab bar display.
-/// - Exactly one active panel per workspace.
+/// - Exactly one active panel per nonempty workspace.
 /// - Panel creation, removal, reordering, and selection.
 /// - Workspace renaming with default name derived from the shell's cwd.
 @MainActor
@@ -294,16 +294,9 @@ final class Workspace: Identifiable, ObservableObject {
         self.workspaceType = snapshot.workspaceType
         self.worktreePath = snapshot.worktreePath
 
-        let terminalDirectories = snapshot.restoredTerminalDirectories
-        let terminalCustomTitles = snapshot.restoredTerminalCustomTitles
-        let firstPanel = TerminalPanel(workspaceId: id, workingDirectory: terminalDirectories[0])
-        addPanel(firstPanel)
-        if let customTitle = terminalCustomTitles[0] {
-            renameTerminalPanel(firstPanel.id, title: customTitle)
-        }
         for (directory, customTitle) in zip(
-            terminalDirectories.dropFirst(),
-            terminalCustomTitles.dropFirst()
+            snapshot.restoredTerminalDirectories,
+            snapshot.restoredTerminalCustomTitles
         ) {
             let panel = addTerminalPanel(workingDirectory: directory)
             if let customTitle {
@@ -336,7 +329,7 @@ final class Workspace: Identifiable, ObservableObject {
             let directory = terminal.directory.trimmingCharacters(in: .whitespacesAndNewlines)
             return directory.isEmpty ? currentDirectory : directory
         }
-        return directories.isEmpty ? [currentDirectory] : directories
+        return directories
     }
 
     private func terminalCustomTitlesForSnapshot() -> [String?] {

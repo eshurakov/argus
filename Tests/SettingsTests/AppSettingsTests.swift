@@ -15,6 +15,7 @@ struct AppSettingsTests {  // swiftlint:disable:this type_body_length
             let settings = AppSettings(defaults: defaults)
 
             #expect(settings.restorePreviousSession)
+            #expect(!settings.keepWorkspaceOpenAfterLastTerminalCloses)
             #expect(settings.defaultRightSidebarView == .changes)
             #expect(
                 settings.defaultStandaloneWorkspaceDirectory == FileManager.default.homeDirectoryForCurrentUser.path
@@ -47,6 +48,7 @@ struct AppSettingsTests {  // swiftlint:disable:this type_body_length
 
             let settings = AppSettings(defaults: defaults)
             settings.restorePreviousSession = false
+            settings.keepWorkspaceOpenAfterLastTerminalCloses = true
             settings.audibleBell = false
             settings.agentCompletionSound = false
             settings.showHiddenFiles = false
@@ -60,6 +62,7 @@ struct AppSettingsTests {  // swiftlint:disable:this type_body_length
 
             let restored = AppSettings(defaults: defaults)
             #expect(!restored.restorePreviousSession)
+            #expect(restored.keepWorkspaceOpenAfterLastTerminalCloses)
             #expect(!restored.audibleBell)
             #expect(!restored.agentCompletionSound)
             #expect(!restored.showHiddenFiles)
@@ -70,7 +73,39 @@ struct AppSettingsTests {  // swiftlint:disable:this type_body_length
             #expect(restored.browserDataStore == .private)
             #expect(restored.homepage == "https://argus.local")
             #expect(restored.newBranchPrefix == "eshurakov")
+
+            restored.keepWorkspaceOpenAfterLastTerminalCloses = false
+            let restoredAgain = AppSettings(defaults: defaults)
+            #expect(!restoredAgain.keepWorkspaceOpenAfterLastTerminalCloses)
+            #expect(
+                defaults.bool(
+                    forKey: "Argus.settings.general.keepWorkspaceOpenAfterLastTerminalCloses"
+                ) == false
+            )
         }
+    }
+
+    @Test
+    func generalSettingsKeepRelatedCopyInSingleRows() throws {
+        let settings = try SourceContract("Argus/Settings/SettingsView.swift")
+        settings.containsAll(
+            [
+                "Section(\"Workspace\")",
+                "Toggle(\"Restore previous session\", isOn: $settings.restorePreviousSession)",
+                "Toggle(\n                    \"Keep Empty Workspaces open\"",
+                "$settings.keepWorkspaceOpenAfterLastTerminalCloses",
+                ".help(\"Closing the last Terminal Tab leaves the Workspace available with no tabs.\")",
+                "LabeledContent {\n                    TextField(\"\", text: $settings.newBranchPrefix",
+                "Text(\"Used for generated branch names.\")",
+                ".foregroundStyle(.secondary)\n                            .lineLimit(1)"
+            ],
+            "general settings keep related copy in single rows"
+        )
+        settings.excludes("Section(\"Workspace Lifecycle\")", "workspace lifecycle is not a separate section")
+        settings.excludes(
+            "Leaves the Workspace open with no tabs. New Workspaces still start with a Terminal Tab.",
+            "workspace lifecycle copy is not a detached row"
+        )
     }
 
     @Test

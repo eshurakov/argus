@@ -31,7 +31,8 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 3. General settings MUST include:
    - restore previous session;
    - default Right-sidebar View;
-   - default directory for a new Standalone Workspace.
+   - default directory for a new Standalone Workspace; and
+   - whether to keep a Workspace open after its final Terminal Tab closes.
 4. An explicitly supplied Standalone Workspace directory MUST take precedence over the configured default. The configured default MUST take precedence over the user's home directory.
 5. Appearance settings MUST include interface text size, document text size, and compact or comfortable interface density.
 6. Terminal settings MUST include the audible-bell preference. Ghostty configuration remains authoritative for terminal font, colors other than Argus's background override, and keybindings.
@@ -56,18 +57,20 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 
 ### Workspaces
 
-1. A Workspace MUST have an immutable Workspace ID, one Workspace Root, an ordered set of Top-level Tabs, and one Active Tab.
+1. A Workspace MUST have an immutable Workspace ID, one Workspace Root, and an ordered set of Top-level Tabs. A nonempty Workspace MUST have one Active Tab; an Empty Workspace has no Active Tab.
 2. A Workspace MAY be a Standalone Workspace, Main-checkout Workspace, or Worktree Workspace.
 3. A Standalone Workspace MAY use an ordinary directory with no Git repository.
-4. New Workspaces MUST start with one Terminal Panel.
+4. New Workspaces MUST start with one Terminal Tab backed by one Terminal Panel.
 5. Workspaces MUST support rename, close, selection, and reordering within a Project.
-6. Closing the last Workspace MUST create and select a fresh Standalone Workspace.
+6. Closing the last Workspace MUST create and select a fresh Standalone Workspace containing one Terminal Tab.
 7. Cmd+1 through Cmd+8 MUST select Workspaces by global left-sidebar order. Cmd+9 MUST select the last Workspace.
 8. The left sidebar MUST show Project and Workspace hierarchy, selection, Workspace type, branch when available, and Agent Status when present.
 9. A Standalone Workspace MUST allow its Workspace Root to be changed from its left-sidebar context menu.
 10. The Workspace Root change workflow MUST support both directory browsing and direct path entry. An entered path MUST resolve to an existing directory.
 11. Changing a Standalone Workspace's Workspace Root MUST immediately update its Files View and Git Status Root. New Terminal tabs MUST start at the new Workspace Root without changing existing Terminal Working Directories.
 12. A Standalone Workspace row MUST show its Workspace Root beneath its display name, abbreviating the user's home directory with `~`.
+13. When the keep-open preference is enabled, closing the final Terminal Tab MUST retain the same Workspace as an Empty Workspace with no Panels, Top-level Tabs, Active Tab, Focused Pane, or live Terminal Surfaces.
+14. An Empty Workspace MUST remain selectable and retain its Workspace Root, Project membership, sidebar order, Files View, and Changes View context.
 
 ## Panels, tabs, and panes
 
@@ -81,7 +84,9 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 8. Tab reuse MUST be scoped to the initiating Workspace.
 9. Cmd+[ and Cmd+] MUST select the previous and next Top-level Tab with wraparound.
 10. Cmd+W MUST close the Focused Pane when a terminal split has multiple panes; otherwise it MUST close the Active Tab.
-11. Closing the final Terminal tab MUST require Workspace-close confirmation before changing state.
+11. Closing the final Terminal Tab MUST require Workspace-close confirmation before changing state when the keep-open preference is disabled. When the preference is enabled, it MUST close the complete Terminal Tab and retain an Empty Workspace.
+12. Closing a final Browser, File, Git Preview, or Release Notes Tab MUST retain the existing generic Workspace-close lifecycle regardless of the keep-open preference.
+13. The empty content region of a Selected Empty Workspace MUST show the normal Workspace chrome, a restrained terminal symbol, “No tabs open”, and a native “New Terminal Tab” action. The action MUST use the normal Terminal Tab creation path and initialize the new Terminal Working Directory from the Workspace Root.
 
 ### Terminal splits
 
@@ -229,12 +234,12 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 
 1. Argus MUST store one JSON Session Snapshot at `~/Library/Application Support/Argus/session.json`.
 2. The snapshot MUST use one schema version. An incompatible version MUST be discarded rather than migrated.
-3. Empty snapshots and snapshots containing more than 128 Workspaces MUST be rejected.
+3. Snapshots with no Workspaces and snapshots containing more than 128 Workspaces MUST be rejected. A Workspace with zero persisted Terminal Panels is valid.
 4. Restore MUST reconcile Project and Workspace references, retain one Catch-all Project, remove stale references, and choose a valid Selected Workspace.
 5. Project snapshots MUST include Project identity, repository metadata, ordering, expansion state, and optional color.
 6. Workspace snapshots MUST include Workspace identity and type, Project association, branch and worktree metadata, Workspace Root, display title, the count used to reconstruct Terminal Panels, terminal custom titles, and per-terminal Terminal Working Directories.
 7. Restored Terminal Panels MUST use their last observed Terminal Working Directory as the initial directory.
-8. File Panels, Git Preview Panels, Browser Panels, Release Notes Panels, split layouts, Active Tab, Focused Pane, Git Status Snapshots, and Agent Status Entries are runtime-only in v1.
+8. File Panels, Git Preview Panels, Browser Panels, Release Notes Panels, split layouts, Active Tab, Focused Pane, Git Status Snapshots, and Agent Status Entries are runtime-only in v1. A Workspace whose persisted Terminal Panel count is zero MUST restore with no Terminal Panels and nil active state.
 9. Argus MUST synchronously save the Session Snapshot during normal application termination. It MUST also synchronously checkpoint after a user commits a Workspace display-name or Workspace Root change, so those changes survive an application crash.
 10. V1 does not provide periodic autosave. Event-driven checkpoints for explicitly user-authored durable changes do not constitute periodic autosave.
 11. Restore MUST be skipped when disabled in Settings or by the supported test/restore environment overrides.

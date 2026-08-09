@@ -62,7 +62,14 @@ struct SettingsView: View {
 
     private var general: some View {
         Form {
-            Toggle("Restore previous session", isOn: $settings.restorePreviousSession)
+            Section("Workspace") {
+                Toggle("Restore previous session", isOn: $settings.restorePreviousSession)
+                Toggle(
+                    "Keep Empty Workspaces open",
+                    isOn: $settings.keepWorkspaceOpenAfterLastTerminalCloses
+                )
+                .help("Closing the last Terminal Tab leaves the Workspace available with no tabs.")
+            }
 
             Picker("Default Right-sidebar View", selection: $settings.defaultRightSidebarView) {
                 ForEach(AppSettings.RightSidebarView.allCases) { view in
@@ -84,9 +91,17 @@ struct SettingsView: View {
             }
 
             Section("New Workspaces") {
-                TextField("Branch prefix", text: $settings.newBranchPrefix, prompt: Text("e.g. eshurakov"))
-                Text("Prepended to auto-generated branch names for new workspaces.")
-                    .foregroundStyle(.secondary)
+                LabeledContent {
+                    TextField("", text: $settings.newBranchPrefix, prompt: Text("e.g. eshurakov"))
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Branch prefix")
+                        Text("Used for generated branch names.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
             }
         }
         .formStyle(.grouped)

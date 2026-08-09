@@ -47,6 +47,8 @@ final class AppSettings: ObservableObject {
 
     private enum Keys {
         static let restorePreviousSession = "Argus.settings.general.restorePreviousSession"
+        static let keepWorkspaceOpenAfterLastTerminalCloses =
+            "Argus.settings.general.keepWorkspaceOpenAfterLastTerminalCloses"
         static let defaultRightSidebarView = "Argus.settings.general.defaultRightSidebarView"
         static let defaultStandaloneWorkspaceDirectory = "Argus.settings.general.defaultStandaloneWorkspaceDirectory"
         static let newBranchPrefix = "Argus.settings.general.newBranchPrefix"
@@ -72,6 +74,11 @@ final class AppSettings: ObservableObject {
 
     @Published var restorePreviousSession: Bool {
         didSet { persist(restorePreviousSession, for: Keys.restorePreviousSession) }
+    }
+    @Published var keepWorkspaceOpenAfterLastTerminalCloses: Bool {
+        didSet {
+            persist(keepWorkspaceOpenAfterLastTerminalCloses, for: Keys.keepWorkspaceOpenAfterLastTerminalCloses)
+        }
     }
     @Published var defaultRightSidebarView: RightSidebarView {
         didSet { persist(defaultRightSidebarView.rawValue, for: Keys.defaultRightSidebarView) }
@@ -168,6 +175,11 @@ final class AppSettings: ObservableObject {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         restorePreviousSession = Self.bool(defaults, key: Keys.restorePreviousSession, fallback: true)
+        keepWorkspaceOpenAfterLastTerminalCloses = Self.bool(
+            defaults,
+            key: Keys.keepWorkspaceOpenAfterLastTerminalCloses,
+            fallback: false
+        )
         defaultRightSidebarView = Self.enumValue(defaults, key: Keys.defaultRightSidebarView, fallback: .changes)
         defaultStandaloneWorkspaceDirectory = Self.normalizedDirectoryPath(
             defaults.string(forKey: Keys.defaultStandaloneWorkspaceDirectory) ?? Self.homeDirectoryPath
@@ -206,6 +218,10 @@ final class AppSettings: ObservableObject {
 
     private func persistCanonicalValues() {
         persist(restorePreviousSession, for: Keys.restorePreviousSession)
+        persist(
+            keepWorkspaceOpenAfterLastTerminalCloses,
+            for: Keys.keepWorkspaceOpenAfterLastTerminalCloses
+        )
         persist(defaultRightSidebarView.rawValue, for: Keys.defaultRightSidebarView)
         persist(defaultStandaloneWorkspaceDirectory, for: Keys.defaultStandaloneWorkspaceDirectory)
         persist(newBranchPrefix, for: Keys.newBranchPrefix)

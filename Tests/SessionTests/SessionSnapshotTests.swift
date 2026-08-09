@@ -105,6 +105,47 @@ struct SessionSnapshotTests {
         #expect(restoredWorkspace.currentDirectory == root.standardizedFileURL.path)
     }
 
+    @Test
+    @MainActor
+    func normalSessionRestorePreservesAnIntentionallyEmptyWorkspace() throws {
+        let suiteName = "ArgusTests.EmptyWorkspaceRestore.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        let snapshotURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("argus-empty-session-\(UUID().uuidString).json")
+        defaults.removePersistentDomain(forName: suiteName)
+        defer {
+            defaults.removePersistentDomain(forName: suiteName)
+            try? FileManager.default.removeItem(at: snapshotURL)
+        }
+
+        let settings = AppSettings(defaults: defaults)
+        settings.keepWorkspaceOpenAfterLastTerminalCloses = true
+        let manager = WorkspaceManager(
+            settings: settings,
+            sessionSnapshotURL: snapshotURL,
+            environment: ["ARGUS_DISABLE_SESSION_RESTORE": "1"]
+        )
+        let workspace = try #require(manager.selectedWorkspace)
+        let workspaceId = workspace.id
+        let terminalId = try #require(workspace.activePanelId)
+        manager.requestCloseTab(terminalId, in: workspaceId)
+        manager.saveSession()
+
+        let restoredManager = WorkspaceManager(
+            settings: settings,
+            sessionSnapshotURL: snapshotURL,
+            environment: [:]
+        )
+        let restoredWorkspace = try #require(restoredManager.selectedWorkspace)
+
+        #expect(restoredWorkspace.id == workspaceId)
+        #expect(restoredManager.selectedWorkspaceId == workspaceId)
+        #expect(restoredWorkspace.panelOrder.isEmpty)
+        #expect(restoredWorkspace.panels.isEmpty)
+        #expect(restoredWorkspace.activePanelId == nil)
+        #expect(restoredWorkspace.activeTabId == nil)
+    }
+
     private func assertFutureSchemaIsIncompatible(
         project: ProjectSnapshot,
         workspace: WorkspaceSnapshot,

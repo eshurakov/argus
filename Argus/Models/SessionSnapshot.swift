@@ -19,7 +19,7 @@ struct WorkspaceSnapshot: Codable, Sendable {
     let terminalCustomTitles: [String?]
 
     var restoredTerminalDirectories: [String] {
-        let total = max(panelCount, 1)
+        let total = max(panelCount, 0)
         let sanitized =
             terminalDirectories
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -65,18 +65,19 @@ struct WorkspaceSnapshot: Codable, Sendable {
         self.title = title
         self.customTitle = customTitle
         self.currentDirectory = currentDirectory
-        self.panelCount = panelCount
+        let normalizedPanelCount = max(panelCount, 0)
+        self.panelCount = normalizedPanelCount
         self.terminalDirectories =
             terminalDirectories
             ?? Array(
                 repeating: currentDirectory,
-                count: max(panelCount, 1)
+                count: normalizedPanelCount
             )
         self.terminalCustomTitles =
             terminalCustomTitles
             ?? Array(
                 repeating: nil,
-                count: max(panelCount, 1)
+                count: normalizedPanelCount
             )
     }
 

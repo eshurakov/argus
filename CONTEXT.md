@@ -37,6 +37,8 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 | **Catch-all Project** | The single synthetic, non-removable Project displayed as "Workspaces" that groups Standalone Workspaces. | Referring to unassigned Workspace organization. | "default project", "misc project", "unassigned project". |
 | **Project ID** | Immutable UUID used for identity, cross-references, and managed worktree storage paths. | Keys, persistence, APIs, and paths. | Project display name, repository basename, or slug as identity. |
 | **Workspace** | UUID-identified user work context with one Workspace Root, ordered top-level tabs, a Panel registry, and optional Named Project association. | Referring to the unit selected in the left sidebar. | "terminal", "worktree", or "tab" as a synonym. |
+| **Empty Workspace** | Existing Workspace with an empty Top-level Tab order and Panel registry, no Active Tab or Focused Pane, and no live Terminal Surfaces. It retains its identity, Workspace Root, Project association, sidebar position, and Files and Changes context. | Retained Workspace state after the final Terminal Tab closes when the global keep-open preference is enabled. | Calling a fresh Workspace "empty" or adding a placeholder Panel. |
+| **Fresh Workspace** | Newly created Workspace that starts with one Terminal Tab backed by one Terminal Panel. | New Workspace creation and the fallback created after explicitly closing the last Workspace. | Empty Workspace. |
 | **Workspace ID** | Persistent UUID used for Workspace identity, Project cross-references, session restore, and `ARGUS_WORKSPACE_ID`. | Keys, persistence, IPC, and Workspace lookup. | Workspace Number, title, branch, or path as identity. |
 | **Standalone Workspace** | Workspace not associated with a Named Project and grouped under the Catch-all Project. | User-facing docs, tasks, and domain behavior for `WorkspaceType.external`. | "external workspace", "loose workspace", "unassigned workspace" except when discussing reconciliation. |
 | **Main-checkout Workspace** | Workspace rooted at a Named Project's repository checkout. | Referring to `WorkspaceType.mainCheckout`. | "main workspace"; the checked-out branch need not equal the Project's main branch. |
@@ -113,7 +115,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 - A Top-level Tab contains one or more Pane leaves; closing the tab closes every Panel in its layout.
 - A Terminal Panel owns exactly one Terminal Surface, and their UUIDs are equal during that runtime session.
 - A Browser Panel owns browser state, follows the normal top-level tab lifecycle, and must not steal focus while its tab is in the background.
-- The Selected Workspace contains one Active Tab, and the Active Tab contains one Focused Pane.
+- A nonempty Selected Workspace contains one Active Tab, and the Active Tab contains one Focused Pane. An Empty Workspace contains neither.
 - A Main-checkout Workspace resolves its Git Status Root from its Named Project's Project Repository Root.
 - A Worktree Workspace resolves its Git Status Root from its worktree path.
 - A Standalone Workspace resolves its Git Status Root from its Workspace Root.
@@ -171,7 +173,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 | External | `WorkspaceType.external` means Standalone Workspace, while an External Worktree is an existing worktree outside managed storage. | Use **Standalone Workspace** and **External Worktree** as separate concepts. |
 | Preview panel | `GitPreviewPanel` is a Panel model, not an AppKit presentation surface. | User-facing concept is **Git Preview Tab**; no floating preview window. |
 | Selection and focus | "Active" is used for Workspace, tab, Panel, and first responder. | Use Selected Workspace, Active Tab, Focused Pane, and AppKit first responder separately. |
-| Empty Workspace | Spec says replacement is "empty" but every new Workspace starts with one Terminal Panel. | "Empty" means fresh/default Workspace, not zero Panels. |
+| Empty Workspace | A retained Workspace with no Terminal content could be confused with the fresh Workspace fallback. | **Empty Workspace** means an existing Workspace with zero Top-level Tabs and zero Panels; **Fresh Workspace** means a newly created Workspace with one Terminal Tab. |
 | Split panes | A Top-level Tab and its terminal Pane layout are distinct layers. | A Top-level Tab may own a split tree of terminal Panes. |
 | Diff/blame presentation | Git Preview content could be confused with a transient preview surface. | Use **Git Preview Tab** in the initiating Workspace. |
 | Panel taxonomy | Historical docs described Terminal/Browser only. | Treat Panel as extensible; v1 implements Terminal, Browser, File, Git Preview, and Release Notes Panels. |

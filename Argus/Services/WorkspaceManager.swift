@@ -309,8 +309,7 @@ final class WorkspaceManager: ObservableObject {
         agentStatusRuntime?.removeStatus(workspaceId: workspace.id, surfaceId: surfaceId)
         workspace.closePane(surfaceId)
 
-        // An empty workspace is equivalent to a closed workspace.
-        if workspace.panelOrder.isEmpty {
+        if workspace.panelOrder.isEmpty && !settings.keepWorkspaceOpenAfterLastTerminalCloses {
             removeWorkspace(workspace.id)
         }
     }
@@ -342,9 +341,8 @@ final class WorkspaceManager: ObservableObject {
 
     /// Removes a workspace by ID, closing all of its panels.
     ///
-    /// When the last workspace is removed a new empty workspace is created
-    /// automatically (spec: "When the last workspace is closed, the system
-    /// MUST create a new empty workspace automatically.").
+    /// When the last workspace is removed a fresh Standalone Workspace with
+    /// one Terminal Tab is created automatically.
     func removeWorkspace(_ workspaceId: UUID) {
         removeWorkspaceFromState(workspaceId)
     }
