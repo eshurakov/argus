@@ -4,6 +4,8 @@ Argus is a personal macOS terminal workspace manager built on Ghostty. It keeps 
 
 The current repository is the stable v1 baseline used for day-to-day development. It is a personal tool, not a distributed product.
 
+test
+
 ## Current scope
 
 V1 includes:
