@@ -2,6 +2,10 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-08-09
+
+- Users can keep an Empty Workspace open after closing its final Terminal Tab, restore it without terminal panels, and create a new Terminal Tab from its empty state. ([e3fe82f](https://github.com/eshurakov/argus/commit/e3fe82f))
+
 ## 2026-08-08
 
 - Completed Pi agent turns now mark the affected Top-level Tab and Workspace as needing attention until viewed. ([5c155e9](https://github.com/jeanduplessis/argus/commit/5c155e9))
