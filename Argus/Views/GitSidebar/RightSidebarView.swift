@@ -198,6 +198,14 @@ struct RightSidebarView: View {
             workspace: workspace,
             project: workspaceManager.project(for: workspace.id)
         )
-        await gitStatusViewModel.refresh(workspaceId: workspace.id, context: context)
+        await gitStatusViewModel.refresh(
+            workspaceId: workspace.id,
+            context: context,
+            presentation: GitStatusPresentation(
+                combineWorkingChangeSections: appSettings.combineWorkingChangeSections,
+                showBaseBranchChanges: appSettings.showBaseBranchChanges,
+                configuredBaseBranch: context.configuredBaseBranch
+            )
+        )
     }
 }

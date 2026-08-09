@@ -68,13 +68,21 @@ extension GitSidebarView {
         isExpanded: Binding<Bool>,
         owner: GitStatusSnapshotOwner
     ) -> some View {
-        let actions = sectionActions(title: section.title, count: section.count)
+        let actions = sectionActions(for: section)
 
         return VStack(spacing: 0) {
             fileSectionHeader(section, isExpanded: isExpanded, actions: actions, owner: owner)
 
-            if isExpanded.wrappedValue {
-                fileSectionRows(section.files, sectionKey: section.sectionKey, owner: owner)
+            if case .unavailable(let message) = section.state {
+                Text(message)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.leading)
+                    .padding(.horizontal, 32)
+                    .padding(.bottom, 8)
+                    .accessibilityLabel(message)
+            } else if isExpanded.wrappedValue {
+                fileSectionRows(section.files, sectionKind: section.kind, owner: owner)
             }
         }
         .contextMenu {
@@ -140,12 +148,12 @@ extension GitSidebarView {
         actions: [GitFileSectionAction],
         owner: GitStatusSnapshotOwner
     ) -> some View {
-        if let visibleAction = actions.first(where: { !$0.isDestructive }) {
+        if let visibleAction = actions.first {
             sectionActionButton(visibleAction, section: section, owner: owner)
         }
-        let destructiveActions = actions.filter(\.isDestructive)
-        if !destructiveActions.isEmpty {
-            sectionDestructiveActionsMenu(destructiveActions, section: section, owner: owner)
+        let secondaryActions = Array(actions.dropFirst())
+        if !secondaryActions.isEmpty {
+            sectionActionsMenu(secondaryActions, section: section, owner: owner)
         }
     }
 
@@ -160,8 +168,8 @@ extension GitSidebarView {
             Button {
                 performSectionAction(
                     action.operation,
-                    sectionKey: section.sectionKey,
-                    pathCount: section.count,
+                    sectionKind: section.kind,
+                    pathCount: sectionActionPathCount(action, section: section),
                     owner: owner
                 )
             } label: {
@@ -186,7 +194,7 @@ extension GitSidebarView {
         }
     }
 
-    private func sectionDestructiveActionsMenu(
+    private func sectionActionsMenu(
         _ actions: [GitFileSectionAction],
         section: GitChangeSectionContent,
         owner: GitStatusSnapshotOwner
@@ -199,8 +207,8 @@ extension GitSidebarView {
                     Button(action.title) {
                         performSectionAction(
                             action.operation,
-                            sectionKey: section.sectionKey,
-                            pathCount: section.count,
+                            sectionKind: section.kind,
+                            pathCount: sectionActionPathCount(action, section: section),
                             owner: owner
                         )
                     }
@@ -231,10 +239,34 @@ extension GitSidebarView {
         }
     }
 
+    private func sectionActionPathCount(
+        _ action: GitFileSectionAction,
+        section: GitChangeSectionContent
+    ) -> Int {
+        guard section.kind == .uncommitted,
+            case .loaded(let summary) = viewModel.state
+        else {
+            return section.count
+        }
+
+        switch action {
+        case .stageAll:
+            return summary.unstagedCount + summary.untrackedCount
+        case .unstageAll:
+            return summary.stagedCount
+        case .discardAllUnstaged:
+            return summary.unstagedCount
+        case .deleteAllUntracked:
+            return summary.untrackedCount
+        case .discardAll, .deleteAll:
+            return section.count
+        }
+    }
+
     @ViewBuilder
     private func fileSectionRows(
         _ files: [GitFileChange],
-        sectionKey: String,
+        sectionKind: GitChangeSectionKind,
         owner: GitStatusSnapshotOwner
     ) -> some View {
         ForEach(
@@ -249,7 +281,7 @@ extension GitSidebarView {
                     directory,
                     depth: row.depth,
                     owner: owner,
-                    allowsGitignore: sectionKey == "untracked"
+                    allowsGitignore: sectionKind == .untracked
                 )
             case .file(let file):
                 fileRow(file, name: row.name, depth: row.depth, owner: owner)
@@ -264,40 +296,28 @@ extension GitSidebarView {
         owner: GitStatusSnapshotOwner
     ) -> some View {
         ForEach(actions) { action in
-            if action.isDestructive {
-                Button(action.title) {
-                    performSectionAction(
-                        action.operation,
-                        sectionKey: section.sectionKey,
-                        pathCount: section.count,
-                        owner: owner
-                    )
-                }
-                .disabled(!viewModel.canPerformActions(for: owner))
-            } else {
-                Button(action.title) {
-                    performSectionAction(
-                        action.operation,
-                        sectionKey: section.sectionKey,
-                        pathCount: section.count,
-                        owner: owner
-                    )
-                }
-                .disabled(!viewModel.canPerformActions(for: owner))
+            Button(action.title) {
+                performSectionAction(
+                    action.operation,
+                    sectionKind: section.kind,
+                    pathCount: sectionActionPathCount(action, section: section),
+                    owner: owner
+                )
             }
+            .disabled(!viewModel.canPerformActions(for: owner))
         }
     }
 
     private func performSectionAction(
         _ operation: GitStatusFileOperation,
-        sectionKey: String,
+        sectionKind: GitChangeSectionKind,
         pathCount: Int,
         owner: GitStatusSnapshotOwner
     ) {
         Task {
             await confirmAndPerformSectionFileOperation(
                 operation,
-                sectionKey: sectionKey,
+                sectionKind: sectionKind,
                 pathCount: pathCount,
                 owner: owner
             )

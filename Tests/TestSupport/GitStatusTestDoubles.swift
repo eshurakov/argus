@@ -144,6 +144,7 @@ final class RecordingFileOperationConfirmer: GitStatusFileOperationConfirming {
     let shouldConfirm: Bool
     private(set) var requests: [GitStatusFileOperation] = []
     private(set) var pathCountRequests: [Int] = []
+    private(set) var confirmationTitleRequests: [String] = []
 
     init(shouldConfirm: Bool) {
         self.shouldConfirm = shouldConfirm
@@ -158,6 +159,17 @@ final class RecordingFileOperationConfirmer: GitStatusFileOperationConfirming {
     func confirm(operation: GitStatusFileOperation, pathCount: Int) -> Bool {
         requests.append(operation)
         pathCountRequests.append(pathCount)
+        return shouldConfirm
+    }
+
+    func confirm(
+        operation: GitStatusFileOperation,
+        pathCount: Int,
+        confirmationTitle: String
+    ) -> Bool {
+        requests.append(operation)
+        pathCountRequests.append(pathCount)
+        confirmationTitleRequests.append(confirmationTitle)
         return shouldConfirm
     }
 }

@@ -57,20 +57,33 @@ extension GitSidebarView {
     }
 
     private func fileActions(for file: GitFileChange) -> [GitFileRowAction] {
-        switch file.sectionKey {
-        case "staged":
+        switch file.sectionKind {
+        case .staged:
             return [.unstage, .diff, .blame, .copyPath]
-        case "unstaged":
+        case .unstaged:
             return [.stage, .discard, .diff, .blame, .copyPath]
-        case "untracked":
+        case .untracked:
             return [.stage, .delete, .diff, .copyPath]
-        default:
-            return [.copyPath]
+        case .uncommitted:
+            if file.isUntracked {
+                return [.stage, .delete, .diff, .copyPath]
+            }
+            if file.hasStagedChanges && file.hasUnstagedChanges {
+                return [.stage, .unstage, .discard, .diff, .blame, .copyPath]
+            }
+            if file.hasStagedChanges {
+                return [.unstage, .diff, .blame, .copyPath]
+            }
+            return [.stage, .discard, .diff, .blame, .copyPath]
+        case .againstBase:
+            return file.status == .deleted
+                ? [.diff, .copyPath]
+                : [.diff, .blame, .copyPath]
         }
     }
 
     private func fileContextActions(for file: GitFileChange) -> [GitFileRowAction] {
-        guard file.sectionKey == "untracked" else { return fileActions(for: file) }
+        guard file.sectionKind == .untracked else { return fileActions(for: file) }
         return fileActions(for: file) + [.addToGitignore]
     }
 
@@ -103,10 +116,26 @@ extension GitSidebarView {
 
     private func fileAccessibilityValue(_ file: GitFileChange) -> String {
         var values = [file.status.displayName]
+        values.append(contentsOf: sectionAccessibilityValues(for: file))
         if let originalPath = file.originalPath { values.append("from \(originalPath)") }
         if let additions = file.additions { values.append("\(additions) lines added") }
         if let deletions = file.deletions { values.append("\(deletions) lines removed") }
         return values.joined(separator: ", ")
+    }
+
+    private func sectionAccessibilityValues(for file: GitFileChange) -> [String] {
+        var values: [String] = []
+        switch file.sectionKind {
+        case .staged: values.append("Staged")
+        case .unstaged: values.append("Unstaged")
+        case .untracked: values.append("Untracked")
+        case .uncommitted:
+            if file.hasStagedChanges { values.append("Staged") }
+            if file.hasUnstagedChanges { values.append("Unstaged") }
+            if file.isUntracked { values.append("Untracked") }
+        case .againstBase: values.append("Against Base")
+        }
+        return values
     }
 
     func sectionActions(title: String, count: Int) -> [GitFileSectionAction] {
@@ -121,6 +150,40 @@ extension GitSidebarView {
         default:
             return []
         }
+    }
+
+    func sectionActions(for section: GitChangeSectionContent) -> [GitFileSectionAction] {
+        guard section.count > 0 else { return [] }
+        switch section.kind {
+        case .staged:
+            return [.unstageAll]
+        case .unstaged:
+            return [.stageAll, .discardAll]
+        case .untracked:
+            return [.stageAll, .deleteAll]
+        case .uncommitted:
+            return uncommittedSectionActions()
+        case .againstBase:
+            return []
+        }
+    }
+
+    private func uncommittedSectionActions() -> [GitFileSectionAction] {
+        guard case .loaded(let summary) = viewModel.state else { return [] }
+        var actions: [GitFileSectionAction] = []
+        if summary.unstagedCount > 0 || summary.untrackedCount > 0 {
+            actions.append(.stageAll)
+        }
+        if summary.stagedCount > 0 {
+            actions.append(.unstageAll)
+        }
+        if summary.unstagedCount > 0 {
+            actions.append(.discardAllUnstaged)
+        }
+        if summary.untrackedCount > 0 {
+            actions.append(.deleteAllUntracked)
+        }
+        return actions
     }
 
     func notRepositoryContent(rootPath: String, message: String? = nil) -> some View {
@@ -225,14 +288,28 @@ extension GitSidebarView {
 
     func confirmAndPerformSectionFileOperation(
         _ operation: GitStatusFileOperation,
-        sectionKey: String,
+        sectionKind: GitChangeSectionKind,
         pathCount: Int,
         owner: GitStatusSnapshotOwner
     ) async {
         guard selectedSnapshotOwner == owner else { return }
         await viewModel.confirmAndPerformSectionFileOperation(
             operation,
-            sectionKey: sectionKey,
+            sectionKind: sectionKind,
+            pathCount: pathCount,
+            owner: owner
+        )
+    }
+
+    func confirmAndPerformSectionFileOperation(
+        _ operation: GitStatusFileOperation,
+        sectionKey: String,
+        pathCount: Int,
+        owner: GitStatusSnapshotOwner
+    ) async {
+        await confirmAndPerformSectionFileOperation(
+            operation,
+            sectionKind: GitChangeSectionKind(rawValue: sectionKey) ?? .unstaged,
             pathCount: pathCount,
             owner: owner
         )
@@ -272,7 +349,15 @@ extension GitSidebarView {
         guard let workspace = workspaceManager.selectedWorkspace,
             let context = statusContext()
         else { return nil }
-        return viewModel.owner(workspaceId: workspace.id, context: context)
+        return viewModel.owner(
+            workspaceId: workspace.id,
+            context: context,
+            presentation: GitStatusPresentation(
+                combineWorkingChangeSections: appSettings.combineWorkingChangeSections,
+                showBaseBranchChanges: appSettings.showBaseBranchChanges,
+                configuredBaseBranch: context.configuredBaseBranch
+            )
+        )
     }
 
     private func statusContext() -> GitStatusRootContext? {

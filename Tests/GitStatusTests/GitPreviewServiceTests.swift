@@ -127,6 +127,106 @@ struct GitPreviewServiceTests {
     }
 
     @Test
+    func resolvesUncommittedNetContent() async throws {
+        let repo = try repository(prefix: "argus-preview-uncommitted", fileContent: "old\n")
+        defer { repo.remove() }
+        try "staged\n".write(to: repo.fileURL, atomically: true, encoding: .utf8)
+        try runGit(["add", "file.txt"], in: repo.url)
+        try "working\n".write(to: repo.fileURL, atomically: true, encoding: .utf8)
+
+        let diff = try await previewDiff(
+            root: repo.url,
+            file: GitFileChange(
+                path: "file.txt",
+                status: .modified,
+                sectionKind: .uncommitted,
+                hasStagedChanges: true,
+                hasUnstagedChanges: true,
+                diffSource: .uncommitted
+            )
+        )
+
+        assertEqual(diff.oldContent, "old\n", "uncommitted old side comes from HEAD")
+        assertEqual(diff.newContent, "working\n", "uncommitted new side comes from working tree")
+    }
+
+    @Test
+    func resolvesAgainstBaseContent() async throws {
+        let repo = try repository(prefix: "argus-preview-against-base", fileContent: "base\n")
+        defer { repo.remove() }
+        try runGit(["checkout", "-b", "feature"], in: repo.url)
+        try "feature\n".write(to: repo.fileURL, atomically: true, encoding: .utf8)
+        try runGit(["add", "file.txt"], in: repo.url)
+        try runGit(["commit", "-m", "feature"], in: repo.url)
+
+        let diff = try await previewDiff(
+            root: repo.url,
+            file: GitFileChange(
+                path: "file.txt",
+                status: .modified,
+                sectionKind: .againstBase,
+                diffSource: .againstBase(baseName: "main", resolvedRef: "refs/heads/main")
+            )
+        )
+
+        assertEqual(diff.oldContent, "base\n", "Against Base old side comes from the merge base")
+        assertEqual(diff.newContent, "feature\n", "Against Base new side comes from HEAD")
+    }
+
+}
+
+extension GitPreviewServiceTests {
+    @Test
+    func explainsCanceledUncommittedDiff() async throws {
+        let repo = try repository(prefix: "argus-preview-canceled", fileContent: "base\n")
+        defer { repo.remove() }
+        try "staged\n".write(to: repo.fileURL, atomically: true, encoding: .utf8)
+        try runGit(["add", "file.txt"], in: repo.url)
+        try "base\n".write(to: repo.fileURL, atomically: true, encoding: .utf8)
+
+        let result = await GitPreviewService().preview(
+            kind: .diff,
+            rootPath: repo.url.path,
+            file: GitFileChange(
+                path: "file.txt",
+                status: .modified,
+                sectionKind: .uncommitted,
+                hasStagedChanges: true,
+                hasUnstagedChanges: true,
+                diffSource: .uncommitted,
+                isNetDiffEmpty: true
+            )
+        )
+        guard case .failed(.diff, "file.txt", let message) = result else {
+            fail("expected an explanatory canceled-diff failure, got \(result)")
+        }
+        assertEqual(message.contains("no net HEAD-to-working-tree"), true, "canceled diff explains its state")
+    }
+
+    @Test
+    func explainsUnmergedUncommittedDiff() async throws {
+        let result = await GitPreviewService().preview(
+            kind: .diff,
+            rootPath: "/tmp/not-a-real-argus-preview-repo",
+            file: GitFileChange(
+                path: "file.txt",
+                status: .unmerged,
+                sectionKind: .uncommitted,
+                hasUnstagedChanges: true,
+                diffSource: .uncommitted
+            )
+        )
+        guard case .failed(.diff, "file.txt", let message) = result else {
+            fail("expected an explanatory unmerged-diff failure, got \(result)")
+        }
+        assertEqual(
+            message.contains("unmerged files"),
+            true,
+            "unmerged combined diff keeps the unavailable preview behavior"
+        )
+    }
+
+    @Test
     func returnsTextFallbackForBinaryContent() async throws {
         let repo = try repository(prefix: "argus-preview-binary")
         defer { repo.remove() }

@@ -247,6 +247,37 @@ struct GitChangesUIContractTests {
             "Changes View file rows open a Git Preview Tab on double-click"
         )
     }
+
+    @Test
+    func filesAndChangesSettingsGroupPresentationControlsAfterFileDefaults() throws {
+        let settings = try SourceContract("Argus/Settings/SettingsView.swift")
+        let filesAndChanges = try settings.section(
+            after: "private var filesAndChanges: some View {",
+            before: "private var browser: some View {"
+        )
+        let filesSection = try #require(filesAndChanges.range(of: "Section(\"Files\")"))
+        let changesSection = try #require(filesAndChanges.range(of: "Section(\"Changes\")"))
+        let diffDefaults = try #require(
+            filesAndChanges.range(of: "Picker(\"Default diff style\"")
+        )
+        let combineChanges = try #require(
+            filesAndChanges.range(of: "Text(\"Combine working changes\")")
+        )
+        let againstBase = try #require(
+            filesAndChanges.range(
+                of: "Text(\"Show committed changes against Base Branch\")"
+            )
+        )
+
+        #expect(filesSection.lowerBound < changesSection.lowerBound)
+        #expect(changesSection.lowerBound < diffDefaults.lowerBound)
+        #expect(diffDefaults.lowerBound < combineChanges.lowerBound)
+        #expect(combineChanges.lowerBound < againstBase.lowerBound)
+        #expect(filesAndChanges.contains("This changes only the layout"))
+        #expect(filesAndChanges.contains("Uses only Git data"))
+        #expect(filesAndChanges.contains("already stored on this Mac"))
+        #expect(!filesAndChanges.contains("Neither setting performs a fetch."))
+    }
 }
 
 @Suite

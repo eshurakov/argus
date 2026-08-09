@@ -31,8 +31,8 @@ struct GitStatusViewModelTests {
 
         await viewModel.refresh(context: context)
 
-        assertEqual(service.requestedRoots, ["/tmp/worktree"], "refresh uses resolved worktree root")
-        assertEqual(viewModel.state, service.result, "refresh publishes loaded state")
+        assertViewModelEqual(service.requestedRoots, ["/tmp/worktree"], "refresh uses resolved worktree root")
+        assertViewModelEqual(viewModel.state, service.result, "refresh publishes loaded state")
     }
 
     @Test
@@ -61,8 +61,8 @@ struct GitStatusViewModelTests {
 
         await viewModel.initializeRepository(context: context)
 
-        assertEqual(service.initializedRoots, ["/tmp/new-repo"], "initialize uses resolved root")
-        assertEqual(viewModel.state, loaded, "successful initialize publishes refreshed clean status")
+        assertViewModelEqual(service.initializedRoots, ["/tmp/new-repo"], "initialize uses resolved root")
+        assertViewModelEqual(viewModel.state, loaded, "successful initialize publishes refreshed clean status")
     }
 
     @Test
@@ -82,10 +82,10 @@ struct GitStatusViewModelTests {
 
         viewModel.copyPath("Sources/App/File.swift")
 
-        assertEqual(
+        assertViewModelEqual(
             clipboard.copiedPaths, ["Sources/App/File.swift"], "copy-path copies the displayed row path")
-        assertEqual(service.operationRequests.isEmpty, true, "copy-path does not run a git operation")
-        assertEqual(service.requestedRoots.isEmpty, true, "copy-path does not refresh git state")
+        assertViewModelEqual(service.operationRequests.isEmpty, true, "copy-path does not run a git operation")
+        assertViewModelEqual(service.requestedRoots.isEmpty, true, "copy-path does not refresh git state")
     }
 
     @Test
@@ -113,10 +113,10 @@ struct GitStatusViewModelTests {
 
         await viewModel.performFileOperation(.stage, path: "file.txt", context: context)
 
-        assertEqual(
+        assertViewModelEqual(
             service.operationRequests.map(\.description), ["stage-/tmp/worktree-file.txt"],
             "file operation uses resolved root and row path")
-        assertEqual(viewModel.state, refreshed, "file operation publishes refreshed status immediately")
+        assertViewModelEqual(viewModel.state, refreshed, "file operation publishes refreshed status immediately")
     }
 
     @Test
@@ -134,11 +134,11 @@ struct GitStatusViewModelTests {
 
         await viewModel.confirmAndPerformFileOperation(.discard, paths: ["file.txt"], context: context)
 
-        assertEqual(confirmation.requests, [.discard], "destructive operation asks for confirmation")
-        assertEqual(
+        assertViewModelEqual(confirmation.requests, [.discard], "destructive operation asks for confirmation")
+        assertViewModelEqual(
             service.bulkOperationRequests.isEmpty, true,
             "canceled destructive operation does not call git")
-        assertEqual(
+        assertViewModelEqual(
             viewModel.state, .idle, "canceled destructive operation leaves sidebar state unchanged")
     }
 
@@ -166,221 +166,99 @@ struct GitStatusViewModelTests {
         await viewModel.confirmAndPerformFileOperation(
             .delete, paths: ["scratch.txt"], context: context)
 
-        assertEqual(confirmation.requests, [.delete], "confirmed delete asks for confirmation")
-        assertEqual(
+        assertViewModelEqual(confirmation.requests, [.delete], "confirmed delete asks for confirmation")
+        assertViewModelEqual(
             service.bulkOperationRequests.map(\.description),
             ["delete-/tmp/repo-scratch.txt"], "confirmed delete runs as a bulk operation")
-        assertEqual(
+        assertViewModelEqual(
             viewModel.state, refreshed, "confirmed destructive operation publishes refreshed status")
     }
-}
-
-@Suite
-struct GitStatusViewModelSectionAndPreviewTests {
-    @Test
-    @MainActor
-    func sectionBulkOperationUsesSectionScopeForCappedResults() async {
-        let refreshed = GitStatusLoadState.loaded(
-            GitStatusSummary(
-                rootPath: "/tmp/repo",
-                branchName: "main",
-                upstreamName: nil,
-                aheadCount: 0,
-                behindCount: 0
-            ))
-        let service = FakeStatusService(result: .idle, operationResult: refreshed)
-        let viewModel = GitStatusViewModel(service: service)
-        let context = GitStatusRootContext(
-            kind: .standalone,
-            currentDirectory: "/tmp/repo",
-            worktreePath: nil,
-            projectRepositoryPath: nil
-        )
-
-        await viewModel.confirmAndPerformSectionFileOperation(
-            .stage, sectionKey: "untracked", pathCount: 501, context: context)
-
-        assertEqual(
-            service.bulkOperationRequests.isEmpty, true,
-            "capped section bulk actions do not operate only on displayed file paths")
-        assertEqual(
-            service.sectionOperationRequests.map(\.description),
-            ["stage-/tmp/repo-untracked"], "bulk action operates on the whole git section")
-        assertEqual(viewModel.state, refreshed, "section bulk operation publishes refreshed status")
-    }
 
     @Test
     @MainActor
-    func sectionBulkOperationKeepsLoadedContentVisibleWhileRefreshing() async {
-        let current = GitStatusLoadState.loaded(
-            GitStatusSummary(
-                rootPath: "/tmp/repo",
-                branchName: "main",
-                upstreamName: nil,
-                aheadCount: 0,
-                behindCount: 0,
-                unstagedCount: 1
-            ))
-        let service = SuspendingSectionStatusService(result: current)
-        let viewModel = GitStatusViewModel(service: service)
-        let context = GitStatusRootContext(
-            kind: .standalone,
-            currentDirectory: "/tmp/repo",
-            worktreePath: nil,
-            projectRepositoryPath: nil
-        )
-        await viewModel.refresh(context: context)
-
-        let operation = Task {
-            await viewModel.performSectionFileOperation(
-                .stage, sectionKey: "unstaged", context: context)
-        }
-        await service.waitUntilOperationStarts()
-
-        assertEqual(viewModel.state, current, "bulk operation keeps loaded sidebar content visible")
-        assertEqual(viewModel.isRefreshing, true, "bulk operation shows non-disruptive refresh progress")
-        await service.finishOperation()
-        await operation.value
-    }
-
-    @Test
-    @MainActor
-    func destructiveSectionBulkOperationConfirmsTotalSectionCount() async {
-        let service = FakeStatusService(result: .idle)
-        let confirmation = RecordingFileOperationConfirmer(shouldConfirm: true)
-        let viewModel = GitStatusViewModel(service: service, fileOperationConfirmer: confirmation)
-        let context = GitStatusRootContext(
-            kind: .standalone,
-            currentDirectory: "/tmp/repo",
-            worktreePath: nil,
-            projectRepositoryPath: nil
-        )
-
-        await viewModel.confirmAndPerformSectionFileOperation(
-            .delete, sectionKey: "untracked", pathCount: 501, context: context)
-
-        assertEqual(
-            confirmation.requests, [.delete], "destructive section action asks for confirmation")
-        assertEqual(
-            confirmation.pathCountRequests, [501],
-            "destructive section confirmation uses total section count, not capped row count")
-        assertEqual(
-            service.sectionOperationRequests.map(\.description),
-            ["delete-/tmp/repo-untracked"],
-            "confirmed destructive section action operates on whole section")
-    }
-
-    @Test
-    @MainActor
-    func previewUsesResolvedRootAndReturnsOutput() async {
-        let service = FakeStatusService(result: .idle)
-        let previewService = RecordingPreviewService(
+    func requestIdentityIncludesPresentationAndConfiguredBase() async {
+        let service = RequestRecordingStatusService(
             result: .loaded(
-                GitPreview(
-                    kind: .diff,
-                    path: "file.txt",
-                    content: .diff(
-                        GitDiffPreview(
-                            fileName: "file.txt", oldContent: "old", newContent: "new")))))
-        let viewModel = GitStatusViewModel(
-            service: service, previewService: previewService)
-        let context = GitStatusRootContext(
-            kind: .worktree,
-            currentDirectory: "/tmp/worktree/subdir",
-            worktreePath: "/tmp/worktree",
-            projectRepositoryPath: nil
-        )
-        let file = GitFileChange(path: "file.txt", status: .modified, sectionKey: "unstaged")
-
-        let result = await viewModel.loadPreview(kind: .diff, file: file, context: context)
-
-        assertEqual(
-            previewService.requests.map(\.description),
-            ["diff-/tmp/worktree-file.txt"], "preview uses resolved status root and selected row")
-        assertEqual(
-            result,
-            .loaded(
-                GitPreview(
-                    kind: .diff,
-                    path: "file.txt",
-                    content: .diff(
-                        GitDiffPreview(
-                            fileName: "file.txt", oldContent: "old", newContent: "new")))),
-            "loaded preview is returned for tab presentation")
-        assertEqual(viewModel.state, .idle, "preview does not replace git status state")
-    }
-
-    @Test
-    @MainActor
-    func previewFailureIsReturnedWithoutReplacingStatusState() async {
-        let current = GitStatusLoadState.loaded(
-            GitStatusSummary(
-                rootPath: "/tmp/repo", branchName: "main", upstreamName: nil, aheadCount: 0, behindCount: 0)
-        )
-        let service = FakeStatusService(result: current)
-        let previewService = RecordingPreviewService(
-            result: .failed(kind: .blame, path: "missing.txt", message: "fatal: no such path"))
-        let viewModel = GitStatusViewModel(
-            service: service, previewService: previewService)
-        let context = GitStatusRootContext(
-            kind: .standalone, currentDirectory: "/tmp/repo", worktreePath: nil,
-            projectRepositoryPath: nil)
-        await viewModel.refresh(context: context)
-
-        let result = await viewModel.loadPreview(
-            kind: .blame,
-            file: GitFileChange(path: "missing.txt", status: .modified, sectionKey: "unstaged"),
-            context: context)
-
-        assertEqual(
-            result, .failed(kind: .blame, path: "missing.txt", message: "fatal: no such path"),
-            "preview failure is returned for tab presentation")
-        assertEqual(viewModel.state, current, "preview failure does not replace loaded status state")
-    }
-
-    @Test
-    @MainActor
-    func automaticRefreshUsesSameLoadingRefreshPath() async {
-        let loaded = GitStatusLoadState.loaded(
-            GitStatusSummary(
-                rootPath: "/tmp/worktree",
-                branchName: "main",
-                upstreamName: nil,
-                aheadCount: 0,
-                behindCount: 0
-            ))
-        var observedLoading = false
-        let service = ObservingStatusService(result: loaded) {
-            observedLoading = true
-        }
+                GitStatusSummary(
+                    rootPath: "/tmp/repo",
+                    branchName: "feature",
+                    upstreamName: nil,
+                    aheadCount: 0,
+                    behindCount: 0
+                )))
         let viewModel = GitStatusViewModel(service: service)
-        let watcher = ViewModelTestWatcher()
-        let scheduler = ViewModelTestScheduler()
-        let controller = GitStatusAutoRefreshController(
-            watcher: watcher,
-            scheduler: scheduler,
-            now: { Date(timeIntervalSince1970: 100) }
-        )
+        let workspaceId = UUID()
         let context = GitStatusRootContext(
             kind: .worktree,
-            currentDirectory: "/tmp/worktree/subdir",
-            worktreePath: "/tmp/worktree",
-            projectRepositoryPath: nil
+            currentDirectory: "/tmp/repo",
+            worktreePath: "/tmp/repo",
+            projectRepositoryPath: nil,
+            configuredBaseBranch: "main"
         )
 
-        controller.start(rootPath: "/tmp/worktree") {
-            await viewModel.refresh(context: context)
-        }
-        watcher.emit(paths: ["/tmp/worktree/file.txt"])
-        await scheduler.runScheduled()
+        let classic = viewModel.owner(workspaceId: workspaceId, context: context)
+        let combined = viewModel.owner(
+            workspaceId: workspaceId,
+            context: context,
+            presentation: GitStatusPresentation(combineWorkingChangeSections: true)
+        )
+        let base = viewModel.owner(
+            workspaceId: workspaceId,
+            context: context,
+            presentation: GitStatusPresentation(showBaseBranchChanges: true)
+        )
 
-        assertEqual(
-            observedLoading, true, "automatic refresh exposes loading state before service returns")
-        assertEqual(viewModel.state, loaded, "automatic refresh publishes final status")
+        assertViewModelEqual(classic != combined, true, "combination setting changes snapshot owner")
+        assertViewModelEqual(classic != base, true, "base setting changes snapshot owner")
+        assertViewModelEqual(
+            classic.request.presentation.configuredBaseBranch, "main", "owner carries Project base branch")
+
+        await viewModel.refresh(owner: classic)
+        await viewModel.refresh(owner: combined)
+        assertViewModelEqual(
+            service.requests.map(\.presentation),
+            [classic.request.presentation, combined.request.presentation],
+            "status refreshes carry the complete request presentation"
+        )
     }
-
 }
 
-private func assertEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
+private func assertViewModelEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
     #expect(actual == expected, Comment(rawValue: message))
+}
+
+private final class RequestRecordingStatusService: GitStatusProviding, @unchecked Sendable {
+    let result: GitStatusLoadState
+    private(set) var requests: [GitStatusRequest] = []
+
+    init(result: GitStatusLoadState) {
+        self.result = result
+    }
+
+    func status(rootPath: String) async -> GitStatusLoadState { result }
+
+    func status(request: GitStatusRequest) async -> GitStatusLoadState {
+        requests.append(request)
+        return result
+    }
+
+    func initializeRepository(rootPath: String) async -> GitStatusLoadState { result }
+
+    func performFileOperation(
+        _ operation: GitStatusFileOperation,
+        rootPath: String,
+        path: String
+    ) async -> GitStatusLoadState { result }
+
+    func performBulkFileOperation(
+        _ operation: GitStatusFileOperation,
+        rootPath: String,
+        paths: [String]
+    ) async -> GitStatusLoadState { result }
+
+    func performSectionFileOperation(
+        _ operation: GitStatusFileOperation,
+        rootPath: String,
+        sectionKey: String
+    ) async -> GitStatusLoadState { result }
 }

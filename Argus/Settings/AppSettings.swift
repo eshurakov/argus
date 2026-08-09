@@ -27,24 +27,6 @@ final class AppSettings: ObservableObject {
         var title: String { rawValue.capitalized }
     }
 
-    enum DiffStyle: String, CaseIterable, Identifiable {
-        case split
-        case unified
-
-        var id: String { rawValue }
-
-        var title: String { rawValue.capitalized }
-    }
-
-    enum DiffOverflow: String, CaseIterable, Identifiable {
-        case scroll
-        case wrap
-
-        var id: String { rawValue }
-
-        var title: String { rawValue.capitalized }
-    }
-
     private enum Keys {
         static let restorePreviousSession = "Argus.settings.general.restorePreviousSession"
         static let keepWorkspaceOpenAfterLastTerminalCloses =
@@ -63,6 +45,8 @@ final class AppSettings: ObservableObject {
         static let openSVGInPreview = "Argus.settings.filesAndChanges.openSVGInPreview"
         static let defaultDiffStyle = "Argus.settings.filesAndChanges.defaultDiffStyle"
         static let defaultDiffOverflow = "Argus.settings.filesAndChanges.defaultDiffOverflow"
+        static let combineWorkingChangeSections = "Argus.settings.filesAndChanges.combineWorkingChangeSections"
+        static let showBaseBranchChanges = "Argus.settings.filesAndChanges.showBaseBranchChanges"
         static let homepage = "Argus.settings.browser.homepage"
         static let searchProvider = "Argus.settings.browser.searchProvider"
         static let defaultZoom = "Argus.settings.browser.defaultZoom"
@@ -142,6 +126,12 @@ final class AppSettings: ObservableObject {
     @Published var defaultDiffOverflow: DiffOverflow {
         didSet { persist(defaultDiffOverflow.rawValue, for: Keys.defaultDiffOverflow) }
     }
+    @Published var combineWorkingChangeSections: Bool {
+        didSet { persist(combineWorkingChangeSections, for: Keys.combineWorkingChangeSections) }
+    }
+    @Published var showBaseBranchChanges: Bool {
+        didSet { persist(showBaseBranchChanges, for: Keys.showBaseBranchChanges) }
+    }
     @Published var homepage: String {
         didSet {
             let normalized = Self.normalizedHomepage(homepage)
@@ -196,6 +186,8 @@ final class AppSettings: ObservableObject {
         openSVGInPreview = Self.bool(defaults, key: Keys.openSVGInPreview, fallback: false)
         defaultDiffStyle = Self.enumValue(defaults, key: Keys.defaultDiffStyle, fallback: .split)
         defaultDiffOverflow = Self.enumValue(defaults, key: Keys.defaultDiffOverflow, fallback: .scroll)
+        combineWorkingChangeSections = Self.bool(defaults, key: Keys.combineWorkingChangeSections, fallback: false)
+        showBaseBranchChanges = Self.bool(defaults, key: Keys.showBaseBranchChanges, fallback: false)
         homepage = Self.normalizedHomepage(defaults.string(forKey: Keys.homepage) ?? "")
         searchProvider = Self.enumValue(defaults, key: Keys.searchProvider, fallback: .none)
         defaultZoom = Self.clamp(defaults.double(forKey: Keys.defaultZoom), to: 0.5...2, fallback: 1)
@@ -236,6 +228,8 @@ final class AppSettings: ObservableObject {
         persist(openSVGInPreview, for: Keys.openSVGInPreview)
         persist(defaultDiffStyle.rawValue, for: Keys.defaultDiffStyle)
         persist(defaultDiffOverflow.rawValue, for: Keys.defaultDiffOverflow)
+        persist(combineWorkingChangeSections, for: Keys.combineWorkingChangeSections)
+        persist(showBaseBranchChanges, for: Keys.showBaseBranchChanges)
         persist(homepage, for: Keys.homepage)
         persist(searchProvider.rawValue, for: Keys.searchProvider)
         persist(defaultZoom, for: Keys.defaultZoom)
@@ -276,6 +270,24 @@ final class AppSettings: ObservableObject {
 }
 
 extension AppSettings {
+    enum DiffStyle: String, CaseIterable, Identifiable {
+        case split
+        case unified
+
+        var id: String { rawValue }
+
+        var title: String { rawValue.capitalized }
+    }
+
+    enum DiffOverflow: String, CaseIterable, Identifiable {
+        case scroll
+        case wrap
+
+        var id: String { rawValue }
+
+        var title: String { rawValue.capitalized }
+    }
+
     struct PresentationMetrics {
         let interfaceTextSize: Double
         let interfaceDensity: InterfaceDensity

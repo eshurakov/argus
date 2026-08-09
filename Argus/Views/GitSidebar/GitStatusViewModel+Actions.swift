@@ -19,12 +19,28 @@ protocol GitStatusFileOperationConfirming: AnyObject {
 
     @MainActor
     func confirm(operation: GitStatusFileOperation, pathCount: Int) -> Bool
+
+    @MainActor
+    func confirm(
+        operation: GitStatusFileOperation,
+        pathCount: Int,
+        confirmationTitle: String
+    ) -> Bool
 }
 
 extension GitStatusFileOperationConfirming {
     @MainActor
     func confirm(operation: GitStatusFileOperation, pathCount: Int) -> Bool {
         confirm(operation: operation, paths: Array(repeating: "", count: pathCount))
+    }
+
+    @MainActor
+    func confirm(
+        operation: GitStatusFileOperation,
+        pathCount: Int,
+        confirmationTitle: String
+    ) -> Bool {
+        confirm(operation: operation, pathCount: pathCount)
     }
 }
 
@@ -33,6 +49,7 @@ final class AlertGitStatusFileOperationConfirmer: GitStatusFileOperationConfirmi
     func confirm(operation: GitStatusFileOperation, paths: [String]) -> Bool {
         guard operation.requiresConfirmation else { return true }
         return runAlert(
+            title: operation.confirmationTitle,
             operation: operation,
             informativeText: operation.confirmationMessage(paths: paths)
         )
@@ -42,24 +59,38 @@ final class AlertGitStatusFileOperationConfirmer: GitStatusFileOperationConfirmi
     func confirm(operation: GitStatusFileOperation, pathCount: Int) -> Bool {
         guard operation.requiresConfirmation else { return true }
         return runAlert(
+            title: operation.confirmationTitle,
             operation: operation,
             informativeText: operation.confirmationMessage(pathCount: pathCount)
         )
     }
 
     @MainActor
-    private func runAlert(operation: GitStatusFileOperation, informativeText: String) -> Bool {
+    func confirm(
+        operation: GitStatusFileOperation,
+        pathCount: Int,
+        confirmationTitle: String
+    ) -> Bool {
+        guard operation.requiresConfirmation else { return true }
+        return runAlert(
+            title: confirmationTitle,
+            operation: operation,
+            informativeText: "\(confirmationTitle): \(operation.confirmationMessage(pathCount: pathCount))"
+        )
+    }
+
+    @MainActor
+    private func runAlert(
+        title: String,
+        operation: GitStatusFileOperation,
+        informativeText: String
+    ) -> Bool {
         confirmDestructiveAction(
-            title: operation.confirmationTitle,
+            title: title,
             message: informativeText,
             confirmTitle: operation.confirmationButtonTitle
         )
     }
-}
-
-struct GitStatusSnapshotOwner: Equatable, Hashable, Sendable {
-    let workspaceId: UUID
-    let rootPath: String
 }
 
 extension GitStatusViewModel {
@@ -67,12 +98,16 @@ extension GitStatusViewModel {
         await refresh(owner: legacyOwner(context: context), exposesWorkspaceId: false)
     }
 
-    func refresh(workspaceId: UUID?, context: GitStatusRootContext) async {
+    func refresh(
+        workspaceId: UUID?,
+        context: GitStatusRootContext,
+        presentation: GitStatusPresentation = .default
+    ) async {
         guard let workspaceId else {
             await refresh(context: context)
             return
         }
-        await refresh(owner: owner(workspaceId: workspaceId, context: context))
+        await refresh(owner: owner(workspaceId: workspaceId, context: context, presentation: presentation))
     }
 
     func refresh(owner: GitStatusSnapshotOwner) async {
@@ -131,14 +166,39 @@ extension GitStatusViewModel {
 
     func performSectionFileOperation(
         _ operation: GitStatusFileOperation,
+        sectionKind: GitChangeSectionKind,
+        context: GitStatusRootContext
+    ) async {
+        await performSectionFileOperation(
+            operation,
+            sectionKind: sectionKind,
+            owner: legacyOwner(context: context),
+            exposesWorkspaceId: false
+        )
+    }
+
+    func performSectionFileOperation(
+        _ operation: GitStatusFileOperation,
+        sectionKind: GitChangeSectionKind,
+        owner: GitStatusSnapshotOwner
+    ) async {
+        await performSectionFileOperation(
+            operation,
+            sectionKind: sectionKind,
+            owner: owner,
+            exposesWorkspaceId: true
+        )
+    }
+
+    func performSectionFileOperation(
+        _ operation: GitStatusFileOperation,
         sectionKey: String,
         context: GitStatusRootContext
     ) async {
         await performSectionFileOperation(
             operation,
-            sectionKey: sectionKey,
-            owner: legacyOwner(context: context),
-            exposesWorkspaceId: false
+            sectionKind: GitChangeSectionKind(rawValue: sectionKey) ?? .unstaged,
+            context: context
         )
     }
 
@@ -149,9 +209,8 @@ extension GitStatusViewModel {
     ) async {
         await performSectionFileOperation(
             operation,
-            sectionKey: sectionKey,
-            owner: owner,
-            exposesWorkspaceId: true
+            sectionKind: GitChangeSectionKind(rawValue: sectionKey) ?? .unstaged,
+            owner: owner
         )
     }
 
@@ -179,11 +238,36 @@ extension GitStatusViewModel {
 
     func confirmAndPerformSectionFileOperation(
         _ operation: GitStatusFileOperation,
+        sectionKind: GitChangeSectionKind,
+        pathCount: Int,
+        context: GitStatusRootContext
+    ) async {
+        guard shouldPerform(operation, sectionKind: sectionKind, pathCount: pathCount) else { return }
+        await performSectionFileOperation(operation, sectionKind: sectionKind, context: context)
+    }
+
+    func confirmAndPerformSectionFileOperation(
+        _ operation: GitStatusFileOperation,
+        sectionKind: GitChangeSectionKind,
+        pathCount: Int,
+        owner: GitStatusSnapshotOwner
+    ) async {
+        guard canPerformActions(for: owner),
+            shouldPerform(operation, sectionKind: sectionKind, pathCount: pathCount)
+        else { return }
+        await performSectionFileOperation(operation, sectionKind: sectionKind, owner: owner)
+    }
+
+    func confirmAndPerformSectionFileOperation(
+        _ operation: GitStatusFileOperation,
         sectionKey: String,
         pathCount: Int,
         context: GitStatusRootContext
     ) async {
-        guard shouldPerform(operation, pathCount: pathCount) else { return }
+        guard
+            shouldPerform(
+                operation, sectionKind: GitChangeSectionKind(rawValue: sectionKey) ?? .unstaged, pathCount: pathCount)
+        else { return }
         await performSectionFileOperation(operation, sectionKey: sectionKey, context: context)
     }
 
@@ -193,7 +277,13 @@ extension GitStatusViewModel {
         pathCount: Int,
         owner: GitStatusSnapshotOwner
     ) async {
-        guard canPerformActions(for: owner), shouldPerform(operation, pathCount: pathCount) else { return }
+        guard canPerformActions(for: owner),
+            shouldPerform(
+                operation,
+                sectionKind: GitChangeSectionKind(rawValue: sectionKey) ?? .unstaged,
+                pathCount: pathCount
+            )
+        else { return }
         await performSectionFileOperation(operation, sectionKey: sectionKey, owner: owner)
     }
 
@@ -227,5 +317,40 @@ extension GitStatusViewModel {
     private func shouldPerform(_ operation: GitStatusFileOperation, pathCount: Int) -> Bool {
         !operation.requiresConfirmation
             || fileOperationConfirmer.confirm(operation: operation, pathCount: pathCount)
+    }
+
+    private func shouldPerform(
+        _ operation: GitStatusFileOperation,
+        sectionKind: GitChangeSectionKind,
+        pathCount: Int
+    ) -> Bool {
+        !operation.requiresConfirmation
+            || fileOperationConfirmer.confirm(
+                operation: operation,
+                pathCount: pathCount,
+                confirmationTitle: sectionOperationTitle(operation, sectionKind: sectionKind)
+            )
+    }
+
+    private func sectionOperationTitle(
+        _ operation: GitStatusFileOperation,
+        sectionKind: GitChangeSectionKind
+    ) -> String {
+        switch (sectionKind, operation) {
+        case (.staged, .unstage), (.uncommitted, .unstage):
+            "Unstage All Files"
+        case (.unstaged, .stage), (.untracked, .stage), (.uncommitted, .stage):
+            "Stage All Files"
+        case (.unstaged, .discard):
+            "Discard All Changes"
+        case (.untracked, .delete):
+            "Delete All Untracked Files"
+        case (.uncommitted, .discard):
+            "Discard All Unstaged"
+        case (.uncommitted, .delete):
+            "Delete All Untracked"
+        default:
+            operation.confirmationTitle
+        }
     }
 }
