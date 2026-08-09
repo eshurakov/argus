@@ -2,10 +2,17 @@ import Foundation
 
 protocol GitStatusProviding: Sendable {
     func status(rootPath: String) async -> GitStatusLoadState
+    func status(request: GitStatusRequest) async -> GitStatusLoadState
     func initializeRepository(rootPath: String) async -> GitStatusLoadState
+    func initializeRepository(request: GitStatusRequest) async -> GitStatusLoadState
     func performFileOperation(
         _ operation: GitStatusFileOperation,
         rootPath: String,
+        path: String
+    ) async -> GitStatusLoadState
+    func performFileOperation(
+        _ operation: GitStatusFileOperation,
+        request: GitStatusRequest,
         path: String
     ) async -> GitStatusLoadState
     func performBulkFileOperation(
@@ -13,14 +20,60 @@ protocol GitStatusProviding: Sendable {
         rootPath: String,
         paths: [String]
     ) async -> GitStatusLoadState
+    func performBulkFileOperation(
+        _ operation: GitStatusFileOperation,
+        request: GitStatusRequest,
+        paths: [String]
+    ) async -> GitStatusLoadState
     func performSectionFileOperation(
         _ operation: GitStatusFileOperation,
         rootPath: String,
         sectionKey: String
     ) async -> GitStatusLoadState
+    func performSectionFileOperation(
+        _ operation: GitStatusFileOperation,
+        request: GitStatusRequest,
+        sectionKind: GitChangeSectionKind
+    ) async -> GitStatusLoadState
 }
 
 extension GitStatusProviding {
+    func status(request: GitStatusRequest) async -> GitStatusLoadState {
+        await status(rootPath: request.rootPath)
+    }
+
+    func initializeRepository(request: GitStatusRequest) async -> GitStatusLoadState {
+        await initializeRepository(rootPath: request.rootPath)
+    }
+
+    func performFileOperation(
+        _ operation: GitStatusFileOperation,
+        request: GitStatusRequest,
+        path: String
+    ) async -> GitStatusLoadState {
+        await performFileOperation(operation, rootPath: request.rootPath, path: path)
+    }
+
+    func performBulkFileOperation(
+        _ operation: GitStatusFileOperation,
+        request: GitStatusRequest,
+        paths: [String]
+    ) async -> GitStatusLoadState {
+        await performBulkFileOperation(operation, rootPath: request.rootPath, paths: paths)
+    }
+
+    func performSectionFileOperation(
+        _ operation: GitStatusFileOperation,
+        request: GitStatusRequest,
+        sectionKind: GitChangeSectionKind
+    ) async -> GitStatusLoadState {
+        await performSectionFileOperation(
+            operation,
+            rootPath: request.rootPath,
+            sectionKey: sectionKind.rawValue
+        )
+    }
+
     func performSectionFileOperation(
         _ operation: GitStatusFileOperation,
         rootPath: String,
@@ -36,28 +89,32 @@ extension GitStatusProviding {
 /// `git` process work in a detached task so SwiftUI callers do not block the
 /// main actor while status is refreshed.
 final class GitStatusService: GitStatusProviding {
-    private static let gitPath = "/usr/bin/git"
-
     func status(rootPath: String) async -> GitStatusLoadState {
+        await status(request: GitStatusRequest(rootPath: rootPath))
+    }
+
+    func status(request: GitStatusRequest) async -> GitStatusLoadState {
         await Task.detached(priority: .utility) {
-            statusSynchronously(rootPath: rootPath)
+            statusSynchronously(request: request)
         }.value
     }
 
     func initializeRepository(rootPath: String) async -> GitStatusLoadState {
+        await initializeRepository(request: GitStatusRequest(rootPath: rootPath))
+    }
+
+    func initializeRepository(request: GitStatusRequest) async -> GitStatusLoadState {
         await Task.detached(priority: .utility) {
             do {
-                _ = try runGit(args: ["-C", rootPath, "init"])
-                return statusSynchronously(rootPath: rootPath)
+                _ = try runGit(args: ["-C", request.rootPath, "init"])
+                return statusSynchronously(request: request)
             } catch let error as GitStatusServiceError {
-                switch error {
-                case .notRepository:
-                    return .repositoryInitializationFailed(rootPath: rootPath, message: "Not a git repository")
-                case .commandFailed(let message):
-                    return .repositoryInitializationFailed(rootPath: rootPath, message: message)
-                }
+                return .repositoryInitializationFailed(rootPath: request.rootPath, message: error.message)
             } catch {
-                return .repositoryInitializationFailed(rootPath: rootPath, message: error.localizedDescription)
+                return .repositoryInitializationFailed(
+                    rootPath: request.rootPath,
+                    message: error.localizedDescription
+                )
             }
         }.value
     }
@@ -67,7 +124,19 @@ final class GitStatusService: GitStatusProviding {
         rootPath: String,
         path: String
     ) async -> GitStatusLoadState {
-        await performBulkFileOperation(operation, rootPath: rootPath, paths: [path])
+        await performFileOperation(
+            operation,
+            request: GitStatusRequest(rootPath: rootPath),
+            path: path
+        )
+    }
+
+    func performFileOperation(
+        _ operation: GitStatusFileOperation,
+        request: GitStatusRequest,
+        path: String
+    ) async -> GitStatusLoadState {
+        await performBulkFileOperation(operation, request: request, paths: [path])
     }
 
     func performBulkFileOperation(
@@ -75,19 +144,26 @@ final class GitStatusService: GitStatusProviding {
         rootPath: String,
         paths: [String]
     ) async -> GitStatusLoadState {
+        await performBulkFileOperation(
+            operation,
+            request: GitStatusRequest(rootPath: rootPath),
+            paths: paths
+        )
+    }
+
+    func performBulkFileOperation(
+        _ operation: GitStatusFileOperation,
+        request: GitStatusRequest,
+        paths: [String]
+    ) async -> GitStatusLoadState {
         await Task.detached(priority: .utility) {
             do {
-                try performOperationSynchronously(operation, rootPath: rootPath, paths: paths)
-                return statusSynchronously(rootPath: rootPath)
+                try performOperationSynchronously(operation, rootPath: request.rootPath, paths: paths)
+                return statusSynchronously(request: request)
             } catch let error as GitStatusServiceError {
-                switch error {
-                case .notRepository:
-                    return .fileOperationFailed(rootPath: rootPath, message: "Not a git repository")
-                case .commandFailed(let message):
-                    return .fileOperationFailed(rootPath: rootPath, message: message)
-                }
+                return .fileOperationFailed(rootPath: request.rootPath, message: error.message)
             } catch {
-                return .fileOperationFailed(rootPath: rootPath, message: error.localizedDescription)
+                return .fileOperationFailed(rootPath: request.rootPath, message: error.localizedDescription)
             }
         }.value
     }
@@ -97,113 +173,46 @@ final class GitStatusService: GitStatusProviding {
         rootPath: String,
         sectionKey: String
     ) async -> GitStatusLoadState {
+        await performSectionFileOperation(
+            operation,
+            request: GitStatusRequest(rootPath: rootPath),
+            sectionKind: GitChangeSectionKind(rawValue: sectionKey) ?? .unstaged
+        )
+    }
+
+    func performSectionFileOperation(
+        _ operation: GitStatusFileOperation,
+        request: GitStatusRequest,
+        sectionKind: GitChangeSectionKind
+    ) async -> GitStatusLoadState {
         await Task.detached(priority: .utility) {
             do {
-                try performSectionOperationSynchronously(operation, rootPath: rootPath, sectionKey: sectionKey)
-                return statusSynchronously(rootPath: rootPath)
+                try performSectionOperationSynchronously(
+                    operation,
+                    rootPath: request.rootPath,
+                    sectionKind: sectionKind
+                )
+                return statusSynchronously(request: request)
             } catch let error as GitStatusServiceError {
-                switch error {
-                case .notRepository:
-                    return .fileOperationFailed(rootPath: rootPath, message: "Not a git repository")
-                case .commandFailed(let message):
-                    return .fileOperationFailed(rootPath: rootPath, message: message)
-                }
+                return .fileOperationFailed(rootPath: request.rootPath, message: error.message)
             } catch {
-                return .fileOperationFailed(rootPath: rootPath, message: error.localizedDescription)
+                return .fileOperationFailed(rootPath: request.rootPath, message: error.localizedDescription)
             }
         }.value
     }
 }
 
-private enum GitStatusServiceError: Error {
-    case notRepository
-    case commandFailed(String)
+func verifyGitRef(rootPath: String, ref: String) -> Bool {
+    optionalGitOutput(args: ["-C", rootPath, "rev-parse", "--verify", "--quiet", "\(ref)^{commit}"]) != nil
 }
 
-private func performOperationSynchronously(
-    _ operation: GitStatusFileOperation,
-    rootPath: String,
-    paths: [String]
-) throws {
-    switch operation {
-    case .stage:
-        _ = try runGit(args: ["-C", rootPath, "add", "--"] + paths)
-    case .unstage:
-        _ = try runGit(args: ["-C", rootPath, "restore", "--staged", "--"] + paths)
-    case .discard:
-        _ = try runGit(args: ["-C", rootPath, "restore", "--"] + paths)
-    case .delete:
-        for path in paths {
-            try deletePath(rootPath: rootPath, path: path)
-        }
-    case .addToGitignore:
-        for path in paths {
-            try addPathToGitignore(rootPath: rootPath, path: path)
-        }
-    }
+func optionalGitOutput(args: [String]) -> String? {
+    guard let result = try? runGit(args: args) else { return nil }
+    let output = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+    return output.isEmpty ? nil : output
 }
 
-private func performSectionOperationSynchronously(
-    _ operation: GitStatusFileOperation,
-    rootPath: String,
-    sectionKey: String
-) throws {
-    switch (sectionKey, operation) {
-    case ("staged", .unstage):
-        _ = try runGit(args: ["-C", rootPath, "restore", "--staged", "--", "."])
-    case ("unstaged", .stage):
-        _ = try runGit(args: ["-C", rootPath, "add", "-u", "--", "."])
-    case ("unstaged", .discard):
-        _ = try runGit(args: ["-C", rootPath, "restore", "--", "."])
-    case ("untracked", .stage):
-        let untrackedPaths = try allUntrackedPaths(rootPath: rootPath)
-        if !untrackedPaths.isEmpty {
-            _ = try runGit(args: ["-C", rootPath, "add", "--"] + untrackedPaths)
-        }
-    case ("untracked", .delete):
-        _ = try runGit(args: ["-C", rootPath, "clean", "-fd", "--", "."])
-    default:
-        throw GitStatusServiceError.commandFailed("Unsupported section file operation")
-    }
-}
-
-private func allUntrackedPaths(rootPath: String) throws -> [String] {
-    let result = try runGit(args: ["-C", rootPath, "ls-files", "--others", "--exclude-standard", "-z"])
-    return result.stdout
-        .split(separator: "\u{0}", omittingEmptySubsequences: true)
-        .map(String.init)
-}
-
-private func statusSynchronously(rootPath: String) -> GitStatusLoadState {
-    do {
-        let result = try runGit(args: [
-            "-C", rootPath, "status", "--porcelain=v2", "--branch", "--untracked-files=all"
-        ])
-        let summary = GitStatusPorcelainParser.parse(result.stdout, rootPath: rootPath)
-        let unstagedOutput = try? runGit(args: ["-C", rootPath, "diff", "--numstat"]).stdout
-        let stagedOutput = try? runGit(args: ["-C", rootPath, "diff", "--cached", "--numstat"]).stdout
-        let unstagedStats = GitDiffStatParser.parse(unstagedOutput ?? "")
-        let stagedStats = GitDiffStatParser.parse(stagedOutput ?? "")
-        let untrackedStats = diffStatsForUntrackedFiles(rootPath: rootPath, files: summary.untrackedFiles)
-        return .loaded(
-            summary.applying(
-                stagedStats: stagedStats,
-                unstagedStats: unstagedStats,
-                untrackedStats: untrackedStats
-            ))
-    } catch let error as GitStatusServiceError {
-        switch error {
-        case .notRepository:
-            return .notRepository(rootPath: rootPath)
-        case .commandFailed(let message):
-            return .error(rootPath: rootPath, message: message)
-        }
-    } catch {
-        return .error(rootPath: rootPath, message: error.localizedDescription)
-    }
-}
-
-private func diffStatsForUntrackedFiles(rootPath: String, files: [GitFileChange]) -> [String: GitDiffStat] {
+func diffStatsForUntrackedFiles(rootPath: String, files: [GitFileChange]) -> [String: GitDiffStat] {
     var stats: [String: GitDiffStat] = [:]
     let rootURL = URL(fileURLWithPath: rootPath).standardizedFileURL
     let rootPathWithSlash = rootURL.path.hasSuffix("/") ? rootURL.path : rootURL.path + "/"
@@ -237,7 +246,7 @@ private func lineCount(in data: Data) -> Int {
     return data.last == newline ? count : count + 1
 }
 
-private func deletePath(rootPath: String, path: String) throws {
+func deletePath(rootPath: String, path: String) throws {
     let rootURL = URL(fileURLWithPath: rootPath).standardizedFileURL
     let targetURL = rootURL.appendingPathComponent(path).standardizedFileURL
     let rootPathWithSlash = rootURL.path.hasSuffix("/") ? rootURL.path : rootURL.path + "/"
@@ -247,7 +256,7 @@ private func deletePath(rootPath: String, path: String) throws {
     try FileManager.default.removeItem(at: targetURL)
 }
 
-private func addPathToGitignore(rootPath: String, path: String) throws {
+func addPathToGitignore(rootPath: String, path: String) throws {
     guard !path.isEmpty,
         !path.hasPrefix("/"),
         !path.contains("\n"),
@@ -302,12 +311,16 @@ private func addPathToGitignore(rootPath: String, path: String) throws {
     }
 }
 
-private struct GitCommandResult: Sendable {
+struct GitCommandResult: Sendable {
     let stdout: String
     let stderr: String
 }
 
-private func runGit(args: [String]) throws -> GitCommandResult {
+final class GitStatusDataBox: @unchecked Sendable {
+    var data = Data()
+}
+
+func runGit(args: [String]) throws -> GitCommandResult {
     let process = Process()
     process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
     process.arguments = args
@@ -322,10 +335,24 @@ private func runGit(args: [String]) throws -> GitCommandResult {
     process.standardError = stderr
 
     try process.run()
+    let outputGroup = DispatchGroup()
+    let stdoutBox = GitStatusDataBox()
+    let stderrBox = GitStatusDataBox()
+    outputGroup.enter()
+    DispatchQueue.global(qos: .utility).async {
+        stdoutBox.data = stdout.fileHandleForReading.readDataToEndOfFile()
+        outputGroup.leave()
+    }
+    outputGroup.enter()
+    DispatchQueue.global(qos: .utility).async {
+        stderrBox.data = stderr.fileHandleForReading.readDataToEndOfFile()
+        outputGroup.leave()
+    }
     process.waitUntilExit()
+    outputGroup.wait()
 
-    let stdoutText = String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-    let stderrText = String(data: stderr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+    let stdoutText = String(data: stdoutBox.data, encoding: .utf8) ?? ""
+    let stderrText = String(data: stderrBox.data, encoding: .utf8) ?? ""
 
     guard process.terminationStatus == 0 else {
         if stderrText.contains("not a git repository") || stderrText.contains("not a git repo") {

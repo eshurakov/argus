@@ -64,6 +64,11 @@ where those controls express the setting. Settings controls MUST retain native
 keyboard and accessibility behavior rather than recreating form controls as
 custom chrome.
 
+Files & Changes Settings MUST put common Files preferences first and group
+repository presentation under a labeled Changes section. Supporting text MUST
+stay visually attached to the setting it explains instead of occupying
+detached form rows.
+
 Appearance and density settings MUST preserve the fixed opaque black application
 shell. They MUST NOT reduce required hit targets, divider drag targets, or other
 accessibility geometry below this contract's minimums.
@@ -218,11 +223,24 @@ Sidebars are navigators, not alternate content areas. They SHOULD stay compact,
 use full-width rows, and put directories before files at each tree level.
 Disclosure state belongs to the tree row; opening content belongs to a tab.
 
-The Changes view MUST preserve the staged, unstaged, and untracked sections
-defined by the application spec. Each section shows its file count and exposes
-only operations valid for that section. The branch summary SHOULD show aggregate
-file, addition, deletion, and upstream information without consuming another
-content row.
+The Changes View MUST render the ordered typed Change Sections in the active
+Git Status Snapshot. With both Changes View settings disabled, it MUST preserve
+the Staged, Unstaged, and Untracked sections and their existing layout. When
+combination is enabled, it MUST render one Uncommitted section; when Against
+Base is enabled, it MUST append the read-only Against Base section after all
+Working Changes sections. Working sections MUST always precede Against Base.
+
+Each available section shows its entry count and exposes only operations valid
+for its typed kind. Empty available sections remain visible and collapsible. An
+unavailable Against Base section remains visible while enabled, shows a concise
+branch/error message, and exposes no rows or operations. Section actions,
+expansion, directory IDs, row IDs, counts, and accessibility values MUST be
+driven by typed section and Git File Change data rather than localized titles.
+
+The branch summary SHOULD show aggregate file, addition, deletion, and upstream
+information without consuming another content row. Its total and the Changes
+badge MUST use active section entries, including entries that occur in both
+Working Changes and Against Base as separate comparison contexts.
 
 Long directory chains MAY be compacted when the intermediate directories add no
 choice. Compaction MUST preserve the full path in help and accessibility text.
@@ -231,7 +249,17 @@ affect one directory, one section, or all sections.
 
 Large trees MUST remain bounded according to the application spec or service
 limit. When rows are omitted, the sidebar MUST disclose that the result is
-truncated and show the total count when known.
+truncated and show the total count when known. The Changes View MUST apply the
+global 500-entry cap in visible section order while retaining uncapped section
+counts and Section Operation scope. Its truncation copy MUST describe omitted
+change entries rather than implying that every entry is a unique file.
+
+Changing either Changes View setting is a presentation refresh, not navigation.
+It MUST preserve the Selected Workspace, Active Tab, Focused Pane, Right
+Sidebar selection, existing Git Preview Tabs, scroll position, and expansion
+state. Expand/collapse-all MUST affect only currently present, available
+sections, and expansion state MUST remain independent for each typed section
+kind when settings are toggled.
 
 ## Selection, activation, and focus
 

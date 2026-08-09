@@ -36,10 +36,17 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 4. An explicitly supplied Standalone Workspace directory MUST take precedence over the configured default. The configured default MUST take precedence over the user's home directory.
 5. Appearance settings MUST include interface text size, document text size, and compact or comfortable interface density.
 6. Terminal settings MUST include the audible-bell preference. Ghostty configuration remains authoritative for terminal font, colors other than Argus's background override, and keybindings.
-7. Files and Changes settings MUST include hidden Workspace Item visibility, initial source wrapping, initial Markdown and SVG display modes, initial diff layout, and initial diff overflow behavior.
+7. Files and Changes settings MUST include hidden Workspace Item visibility, initial source wrapping, initial Markdown and SVG display modes, initial diff layout, initial diff overflow behavior, and these two global Changes View toggles:
+   - **Combine working changes**;
+   - **Show committed changes against Base Branch**.
+   Both toggles MUST default to off, persist independently outside the Session Snapshot, and apply immediately. Combining Working Changes MUST alter only presentation and MUST NOT alter the index. Against Base MUST be additive, read-only, and computed from Git data already stored locally without contacting or updating a remote.
 8. Browser settings MUST include homepage, search provider, page zoom, WebKit inspectability, and persistent or private website data storage.
 9. Global defaults MUST apply when their target is created. They MUST NOT reset existing Panel-local state.
 10. `.git` MUST remain excluded from the Files View even when hidden Workspace Items are visible.
+
+Changing either Changes View toggle MUST refresh the Selected Workspace without
+changing the Selected Workspace, Active Tab, Focused Pane, Right Sidebar
+selection, or existing Git Preview Tabs.
 
 ## Projects and Workspaces
 
@@ -146,25 +153,56 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
    - Main-checkout Workspace: Project Repository Root;
    - Standalone Workspace: Workspace Root.
 2. Git status and mutations MUST NOT follow a Terminal Panel's live Terminal Working Directory.
-3. The Changes View MUST show branch and upstream information, ahead and behind counts, aggregate statistics, and a Staged, Unstaged, or Untracked section for each of those groups that contains at least one Git File Change. A section with no changes MUST be hidden.
-4. Git File Changes MUST show their status, path, and available addition/deletion statistics.
-5. Changed paths MAY be grouped into a compacted Change Tree.
-6. Displayed changes MUST be capped at 500 while section counts and Section Operations continue to represent the full Git Status Snapshot.
-7. Git status MUST request individual untracked paths rather than treating an untracked directory as one opaque item.
-8. A clean repository MUST replace the file sections with a clean-state empty state. A non-repository directory MUST offer Git initialization.
-9. Refreshing the same Git Status Snapshot SHOULD keep current content visible and show progress in reserved chrome.
-10. Changing the snapshot owner MAY replace content with an initial loading state.
+3. The Changes View MUST show branch and upstream information, ahead and behind counts, aggregate statistics, and an ordered collection of typed Change Sections.
+4. The two Changes View settings MUST combine independently:
 
-### Change actions
+   | Combine Working Changes | Show Against Base | Sections, in order |
+   | --- | --- | --- |
+   | Off | Off | Staged, Unstaged, Untracked |
+   | On | Off | Uncommitted |
+   | Off | On | Staged, Unstaged, Untracked, Against `<base>` |
+   | On | On | Uncommitted, Against `<base>` |
 
-1. Staged changes MUST offer unstage, diff, blame, and copy-path actions.
-2. Unstaged changes MUST offer stage, discard, diff, blame, and copy-path actions.
-3. Untracked changes MUST offer stage, delete, diff, copy-path, and add-to-`.gitignore` actions. The add-to-`.gitignore` action MUST support untracked file paths and displayed untracked directory paths.
-4. Applicable Section Operations MUST include stage all, unstage all, discard all, and delete all.
-5. Discard and delete operations MUST require confirmation.
-6. A completed Git Mutation MUST refresh the Git Status Snapshot.
-7. Diff and blame actions MUST open Git Preview Tabs in the initiating Workspace.
-8. Reopening the same Preview Kind, Git Status Root, and path SHOULD refresh and select its existing Git Preview Tab.
+   Working-change sections MUST always precede Against Base. Against Base is
+   additive and MUST NOT replace Working Changes.
+5. Git File Changes MUST show their Git File Status, path, and available addition/deletion statistics. Working Changes MUST retain their staged, unstaged, and untracked state even when combined. A path MAY appear in both Working Changes and Against Base because they are separate comparison contexts.
+6. Uncommitted MUST contain one row per unique Working Changes path and represent its complete `HEAD`-to-working-tree difference. A row whose staged and unstaged changes cancel MUST remain visible with an explanatory empty-diff state. Unborn repositories MUST still represent staged additions and untracked files.
+7. Changed paths MAY be grouped into a compacted Change Tree. Git status MUST enumerate individual untracked paths rather than treating an untracked directory as one opaque item.
+8. A clean repository MUST replace file sections with a clean-state empty state. Otherwise, empty available sections MUST remain visible and collapsible. A non-repository directory MUST offer Git initialization.
+9. Working Changes alone determine whether the titlebar reports a dirty working tree; Against Base MUST NOT make clean Working Changes dirty.
+10. Displayed entries MUST be capped at 500 in visible section order. Section counts and Section Operations MUST retain their full uncapped scope.
+11. The Changes badge, branch summary total, and aggregate additions/deletions MUST count entries in every active comparison context.
+
+#### Base Branch and Against Base
+
+1. Base Branch work MUST run only when its setting is enabled and MUST never contact a remote or mutate repository state.
+2. A Named Project MUST use its configured main branch, preferring the corresponding `origin`-tracking reference over the local branch.
+3. A Standalone Workspace MUST detect its Base Branch from `origin/HEAD`, then an available local `main` or `master`; after selecting the name, it MUST prefer the matching `origin`-tracking reference over the local branch. It MUST NOT use the current branch as its own Base Branch, scan arbitrary remotes, or infer a Base Branch from the current branch name.
+4. Against Base MUST show committed changes from the merge base of the resolved Base Branch and `HEAD` to `HEAD`, excluding Working Changes. Its title MUST use the Base Branch name even when an `origin`-tracking reference supplies the content.
+5. If the Base Branch or comparison is unavailable, only Against Base MUST become unavailable. Working Changes MUST remain loaded and actionable, while Against Base remains visible with a concise explanation and no rows or Section Operations. Refreshing MUST retry the comparison.
+
+#### Change actions
+
+1. Staged changes MUST offer Unstage, Diff, Blame, and Copy Path; Unstaged changes MUST offer Stage, confirmed Discard, Diff, Blame, and Copy Path; Untracked changes MUST offer Stage, confirmed Delete, Diff, Copy Path, and Add to `.gitignore`. Add to `.gitignore` MUST support untracked files and displayed untracked directories.
+2. Classic Change Sections MUST retain their applicable Stage All, Unstage All, confirmed Discard All, and confirmed Delete All operations.
+3. Uncommitted MUST expose the same applicable row actions from each path's retained Working Changes state. Stage MUST affect unstaged or untracked content, Unstage MUST affect staged content, Discard MUST affect only unstaged tracked content, and Delete MUST be limited to untracked paths.
+4. Uncommitted Section Operations MUST keep Stage All, Unstage All, confirmed Discard All Unstaged, and confirmed Delete All Untracked as applicable. Destructive subsets MUST remain separate, name their exact operation, and use the full uncapped affected count.
+5. Against Base MUST have no Git Mutations or Section Operations. Its rows MUST offer Diff and Copy Path, plus Blame only when the path exists at `HEAD`.
+6. A completed Git Mutation MUST refresh the Git Status Snapshot without losing its active Changes View settings.
+
+#### Preview behavior
+
+1. Diff and Blame MUST open Git Preview Tabs in the initiating Workspace. Reopening a matching Preview Kind, Git Status Root, path, and comparison context SHOULD refresh and select the existing tab.
+2. Uncommitted Diff MUST compare `HEAD` with the complete working-tree content, using empty content for an absent side. A canceled net change MUST show an explanatory state rather than a blank or failing diff.
+3. Against Base Diff MUST compare the merge base with `HEAD`; Against Base Blame MUST target `HEAD` so Working Changes do not alter the committed preview.
+4. Existing binary, size, line-length, and failure behavior MUST remain unchanged.
+
+#### Refresh, clean state, and UI rules
+
+1. Refresh results MUST apply only to the Workspace, Git Status Root, and settings that initiated them; stale results MUST be ignored.
+2. Refreshing the same Workspace and Git Status Root SHOULD preserve loaded content, section and directory expansion, scroll position, selection, and focus. Expansion state MUST remain independent for each Change Section kind.
+3. Expand/collapse-all MUST affect only currently present, available sections.
+4. Accessibility values MUST identify Git File Status and the relevant Working Changes or Against Base context. Unavailable states MUST NOT rely on color alone.
 
 ### Automatic Git refresh
 

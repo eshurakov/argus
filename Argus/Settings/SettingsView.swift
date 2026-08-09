@@ -164,18 +164,50 @@ struct SettingsView: View {
 
     private var filesAndChanges: some View {
         Form {
-            Toggle("Show hidden files", isOn: $settings.showHiddenFiles)
-            Toggle("Wrap source lines", isOn: $settings.wrapSourceLines)
-            Toggle("Open Markdown in preview", isOn: $settings.openMarkdownInPreview)
-            Toggle("Open SVG in preview", isOn: $settings.openSVGInPreview)
-            Picker("Default diff style", selection: $settings.defaultDiffStyle) {
-                ForEach(AppSettings.DiffStyle.allCases) { style in
-                    Text(style.title).tag(style)
-                }
+            Section("Files") {
+                Toggle("Show hidden files", isOn: $settings.showHiddenFiles)
+                Toggle("Wrap source lines", isOn: $settings.wrapSourceLines)
+                Toggle("Open Markdown in preview", isOn: $settings.openMarkdownInPreview)
+                Toggle("Open SVG in preview", isOn: $settings.openSVGInPreview)
             }
-            Picker("Default diff overflow", selection: $settings.defaultDiffOverflow) {
-                ForEach(AppSettings.DiffOverflow.allCases) { overflow in
-                    Text(overflow.title).tag(overflow)
+
+            Section("Changes") {
+                Picker("Default diff style", selection: $settings.defaultDiffStyle) {
+                    ForEach(AppSettings.DiffStyle.allCases) { style in
+                        Text(style.title).tag(style)
+                    }
+                }
+                Picker("Default diff overflow", selection: $settings.defaultDiffOverflow) {
+                    ForEach(AppSettings.DiffOverflow.allCases) { overflow in
+                        Text(overflow.title).tag(overflow)
+                    }
+                }
+                Toggle(isOn: $settings.combineWorkingChangeSections) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Combine working changes")
+                        Text(
+                            "Shows staged, unstaged, and untracked changes together in one "
+                                + "Uncommitted section. This changes only the layout; it does not "
+                                + "stage or unstage anything."
+                        )
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                Toggle(isOn: $settings.showBaseBranchChanges) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Show committed changes against Base Branch")
+                        Text(
+                            "Adds a read-only Against Base section for committed changes since "
+                                + "this branch diverged from the Base Branch. Uses only Git data "
+                                + "already stored on this Mac; it does not contact or update a "
+                                + "remote repository."
+                        )
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }
@@ -183,6 +215,9 @@ struct SettingsView: View {
         .padding()
     }
 
+}
+
+extension SettingsView {
     private var browser: some View {
         Form {
             Section("Defaults for New Browser Tabs") {

@@ -45,7 +45,7 @@ enum GitFileTree {
             guard !components.isEmpty else { continue }
             root.insert(file: file, components: components[...])
         }
-        return root.nodes(prefix: "", sectionKey: files.first?.sectionKey ?? "")
+        return root.nodes(prefix: "", sectionKind: files.first?.sectionKind ?? .unstaged)
     }
 
     static func visibleRows(
@@ -105,13 +105,13 @@ enum GitFileTree {
             directories[component] = directory
         }
 
-        func nodes(prefix: String, sectionKey: String) -> [GitFileTreeNode] {
+        func nodes(prefix: String, sectionKind: GitChangeSectionKind) -> [GitFileTreeNode] {
             let directoryNodes = directories.keys.sorted().map { directoryName in
                 compactedDirectoryNode(
                     name: directoryName,
                     builder: directories[directoryName]!,
                     prefix: prefix,
-                    sectionKey: sectionKey
+                    sectionKind: sectionKind
                 )
             }
             let fileNodes = files.sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
@@ -130,7 +130,7 @@ enum GitFileTree {
             name: String,
             builder: DirectoryBuilder,
             prefix: String,
-            sectionKey: String
+            sectionKind: GitChangeSectionKind
         ) -> GitFileTreeNode {
             var names = [name]
             var path = prefix.isEmpty ? name : "\(prefix)/\(name)"
@@ -146,10 +146,10 @@ enum GitFileTree {
             }
 
             return GitFileTreeNode(
-                id: "\(sectionKey):directory:\(path)",
+                id: "\(sectionKind.rawValue):directory:\(path)",
                 name: names.joined(separator: " / "),
                 path: path,
-                content: .directory(children: directory.nodes(prefix: path, sectionKey: sectionKey))
+                content: .directory(children: directory.nodes(prefix: path, sectionKind: sectionKind))
             )
         }
     }
@@ -232,6 +232,8 @@ enum GitFileSectionAction: String, Identifiable {
     case unstageAll
     case discardAll
     case deleteAll
+    case discardAllUnstaged
+    case deleteAllUntracked
 
     var id: String { rawValue }
 
@@ -245,6 +247,10 @@ enum GitFileSectionAction: String, Identifiable {
             return "Discard All Changes"
         case .deleteAll:
             return "Delete All Untracked Files"
+        case .discardAllUnstaged:
+            return "Discard All Unstaged"
+        case .deleteAllUntracked:
+            return "Delete All Untracked"
         }
     }
 
@@ -258,19 +264,54 @@ enum GitFileSectionAction: String, Identifiable {
             return .discard
         case .deleteAll:
             return .delete
+        case .discardAllUnstaged:
+            return .discard
+        case .deleteAllUntracked:
+            return .delete
         }
     }
 
-    var isDestructive: Bool {
-        operation.requiresConfirmation
-    }
 }
 
 struct GitChangeSectionContent {
+    let kind: GitChangeSectionKind
     let title: String
-    let sectionKey: String
     let count: Int
     let files: [GitFileChange]
+    let state: GitChangeSectionState
+
+    init(
+        kind: GitChangeSectionKind,
+        title: String,
+        count: Int,
+        files: [GitFileChange],
+        state: GitChangeSectionState = .available
+    ) {
+        self.kind = kind
+        self.title = title
+        self.count = count
+        self.files = files
+        self.state = state
+    }
+
+    init(title: String, sectionKey: String, count: Int, files: [GitFileChange]) {
+        self.init(
+            kind: GitChangeSectionKind(rawValue: sectionKey) ?? .unstaged,
+            title: title,
+            count: count,
+            files: files
+        )
+    }
+
+    init(section: GitChangeSection) {
+        self.init(
+            kind: section.kind,
+            title: section.title,
+            count: section.totalCount,
+            files: section.files,
+            state: section.state
+        )
+    }
 }
 
 struct GitSidebarView: View {
@@ -279,9 +320,7 @@ struct GitSidebarView: View {
     @EnvironmentObject var viewModel: GitStatusViewModel
     @EnvironmentObject var appSettings: AppSettings
     @State var autoRefreshController = GitStatusAutoRefreshController()
-    @State var stagedExpanded = true
-    @State var unstagedExpanded = true
-    @State var untrackedExpanded = true
+    @State var expandedSectionKinds = Set(GitChangeSectionKind.allCases)
     @State var collapsedDirectoryIds: Set<String> = []
 
     init(showsHeader: Bool = true) {

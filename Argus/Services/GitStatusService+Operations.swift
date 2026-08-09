@@ -1,0 +1,123 @@
+import Foundation
+
+enum GitStatusServiceError: Error {
+    case notRepository
+    case commandFailed(String)
+
+    var message: String {
+        switch self {
+        case .notRepository: "Not a git repository"
+        case .commandFailed(let message): message
+        }
+    }
+}
+
+func performOperationSynchronously(
+    _ operation: GitStatusFileOperation,
+    rootPath: String,
+    paths: [String]
+) throws {
+    switch operation {
+    case .stage:
+        _ = try runGit(args: ["-C", rootPath, "add", "--"] + paths)
+    case .unstage:
+        _ = try runGit(args: ["-C", rootPath, "restore", "--staged", "--"] + paths)
+    case .discard:
+        _ = try runGit(args: ["-C", rootPath, "restore", "--"] + paths)
+    case .delete:
+        for path in paths {
+            try deletePath(rootPath: rootPath, path: path)
+        }
+    case .addToGitignore:
+        for path in paths {
+            try addPathToGitignore(rootPath: rootPath, path: path)
+        }
+    }
+}
+
+func performSectionOperationSynchronously(
+    _ operation: GitStatusFileOperation,
+    rootPath: String,
+    sectionKind: GitChangeSectionKind
+) throws {
+    switch sectionKind {
+    case .staged:
+        try performStagedSectionOperation(operation, rootPath: rootPath)
+    case .unstaged:
+        try performUnstagedSectionOperation(operation, rootPath: rootPath)
+    case .untracked:
+        try performUntrackedSectionOperation(operation, rootPath: rootPath)
+    case .uncommitted:
+        try performUncommittedSectionOperation(operation, rootPath: rootPath)
+    case .againstBase:
+        throw unsupportedSectionOperation()
+    }
+}
+
+private func performStagedSectionOperation(
+    _ operation: GitStatusFileOperation,
+    rootPath: String
+) throws {
+    guard operation == .unstage else { throw unsupportedSectionOperation() }
+    _ = try runGit(args: ["-C", rootPath, "restore", "--staged", "--", "."])
+}
+
+private func performUnstagedSectionOperation(
+    _ operation: GitStatusFileOperation,
+    rootPath: String
+) throws {
+    switch operation {
+    case .stage:
+        _ = try runGit(args: ["-C", rootPath, "add", "-u", "--", "."])
+    case .discard:
+        _ = try runGit(args: ["-C", rootPath, "restore", "--", "."])
+    default:
+        throw unsupportedSectionOperation()
+    }
+}
+
+private func performUntrackedSectionOperation(
+    _ operation: GitStatusFileOperation,
+    rootPath: String
+) throws {
+    switch operation {
+    case .stage:
+        let untrackedPaths = try allUntrackedPaths(rootPath: rootPath)
+        if !untrackedPaths.isEmpty {
+            _ = try runGit(args: ["-C", rootPath, "add", "--"] + untrackedPaths)
+        }
+    case .delete:
+        _ = try runGit(args: ["-C", rootPath, "clean", "-fd", "--", "."])
+    default:
+        throw unsupportedSectionOperation()
+    }
+}
+
+private func performUncommittedSectionOperation(
+    _ operation: GitStatusFileOperation,
+    rootPath: String
+) throws {
+    switch operation {
+    case .stage:
+        _ = try runGit(args: ["-C", rootPath, "add", "--", "."])
+    case .unstage:
+        _ = try runGit(args: ["-C", rootPath, "restore", "--staged", "--", "."])
+    case .discard:
+        _ = try runGit(args: ["-C", rootPath, "restore", "--", "."])
+    case .delete:
+        _ = try runGit(args: ["-C", rootPath, "clean", "-fd", "--", "."])
+    case .addToGitignore:
+        throw unsupportedSectionOperation()
+    }
+}
+
+private func unsupportedSectionOperation() -> GitStatusServiceError {
+    .commandFailed("Unsupported section file operation")
+}
+
+private func allUntrackedPaths(rootPath: String) throws -> [String] {
+    let result = try runGit(args: ["-C", rootPath, "ls-files", "--others", "--exclude-standard", "-z"])
+    return result.stdout
+        .split(separator: "\u{0}", omittingEmptySubsequences: true)
+        .map(String.init)
+}

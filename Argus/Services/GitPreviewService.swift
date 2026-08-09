@@ -1,42 +1,5 @@
 import Foundation
 
-struct GitPreviewCommand: Equatable, Sendable {
-    let executablePath: String
-    let arguments: [String]
-    let successfulExitCodes: Set<Int32>
-}
-
-enum GitPreviewKind: Equatable, Sendable {
-    case diff
-    case blame
-}
-
-enum GitPreviewContent: Equatable, Sendable {
-    case diff(GitDiffPreview)
-    case ansiText(String)
-}
-
-struct GitDiffPreview: Equatable, Sendable {
-    let fileName: String
-    let oldContent: String
-    let newContent: String
-}
-
-struct GitPreview: Equatable, Sendable {
-    let kind: GitPreviewKind
-    let path: String
-    let content: GitPreviewContent
-}
-
-enum GitPreviewLoadState: Equatable, Sendable {
-    case loaded(GitPreview)
-    case failed(kind: GitPreviewKind, path: String, message: String)
-}
-
-protocol GitPreviewProviding: Sendable {
-    func preview(kind: GitPreviewKind, rootPath: String, file: GitFileChange) async -> GitPreviewLoadState
-}
-
 final class GitPreviewService: GitPreviewProviding {
     private let commandBuilder: GitPreviewCommandBuilder
     private let commandRunner: GitPreviewCommandRunner
@@ -96,10 +59,13 @@ struct GitPreviewCommandBuilder: Sendable {
     }
 
     private func blameCommand(rootPath: String, file: GitFileChange) -> GitPreviewCommand? {
-        guard file.sectionKey != "untracked", file.status != .untracked else { return nil }
+        guard file.diffSource != .untracked, !file.isUntracked, file.status != .untracked else { return nil }
+        if case .againstBase = file.diffSource, file.status == .deleted {
+            return nil
+        }
         return GitPreviewCommand(
             executablePath: "/usr/bin/git",
-            arguments: ["-C", rootPath, "blame", "--color-lines", "--color-by-age", "--", file.path],
+            arguments: ["-C", rootPath, "blame", "HEAD", "--color-lines", "--color-by-age", "--", file.path],
             successfulExitCodes: [0]
         )
     }
@@ -149,15 +115,22 @@ struct GitDiffContentLoader: Sendable {
     }
 
     private func contentSides(rootPath: String, file: GitFileChange) throws -> (old: Data, new: Data) {
-        switch file.sectionKey {
-        case "staged":
+        switch file.diffSource {
+        case .staged:
             return try stagedContentSides(rootPath: rootPath, file: file)
-        case "unstaged":
+        case .unstaged:
             return try unstagedContentSides(rootPath: rootPath, file: file)
-        case "untracked":
+        case .untracked:
             return (Data(), try workingTreeFile(rootPath: rootPath, path: file.path))
-        default:
-            throw GitDiffContentError.unavailable("Diff preview is unavailable for this file")
+        case .uncommitted:
+            return try uncommittedContentSides(rootPath: rootPath, file: file)
+        case .againstBase(let baseName, let resolvedRef):
+            return try againstBaseContentSides(
+                rootPath: rootPath,
+                file: file,
+                baseName: baseName,
+                resolvedRef: resolvedRef
+            )
         }
     }
 
@@ -207,6 +180,77 @@ struct GitDiffContentLoader: Sendable {
                 try workingTreeFile(rootPath: rootPath, path: file.path)
             )
         }
+    }
+
+    private func uncommittedContentSides(
+        rootPath: String,
+        file: GitFileChange
+    ) throws -> (old: Data, new: Data) {
+        if file.isNetDiffEmpty {
+            throw GitDiffContentError.unavailable(
+                "This path has staged and unstaged Git state, but no net HEAD-to-working-tree content difference."
+            )
+        }
+        if file.status == .unmerged {
+            throw GitDiffContentError.unavailable("Diff preview is unavailable for unmerged files")
+        }
+
+        let old: Data
+        if file.status == .added || file.status == .untracked || file.isUntracked {
+            old = Data()
+        } else {
+            let originalPath = file.originalPath ?? file.path
+            old = (try? gitObject(rootPath: rootPath, specifier: "HEAD:\(originalPath)")) ?? Data()
+        }
+
+        let new: Data
+        if file.status == .deleted {
+            new = Data()
+        } else {
+            new = try workingTreeFile(rootPath: rootPath, path: file.path)
+        }
+        return (old, new)
+    }
+
+    private func againstBaseContentSides(
+        rootPath: String,
+        file: GitFileChange,
+        baseName: String,
+        resolvedRef: String
+    ) throws -> (old: Data, new: Data) {
+        let mergeBase = try mergeBase(rootPath: rootPath, resolvedRef: resolvedRef, baseName: baseName)
+        guard file.status != .deleted else {
+            let originalPath = file.originalPath ?? file.path
+            return (
+                try gitObject(rootPath: rootPath, specifier: "\(mergeBase):\(originalPath)"),
+                Data()
+            )
+        }
+
+        let old: Data
+        if file.status == .added {
+            old = Data()
+        } else {
+            let originalPath = file.originalPath ?? file.path
+            old = try gitObject(rootPath: rootPath, specifier: "\(mergeBase):\(originalPath)")
+        }
+        let new = try gitObject(rootPath: rootPath, specifier: "HEAD:\(file.path)")
+        return (old, new)
+    }
+
+    private func mergeBase(rootPath: String, resolvedRef: String, baseName: String) throws -> String {
+        let result = try commandRunner.run(
+            GitPreviewCommand(
+                executablePath: "/usr/bin/git",
+                arguments: ["-C", rootPath, "merge-base", resolvedRef, "HEAD"],
+                successfulExitCodes: [0]
+            ))
+        let value = (String(bytes: result.stdout, encoding: .utf8) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else {
+            throw GitDiffContentError.unavailable("Could not find a merge base with \"\(baseName)\".")
+        }
+        return value
     }
 
     private func gitObject(rootPath: String, specifier: String) throws -> Data {

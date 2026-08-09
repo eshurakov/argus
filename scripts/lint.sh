@@ -21,6 +21,12 @@ if [[ ! -x "$swiftlint_bin" ]]; then
   exit 1
 fi
 
+if [[ -n "${SWIFTLINT_CACHE_PATH:-}" ]]; then
+  swiftlint_cache_path="$SWIFTLINT_CACHE_PATH"
+else
+  swiftlint_cache_path="$project_root/.build/swiftlint-cache"
+fi
+
 if [[ -n "${SWIFT_FORMAT_BIN:-}" ]]; then
   swift_format_bin="$SWIFT_FORMAT_BIN"
 elif command -v swift-format >/dev/null 2>&1; then
@@ -44,4 +50,6 @@ cd "$project_root"
   --parallel \
   --strict \
   Argus ArgusCLI Tests Package.swift
-"$swiftlint_bin" lint --config "$project_root/.swiftlint.yml"
+"$swiftlint_bin" lint \
+  --config "$project_root/.swiftlint.yml" \
+  --cache-path "$swiftlint_cache_path"

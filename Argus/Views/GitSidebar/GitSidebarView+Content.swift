@@ -115,11 +115,13 @@ extension GitSidebarView {
                 cleanWorkingTreeContent()
             } else {
                 if summary.isFileDisplayCapped {
-                    Text("Showing first \(GitStatusSummary.displayFileLimit) of \(summary.totalFileCount) files")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 12)
-                        .padding(.top, 10)
+                    Text(
+                        "Showing first \(GitStatusSummary.displayFileLimit) of \(summary.totalFileCount) change entries"
+                    )
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 10)
                 }
 
                 changeSections(summary, owner: owner)
@@ -151,10 +153,10 @@ extension GitSidebarView {
     ) -> some View {
         ScrollView {
             VStack(spacing: 0) {
-                ForEach(populatedSections(summary), id: \.sectionKey) { section in
+                ForEach(summary.sections) { section in
                     fileSection(
-                        section,
-                        isExpanded: sectionExpansionBinding(section.sectionKey),
+                        GitChangeSectionContent(section: section),
+                        isExpanded: sectionExpansionBinding(for: section.kind),
                         owner: owner
                     )
                 }
@@ -162,45 +164,9 @@ extension GitSidebarView {
         }
     }
 
-    private func populatedSections(_ summary: GitStatusSummary) -> [GitChangeSectionContent] {
-        [
-            GitChangeSectionContent(
-                title: "Staged",
-                sectionKey: "staged",
-                count: summary.stagedCount,
-                files: summary.stagedFiles
-            ),
-            GitChangeSectionContent(
-                title: "Unstaged",
-                sectionKey: "unstaged",
-                count: summary.unstagedCount,
-                files: summary.unstagedFiles
-            ),
-            GitChangeSectionContent(
-                title: "Untracked",
-                sectionKey: "untracked",
-                count: summary.untrackedCount,
-                files: summary.untrackedFiles
-            )
-        ]
-        .filter { $0.count > 0 }
-    }
-
-    private func sectionExpansionBinding(_ sectionKey: String) -> Binding<Bool> {
-        switch sectionKey {
-        case "staged":
-            return $stagedExpanded
-        case "unstaged":
-            return $unstagedExpanded
-        default:
-            return $untrackedExpanded
-        }
-    }
-
     private func branchBar(_ summary: GitStatusSummary) -> some View {
         let totals = totalDiffStats(summary)
-        let sections = populatedSections(summary)
-        let allCollapsed = allSectionsCollapsed(sections)
+        let allCollapsed = allSectionsCollapsed(summary)
         let actionName = allCollapsed ? "Expand all file sections" : "Collapse all file sections"
 
         return HStack(spacing: 6) {
@@ -233,13 +199,11 @@ extension GitSidebarView {
 
             Spacer(minLength: 0)
 
-            if !sections.isEmpty {
-                branchSectionActionButton(
-                    allCollapsed: allCollapsed,
-                    sections: sections,
-                    actionName: actionName
-                )
-            }
+            branchSectionActionButton(
+                allCollapsed: allCollapsed,
+                summary: summary,
+                actionName: actionName
+            )
         }
         .font(.system(size: 12, weight: .semibold, design: .monospaced))
         .padding(.horizontal, 12)
@@ -251,12 +215,12 @@ extension GitSidebarView {
 
     private func branchSectionActionButton(
         allCollapsed: Bool,
-        sections: [GitChangeSectionContent],
+        summary: GitStatusSummary,
         actionName: String
     ) -> some View {
         HoverStateView { isHovered in
             Button {
-                setAllSectionsExpanded(allCollapsed, sections: sections)
+                setAllSectionsExpanded(allCollapsed, summary: summary)
             } label: {
                 Image(
                     systemName: allCollapsed
@@ -281,22 +245,43 @@ extension GitSidebarView {
     }
 
     private func totalDiffStats(_ summary: GitStatusSummary) -> (additions: Int, deletions: Int) {
-        let files = summary.stagedFiles + summary.unstagedFiles + summary.untrackedFiles
+        let files = summary.sections.flatMap(\.files)
         return files.reduce(into: (additions: 0, deletions: 0)) { totals, file in
             totals.additions += file.additions ?? 0
             totals.deletions += file.deletions ?? 0
         }
     }
 
-    private func allSectionsCollapsed(_ sections: [GitChangeSectionContent]) -> Bool {
-        guard !sections.isEmpty else { return false }
-        return sections.allSatisfy { !sectionExpansionBinding($0.sectionKey).wrappedValue }
+    private func allSectionsCollapsed(_ summary: GitStatusSummary) -> Bool {
+        summary.sections
+            .filter(\.state.isAvailable)
+            .allSatisfy { !isSectionExpanded($0.kind) }
     }
 
-    private func setAllSectionsExpanded(_ isExpanded: Bool, sections: [GitChangeSectionContent]) {
-        for section in sections {
-            sectionExpansionBinding(section.sectionKey).wrappedValue = isExpanded
+    private func setAllSectionsExpanded(_ isExpanded: Bool, summary: GitStatusSummary) {
+        for section in summary.sections {
+            guard case .available = section.state else { continue }
+            setSectionExpanded(section.kind, isExpanded: isExpanded)
         }
+    }
+
+    private func isSectionExpanded(_ kind: GitChangeSectionKind) -> Bool {
+        expandedSectionKinds.contains(kind)
+    }
+
+    private func setSectionExpanded(_ kind: GitChangeSectionKind, isExpanded: Bool) {
+        if isExpanded {
+            expandedSectionKinds.insert(kind)
+        } else {
+            expandedSectionKinds.remove(kind)
+        }
+    }
+
+    private func sectionExpansionBinding(for kind: GitChangeSectionKind) -> Binding<Bool> {
+        Binding(
+            get: { isSectionExpanded(kind) },
+            set: { setSectionExpanded(kind, isExpanded: $0) }
+        )
     }
 
     private func upstreamText(_ summary: GitStatusSummary, upstreamName: String) -> String {

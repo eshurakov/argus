@@ -1,52 +1,23 @@
 import Foundation
 
-struct GitDiffStat: Equatable, Sendable {
-    let additions: Int?
-    let deletions: Int?
-    let isBinary: Bool
+/// Summary of the active workspace Git Status Snapshot and its current
+/// presentation projection.
+private struct GitStatusSectionInputs {
+    let stagedCount: Int
+    let unstagedCount: Int
+    let untrackedCount: Int
+    let stagedFiles: [GitFileChange]
+    let unstagedFiles: [GitFileChange]
+    let untrackedFiles: [GitFileChange]
+    let uncommittedCount: Int
+    let uncommittedFiles: [GitFileChange]
+    let againstBaseCount: Int
+    let againstBaseFiles: [GitFileChange]
+    let againstBaseState: GitChangeSectionState
+    let combineWorkingChangeSections: Bool
+    let showBaseBranchChanges: Bool
 }
 
-/// Git change kind shown in the Phase 3 sidebar.
-enum GitFileStatus: String, Equatable, Sendable {
-    case added
-    case modified
-    case deleted
-    case renamed
-    case copied
-    case typeChanged
-    case untracked
-    case unmerged
-}
-
-/// One changed file row in the git sidebar.
-struct GitFileChange: Equatable, Sendable, Identifiable {
-    var id: String { "\(sectionKey):\(path):\(originalPath ?? "")" }
-
-    let path: String
-    let originalPath: String?
-    let status: GitFileStatus
-    let additions: Int?
-    let deletions: Int?
-    let sectionKey: String
-
-    init(
-        path: String,
-        originalPath: String? = nil,
-        status: GitFileStatus,
-        additions: Int? = nil,
-        deletions: Int? = nil,
-        sectionKey: String
-    ) {
-        self.path = path
-        self.originalPath = originalPath
-        self.status = status
-        self.additions = additions
-        self.deletions = deletions
-        self.sectionKey = sectionKey
-    }
-}
-
-/// Summary of the active workspace git status for the Phase 3 sidebar.
 struct GitStatusSummary: Equatable, Sendable {
     static let displayFileLimit = 500
 
@@ -61,6 +32,14 @@ struct GitStatusSummary: Equatable, Sendable {
     let stagedFiles: [GitFileChange]
     let unstagedFiles: [GitFileChange]
     let untrackedFiles: [GitFileChange]
+    let uncommittedCount: Int
+    let uncommittedFiles: [GitFileChange]
+    let againstBaseCount: Int
+    let againstBaseFiles: [GitFileChange]
+    let againstBaseState: GitChangeSectionState
+    let sections: [GitChangeSection]
+    let combineWorkingChangeSections: Bool
+    let showBaseBranchChanges: Bool
     let isFileDisplayCapped: Bool
     let totalFileCount: Int
 
@@ -76,7 +55,15 @@ struct GitStatusSummary: Equatable, Sendable {
         stagedFiles: [GitFileChange] = [],
         unstagedFiles: [GitFileChange] = [],
         untrackedFiles: [GitFileChange] = [],
-        isFileDisplayCapped: Bool = false,
+        uncommittedCount: Int? = nil,
+        uncommittedFiles: [GitFileChange] = [],
+        againstBaseCount: Int? = nil,
+        againstBaseFiles: [GitFileChange] = [],
+        againstBaseState: GitChangeSectionState = .available,
+        sections: [GitChangeSection]? = nil,
+        combineWorkingChangeSections: Bool = false,
+        showBaseBranchChanges: Bool = false,
+        isFileDisplayCapped: Bool? = nil,
         totalFileCount: Int? = nil
     ) {
         self.rootPath = rootPath
@@ -90,8 +77,39 @@ struct GitStatusSummary: Equatable, Sendable {
         self.stagedCount = stagedCount ?? stagedFiles.count
         self.unstagedCount = unstagedCount ?? unstagedFiles.count
         self.untrackedCount = untrackedCount ?? untrackedFiles.count
-        self.isFileDisplayCapped = isFileDisplayCapped
-        self.totalFileCount = totalFileCount ?? (self.stagedCount + self.unstagedCount + self.untrackedCount)
+        self.uncommittedFiles = uncommittedFiles
+        self.uncommittedCount = uncommittedCount ?? uncommittedFiles.count
+        self.againstBaseFiles = againstBaseFiles
+        self.againstBaseCount = againstBaseCount ?? againstBaseFiles.count
+        self.againstBaseState = againstBaseState
+        self.combineWorkingChangeSections = combineWorkingChangeSections
+        self.showBaseBranchChanges = showBaseBranchChanges
+
+        let projectedSections =
+            sections
+            ?? Self.defaultSections(
+                GitStatusSectionInputs(
+                    stagedCount: self.stagedCount,
+                    unstagedCount: self.unstagedCount,
+                    untrackedCount: self.untrackedCount,
+                    stagedFiles: stagedFiles,
+                    unstagedFiles: unstagedFiles,
+                    untrackedFiles: untrackedFiles,
+                    uncommittedCount: self.uncommittedCount,
+                    uncommittedFiles: uncommittedFiles,
+                    againstBaseCount: self.againstBaseCount,
+                    againstBaseFiles: againstBaseFiles,
+                    againstBaseState: againstBaseState,
+                    combineWorkingChangeSections: combineWorkingChangeSections,
+                    showBaseBranchChanges: showBaseBranchChanges
+                ))
+        self.sections = projectedSections
+        let activeCount =
+            projectedSections
+            .filter(\.state.isAvailable)
+            .reduce(0) { $0 + $1.totalCount }
+        self.totalFileCount = totalFileCount ?? activeCount
+        self.isFileDisplayCapped = isFileDisplayCapped ?? (activeCount > Self.displayFileLimit)
     }
 
     var isClean: Bool {
@@ -101,7 +119,9 @@ struct GitStatusSummary: Equatable, Sendable {
     func applying(
         stagedStats: [String: GitDiffStat],
         unstagedStats: [String: GitDiffStat],
-        untrackedStats: [String: GitDiffStat] = [:]
+        untrackedStats: [String: GitDiffStat] = [:],
+        uncommittedStats: [String: GitDiffStat] = [:],
+        againstBaseStats: [String: GitDiffStat] = [:]
     ) -> GitStatusSummary {
         GitStatusSummary(
             rootPath: rootPath,
@@ -115,9 +135,67 @@ struct GitStatusSummary: Equatable, Sendable {
             stagedFiles: stagedFiles.map { $0.applying(stat: stagedStats[$0.path]) },
             unstagedFiles: unstagedFiles.map { $0.applying(stat: unstagedStats[$0.path]) },
             untrackedFiles: untrackedFiles.map { $0.applying(stat: untrackedStats[$0.path]) },
+            uncommittedCount: uncommittedCount,
+            uncommittedFiles: uncommittedFiles.map {
+                $0.applying(stat: uncommittedStats[$0.path] ?? untrackedStats[$0.path])
+            },
+            againstBaseCount: againstBaseCount,
+            againstBaseFiles: againstBaseFiles.map { $0.applying(stat: againstBaseStats[$0.path]) },
+            againstBaseState: againstBaseState,
+            combineWorkingChangeSections: combineWorkingChangeSections,
+            showBaseBranchChanges: showBaseBranchChanges,
             isFileDisplayCapped: isFileDisplayCapped,
             totalFileCount: totalFileCount
         )
+    }
+
+    private static func defaultSections(_ inputs: GitStatusSectionInputs) -> [GitChangeSection] {
+        var result: [GitChangeSection] = []
+        if inputs.combineWorkingChangeSections {
+            result.append(
+                GitChangeSection(
+                    kind: .uncommitted,
+                    title: GitChangeSectionKind.uncommitted.title,
+                    totalCount: inputs.uncommittedCount,
+                    files: inputs.uncommittedFiles,
+                    state: .available
+                ))
+        } else {
+            result.append(contentsOf: [
+                GitChangeSection(
+                    kind: .staged,
+                    title: GitChangeSectionKind.staged.title,
+                    totalCount: inputs.stagedCount,
+                    files: inputs.stagedFiles,
+                    state: .available
+                ),
+                GitChangeSection(
+                    kind: .unstaged,
+                    title: GitChangeSectionKind.unstaged.title,
+                    totalCount: inputs.unstagedCount,
+                    files: inputs.unstagedFiles,
+                    state: .available
+                ),
+                GitChangeSection(
+                    kind: .untracked,
+                    title: GitChangeSectionKind.untracked.title,
+                    totalCount: inputs.untrackedCount,
+                    files: inputs.untrackedFiles,
+                    state: .available
+                )
+            ])
+        }
+        if inputs.showBaseBranchChanges {
+            result.append(
+                GitChangeSection(
+                    kind: .againstBase,
+                    title: GitChangeSectionKind.againstBase.title,
+                    totalCount: inputs.againstBaseCount,
+                    files: inputs.againstBaseFiles,
+                    state: inputs.againstBaseState
+                ))
+        }
+        return result
     }
 }
 
@@ -130,7 +208,12 @@ extension GitFileChange {
             status: status,
             additions: stat.additions,
             deletions: stat.deletions,
-            sectionKey: sectionKey
+            sectionKind: sectionKind,
+            hasStagedChanges: hasStagedChanges,
+            hasUnstagedChanges: hasUnstagedChanges,
+            isUntracked: isUntracked,
+            diffSource: diffSource,
+            isNetDiffEmpty: isNetDiffEmpty
         )
     }
 }
@@ -240,6 +323,21 @@ struct GitStatusRootContext: Equatable, Sendable {
     let currentDirectory: String
     let worktreePath: String?
     let projectRepositoryPath: String?
+    let configuredBaseBranch: String?
+
+    init(
+        kind: WorkspaceKind,
+        currentDirectory: String,
+        worktreePath: String?,
+        projectRepositoryPath: String?,
+        configuredBaseBranch: String? = nil
+    ) {
+        self.kind = kind
+        self.currentDirectory = currentDirectory
+        self.worktreePath = worktreePath
+        self.projectRepositoryPath = projectRepositoryPath
+        self.configuredBaseBranch = configuredBaseBranch
+    }
 }
 
 struct GitStatusRootResolver: Sendable {

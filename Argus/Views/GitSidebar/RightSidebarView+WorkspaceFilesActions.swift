@@ -175,6 +175,7 @@ extension WorkspaceFilesView {
 @MainActor
 func gitStatusContext(workspace: Workspace, project: Project?) -> GitStatusRootContext {
     let projectRepositoryPath = project?.isCatchAll == false ? project?.repositoryPath : nil
+    let configuredBaseBranch = project?.isCatchAll == false ? project?.mainBranch : nil
 
     let kind: GitStatusRootContext.WorkspaceKind
     switch workspace.workspaceType {
@@ -190,6 +191,7 @@ func gitStatusContext(workspace: Workspace, project: Project?) -> GitStatusRootC
         kind: kind,
         currentDirectory: workspace.currentDirectory,
         worktreePath: workspace.worktreePath,
-        projectRepositoryPath: projectRepositoryPath
+        projectRepositoryPath: projectRepositoryPath,
+        configuredBaseBranch: configuredBaseBranch
     )
 }

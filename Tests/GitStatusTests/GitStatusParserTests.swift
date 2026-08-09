@@ -149,8 +149,8 @@ struct GitStatusActionsUIContractTests {
         view.containsAll(
             [
                 "fileActions(for file: GitFileChange)",
-                "case \"staged\":", ".unstage",
-                "case \"unstaged\":", "case \"untracked\":", ".stage",
+                "case .staged:", ".unstage",
+                "case .unstaged:", "case .untracked:", ".stage",
                 ".copyPath",
                 "return \"Stage File\"", "return \"Unstage File\"",
                 "return \"Discard Changes\"", "return \"Delete File\"",
@@ -326,17 +326,28 @@ struct GitStatusActionsUIContractTests {
 
     @Test
     func untrackedRowsOfferGitignoreActionsForFilesAndDirectories() throws {
-        let view = try SourceContract("Argus/Views/GitSidebar/GitSidebarView.swift")
-        view.containsAll(
+        let sidebar = try SourceContract("Argus/Views/GitSidebar/GitSidebarView.swift")
+        sidebar.containsAll(
             [
                 "case addToGitignore",
                 "return \"Add to .gitignore\"",
                 "private func fileContextActions(for file: GitFileChange)",
-                "return fileActions(for: file) + [.addToGitignore]",
-                "allowsGitignore: sectionKey == \"untracked\"",
-                "onAddToGitignore: addToGitignore",
-                "Button(\"Add to .gitignore\", action: onAddToGitignore)"
+                "return fileActions(for: file) + [.addToGitignore]"
             ], "untracked Gitignore context actions"
+        )
+
+        let sections = try SourceContract("Argus/Views/GitSidebar/GitSidebarView+Sections.swift")
+        sections.containsAll(
+            [
+                "allowsGitignore: sectionKind == .untracked",
+                "Button(\"Add to .gitignore\", action: onAddToGitignore)"
+            ], "untracked directory Gitignore actions"
+        )
+
+        let rows = try SourceContract("Argus/Views/GitSidebar/GitSidebarView+RowsAndOperations.swift")
+        rows.contains(
+            "onAddToGitignore: addToGitignore",
+            "untracked directory Gitignore callback wiring"
         )
     }
 
@@ -346,15 +357,15 @@ struct GitStatusActionsUIContractTests {
         view.containsAll(
             [
                 "case discard", "case delete",
-                "case \"unstaged\":", ".discard",
-                "case \"untracked\":", ".delete",
+                "case .unstaged:", ".discard",
+                "case .untracked:", ".delete",
                 "await confirmAndPerformFileOperation(action.operation, paths: [file.path], owner: owner)",
                 "sectionActions(title: String, count: Int)",
                 "Stage All Files", "Unstage All Files", "Discard All Changes", "Delete All Untracked Files",
                 "await confirmAndPerformSectionFileOperation(",
                 "performSectionAction(",
-                "sectionKey: section.sectionKey",
-                "pathCount: section.count"
+                "sectionKind: section.kind",
+                "pathCount: sectionActionPathCount(action, section: section)"
             ], "destructive and bulk git actions")
         view.excludes("files.map(\\.path)", "bulk actions must not be limited to displayed rows")
         view.excludes("role: .destructive", "Git actions avoid SwiftUI destructive-role rendering")
@@ -371,7 +382,8 @@ struct GitStatusActionsUIContractTests {
         viewModel.containsAll(
             [
                 "fileOperationConfirmer.confirm(operation: operation, paths: paths)",
-                "fileOperationConfirmer.confirm(operation: operation, pathCount: pathCount)",
+                "fileOperationConfirmer.confirm(",
+                "confirmationTitle: sectionOperationTitle(operation, sectionKind: sectionKind)",
                 "guard activeMutationRequest == nil, activeRefreshRequests[owner] == nil else { return nil }",
                 "activeMutationRequest = (requestId, owner)",
                 "isMutationInProgress = true",

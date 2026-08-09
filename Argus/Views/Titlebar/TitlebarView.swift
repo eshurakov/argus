@@ -99,7 +99,7 @@ struct TitlebarView: View {
                 .allowsHitTesting(false)
         }
         .onAppear(perform: syncWindowTitle)
-        .task(id: workspaceManager.selectedWorkspaceId) {
+        .task(id: statusRefreshOwner) {
             await refreshSharedStatusForActiveWorkspace()
         }
         .onChange(of: workspaceManager.selectedWorkspaceId) { _, _ in syncWindowTitle() }
@@ -141,33 +141,26 @@ struct TitlebarView: View {
     }
 
     private func refreshSharedStatusForActiveWorkspace() async {
-        guard let workspace = workspaceManager.selectedWorkspace,
-            gitStatusViewModel.stateWorkspaceId != workspace.id,
-            let context = statusContext(for: workspace)
-        else { return }
-
-        await gitStatusViewModel.refresh(workspaceId: workspace.id, context: context)
+        guard let owner = statusRefreshOwner else { return }
+        await gitStatusViewModel.refresh(owner: owner)
     }
 
-    private func statusContext(for workspace: Workspace) -> GitStatusRootContext? {
-        let project = workspaceManager.project(for: workspace.id)
-        let projectRepositoryPath = project?.isCatchAll == false ? project?.repositoryPath : nil
+    private var statusRefreshOwner: GitStatusSnapshotOwner? {
+        _ = workspaceManager.workspaceContextRevision
+        guard let workspace = workspaceManager.selectedWorkspace else { return nil }
+        let context = gitStatusContext(
+            workspace: workspace,
+            project: workspaceManager.project(for: workspace.id)
+        )
 
-        let kind: GitStatusRootContext.WorkspaceKind
-        switch workspace.workspaceType {
-        case .worktree:
-            kind = .worktree
-        case .mainCheckout:
-            kind = .mainCheckout
-        case .external:
-            kind = .standalone
-        }
-
-        return GitStatusRootContext(
-            kind: kind,
-            currentDirectory: workspace.currentDirectory,
-            worktreePath: workspace.worktreePath,
-            projectRepositoryPath: projectRepositoryPath
+        return gitStatusViewModel.owner(
+            workspaceId: workspace.id,
+            context: context,
+            presentation: GitStatusPresentation(
+                combineWorkingChangeSections: appSettings.combineWorkingChangeSections,
+                showBaseBranchChanges: appSettings.showBaseBranchChanges,
+                configuredBaseBranch: context.configuredBaseBranch
+            )
         )
     }
 

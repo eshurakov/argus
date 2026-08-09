@@ -1,4 +1,3 @@
-// swiftlint:disable file_length
 import Foundation
 import Testing
 
@@ -399,19 +398,3 @@ struct GitStatusServiceBulkAndDiffTests {
             "untracked directories expand to child files")
     }
 }
-
-private func run(_ executable: String, _ arguments: [String], in directory: URL) throws {
-    #expect(executable == "/usr/bin/git", "Git status fixtures must use the system git executable")
-    _ = try TestGit.run(arguments, in: directory)
-}
-
-private func assertEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
-    #expect(actual == expected, Comment(rawValue: message))
-}
-
-private func fail(_ message: String) -> Never {
-    Issue.record(Comment(rawValue: message))
-    fatalError(message)
-}
-
-private typealias TemporaryDirectory = TestTemporaryDirectory

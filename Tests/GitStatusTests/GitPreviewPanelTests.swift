@@ -190,7 +190,10 @@ struct GitStatusPreviewUIContractTests {
                 "$0.id == owner.workspaceId",
                 "rootPath: owner.rootPath"
             ], "diff and blame actions")
-        let untracked = try view.section(after: "case \"untracked\":", before: "default:")
+        let untracked = try view.section(
+            after: "case .untracked:\n            return [.stage",
+            before: "case .uncommitted:"
+        )
         #expect(untracked.contains(".diff"))
         #expect(!untracked.contains(".blame"))
 
@@ -246,7 +249,9 @@ struct GitStatusPreviewUIContractTests {
             [
                 "@EnvironmentObject var viewModel: GitStatusViewModel",
                 "GitStatusSnapshotOwner",
-                "viewModel.owner(workspaceId: workspace.id, context: context)",
+                "return viewModel.owner(",
+                "workspaceId: workspace.id",
+                "presentation: GitStatusPresentation(",
                 "viewModel.activate(owner)",
                 "viewModel.ownsSnapshot(owner)",
                 "viewModel.refresh(owner: owner)"
@@ -256,9 +261,11 @@ struct GitStatusPreviewUIContractTests {
                 "@EnvironmentObject private var gitStatusViewModel: GitStatusViewModel",
                 "gitStatusViewModel.titlebarGitContext(for: workspace.id)",
                 "gitContext.visibleText",
-                ".task(id: workspaceManager.selectedWorkspaceId)",
-                "gitStatusViewModel.stateWorkspaceId != workspace.id",
-                "gitStatusViewModel.refresh(workspaceId: workspace.id, context: context)",
+                ".task(id: statusRefreshOwner)",
+                "private var statusRefreshOwner: GitStatusSnapshotOwner?",
+                "await gitStatusViewModel.refresh(owner: owner)",
+                "workspaceId: workspace.id",
+                "presentation: GitStatusPresentation(",
                 "WorkspaceTitleFormatter.title(",
                 "gitContext: gitContext?.windowTitleText",
                 "NSApp.mainWindow?.title"

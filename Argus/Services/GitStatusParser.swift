@@ -2,22 +2,29 @@ import Foundation
 
 struct GitStatusPorcelainParser: Sendable {
     static func parse(_ output: String, rootPath: String) -> GitStatusSummary {
-        var status = ParsedGitStatus()
+        cappedSummary(rootPath: rootPath, status: parseUncapped(output))
+    }
+
+    /// Parses the complete porcelain result without applying the Changes View
+    /// display limit. Git mutations and combined sections must be based on the
+    /// complete status, even when the sidebar only renders 500 entries.
+    static func parseUncapped(_ output: String) -> GitStatusRawSnapshot {
+        var status = GitStatusRawSnapshot()
 
         for line in output.components(separatedBy: .newlines) {
             parse(line, into: &status)
         }
 
-        return cappedSummary(rootPath: rootPath, status: status)
+        return status
     }
 
-    private static func parse(_ line: String, into status: inout ParsedGitStatus) {
+    private static func parse(_ line: String, into status: inout GitStatusRawSnapshot) {
         if line.hasPrefix("# ") {
             parseBranch(line, into: &status)
         } else if line.hasPrefix("? ") {
             let path = String(line.dropFirst(2))
             status.untrackedFiles.append(
-                GitFileChange(path: path, status: .untracked, sectionKey: "untracked")
+                GitFileChange(path: path, status: .untracked, sectionKind: .untracked)
             )
         } else if line.hasPrefix("1 ") {
             appendOrdinaryChange(line, status: &status)
@@ -25,12 +32,12 @@ struct GitStatusPorcelainParser: Sendable {
             appendRenamedOrCopiedChange(line, status: &status)
         } else if line.hasPrefix("u "), let path = pathFromUnmergedLine(line) {
             status.unstagedFiles.append(
-                GitFileChange(path: path, status: .unmerged, sectionKey: "unstaged")
+                GitFileChange(path: path, status: .unmerged, sectionKind: .unstaged)
             )
         }
     }
 
-    private static func parseBranch(_ line: String, into status: inout ParsedGitStatus) {
+    private static func parseBranch(_ line: String, into status: inout GitStatusRawSnapshot) {
         if line.hasPrefix("# branch.head ") {
             let value = String(line.dropFirst("# branch.head ".count))
             status.branchName = value == "(detached)" ? nil : value
@@ -41,7 +48,7 @@ struct GitStatusPorcelainParser: Sendable {
         }
     }
 
-    private static func parseBranchCounts(_ line: String, into status: inout ParsedGitStatus) {
+    private static func parseBranchCounts(_ line: String, into status: inout GitStatusRawSnapshot) {
         for part in line.dropFirst("# branch.ab ".count).split(separator: " ") {
             if part.hasPrefix("+") {
                 status.aheadCount = Int(part.dropFirst()) ?? 0
@@ -53,7 +60,7 @@ struct GitStatusPorcelainParser: Sendable {
 
     private static func appendOrdinaryChange(
         _ line: String,
-        status: inout ParsedGitStatus
+        status: inout GitStatusRawSnapshot
     ) {
         let fields = line.split(separator: " ", maxSplits: 8, omittingEmptySubsequences: true)
         guard fields.count >= 9 else { return }
@@ -67,7 +74,7 @@ struct GitStatusPorcelainParser: Sendable {
 
     private static func appendRenamedOrCopiedChange(
         _ line: String,
-        status: inout ParsedGitStatus
+        status: inout GitStatusRawSnapshot
     ) {
         let fields = line.split(separator: " ", maxSplits: 9, omittingEmptySubsequences: true)
         guard fields.count >= 10 else { return }
@@ -89,7 +96,7 @@ struct GitStatusPorcelainParser: Sendable {
         xy: String,
         path: String,
         originalPath: String?,
-        status parsedStatus: inout ParsedGitStatus
+        status parsedStatus: inout GitStatusRawSnapshot
     ) {
         let characters = Array(xy)
         guard characters.count >= 2 else { return }
@@ -99,7 +106,7 @@ struct GitStatusPorcelainParser: Sendable {
                     path: path,
                     originalPath: originalPath,
                     status: status(for: characters[0]),
-                    sectionKey: "staged"
+                    sectionKind: .staged
                 ))
         }
         if characters[1] != "." {
@@ -108,7 +115,7 @@ struct GitStatusPorcelainParser: Sendable {
                     path: path,
                     originalPath: originalPath,
                     status: status(for: characters[1]),
-                    sectionKey: "unstaged"
+                    sectionKind: .unstaged
                 ))
         }
     }
@@ -127,7 +134,7 @@ struct GitStatusPorcelainParser: Sendable {
 
     private static func cappedSummary(
         rootPath: String,
-        status: ParsedGitStatus
+        status: GitStatusRawSnapshot
     ) -> GitStatusSummary {
         let total = status.stagedFiles.count + status.unstagedFiles.count + status.untrackedFiles.count
         var remaining = GitStatusSummary.displayFileLimit
@@ -155,7 +162,7 @@ struct GitStatusPorcelainParser: Sendable {
     }
 }
 
-private struct ParsedGitStatus {
+struct GitStatusRawSnapshot: Equatable, Sendable {
     var branchName: String?
     var upstreamName: String?
     var aheadCount = 0

@@ -41,8 +41,20 @@ final class GitStatusViewModel: ObservableObject {
         resolver.root(for: context)
     }
 
-    func owner(workspaceId: UUID, context: GitStatusRootContext) -> GitStatusSnapshotOwner {
-        GitStatusSnapshotOwner(workspaceId: workspaceId, rootPath: resolver.root(for: context))
+    func owner(
+        workspaceId: UUID,
+        context: GitStatusRootContext,
+        presentation: GitStatusPresentation = .default
+    ) -> GitStatusSnapshotOwner {
+        let request = GitStatusRequest(
+            rootPath: resolver.root(for: context),
+            presentation: GitStatusPresentation(
+                combineWorkingChangeSections: presentation.combineWorkingChangeSections,
+                showBaseBranchChanges: presentation.showBaseBranchChanges,
+                configuredBaseBranch: presentation.configuredBaseBranch ?? context.configuredBaseBranch
+            )
+        )
+        return GitStatusSnapshotOwner(workspaceId: workspaceId, request: request)
     }
 
     func ownsSnapshot(_ owner: GitStatusSnapshotOwner) -> Bool {
@@ -88,7 +100,7 @@ final class GitStatusViewModel: ObservableObject {
         let requestId = beginRequest(owner: owner)
         pendingRefreshOwners.remove(owner)
         activeRefreshRequests[owner] = requestId
-        let result = await service.status(rootPath: owner.rootPath)
+        let result = await service.status(request: owner.request)
         publish(result, owner: owner, requestId: requestId)
         if activeRefreshRequests[owner] == requestId {
             activeRefreshRequests[owner] = nil
@@ -99,7 +111,7 @@ final class GitStatusViewModel: ObservableObject {
     func initializeRepository(owner: GitStatusSnapshotOwner, exposesWorkspaceId: Bool) async {
         guard prepareMutationOwner(owner, exposesWorkspaceId: exposesWorkspaceId) else { return }
         guard let requestId = beginMutation(owner: owner) else { return }
-        let result = await service.initializeRepository(rootPath: owner.rootPath)
+        let result = await service.initializeRepository(request: owner.request)
         publish(result, owner: owner, requestId: requestId)
         finishMutation(requestId)
     }
@@ -112,7 +124,7 @@ final class GitStatusViewModel: ObservableObject {
     ) async {
         guard prepareMutationOwner(owner, exposesWorkspaceId: exposesWorkspaceId) else { return }
         guard let requestId = beginMutation(owner: owner) else { return }
-        let result = await service.performFileOperation(operation, rootPath: owner.rootPath, path: path)
+        let result = await service.performFileOperation(operation, request: owner.request, path: path)
         publish(result, owner: owner, requestId: requestId)
         finishMutation(requestId)
     }
@@ -125,14 +137,14 @@ final class GitStatusViewModel: ObservableObject {
     ) async {
         guard prepareMutationOwner(owner, exposesWorkspaceId: exposesWorkspaceId) else { return }
         guard let requestId = beginMutation(owner: owner) else { return }
-        let result = await service.performBulkFileOperation(operation, rootPath: owner.rootPath, paths: paths)
+        let result = await service.performBulkFileOperation(operation, request: owner.request, paths: paths)
         publish(result, owner: owner, requestId: requestId)
         finishMutation(requestId)
     }
 
     func performSectionFileOperation(
         _ operation: GitStatusFileOperation,
-        sectionKey: String,
+        sectionKind: GitChangeSectionKind,
         owner: GitStatusSnapshotOwner,
         exposesWorkspaceId: Bool
     ) async {
@@ -140,8 +152,8 @@ final class GitStatusViewModel: ObservableObject {
         guard let requestId = beginMutation(owner: owner) else { return }
         let result = await service.performSectionFileOperation(
             operation,
-            rootPath: owner.rootPath,
-            sectionKey: sectionKey
+            request: owner.request,
+            sectionKind: sectionKind
         )
         publish(result, owner: owner, requestId: requestId)
         finishMutation(requestId)
@@ -229,7 +241,10 @@ final class GitStatusViewModel: ObservableObject {
     func legacyOwner(context: GitStatusRootContext) -> GitStatusSnapshotOwner {
         GitStatusSnapshotOwner(
             workspaceId: Self.legacyWorkspaceId,
-            rootPath: resolver.root(for: context)
+            request: GitStatusRequest(
+                rootPath: resolver.root(for: context),
+                presentation: GitStatusPresentation(configuredBaseBranch: context.configuredBaseBranch)
+            )
         )
     }
 }
