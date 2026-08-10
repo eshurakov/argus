@@ -6,7 +6,9 @@
 import AppKit
 import UniformTypeIdentifiers
 
-private let terminalControlV = "\u{16}"
+// macOS virtual keycode and unshifted codepoint for the "v" key.
+private let terminalControlVKeycode: UInt32 = 9
+private let terminalControlVCodepoint: UInt32 = 0x76
 
 private let ghosttyKeyMap: [UInt16: ghostty_input_key_e] = [
     // Main keyboard
@@ -166,10 +168,17 @@ func ghosttyKeyEvent(
     return keyInput
 }
 
-func terminalImagePasteFallback(
+/// Key events that deliver Ctrl+V to the running terminal program when Cmd+V
+/// is pressed with an image-only system clipboard.
+///
+/// Raw text injection cannot be used here: Ghostty's paste path replaces C0
+/// bytes, including 0x16 (VLNEXT / Ctrl+V), with a space. Synthesising a key
+/// event instead lets Ghostty encode Ctrl+V with whatever keyboard protocol
+/// the running program negotiated (legacy 0x16 or Kitty CSI-u).
+func terminalImagePasteKeyEvents(
     for event: NSEvent,
     pasteboard: NSPasteboard = .general
-) -> String? {
+) -> [ghostty_input_key_s]? {
     let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
     guard event.type == .keyDown,
         event.charactersIgnoringModifiers?.lowercased() == "v",
@@ -178,7 +187,24 @@ func terminalImagePasteFallback(
         pasteboard.canReadItem(withDataConformingToTypes: [UTType.image.identifier])
     else { return nil }
 
-    return terminalControlV
+    return [
+        terminalControlVKeyEvent(action: GHOSTTY_ACTION_PRESS),
+        terminalControlVKeyEvent(action: GHOSTTY_ACTION_RELEASE)
+    ]
+}
+
+private func terminalControlVKeyEvent(
+    action: ghostty_input_action_e
+) -> ghostty_input_key_s {
+    var keyInput = ghostty_input_key_s()
+    keyInput.action = action
+    keyInput.mods = GHOSTTY_MODS_CTRL
+    keyInput.consumed_mods = GHOSTTY_MODS_NONE
+    keyInput.keycode = terminalControlVKeycode
+    keyInput.unshifted_codepoint = terminalControlVCodepoint
+    keyInput.composing = false
+    keyInput.text = nil
+    return keyInput
 }
 
 func isModifierPress(event: NSEvent) -> Bool {

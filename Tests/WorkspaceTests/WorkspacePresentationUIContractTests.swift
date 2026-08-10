@@ -47,7 +47,22 @@ struct WorkspacePresentationUIContractTests {
         pasteboard.setData(Data([0x89, 0x50, 0x4E, 0x47]), forType: .png)
 
         let commandV = try #require(keyEvent(characters: "v", modifiers: .command))
-        #expect(terminalImagePasteFallback(for: commandV, pasteboard: pasteboard) == "\u{16}")
+        let events = try #require(
+            terminalImagePasteKeyEvents(for: commandV, pasteboard: pasteboard)
+        )
+
+        // Ghostty's paste path replaces 0x16 with a space, so the fallback must
+        // synthesise Ctrl+V key events instead of injecting raw text.
+        #expect(events.count == 2)
+        let press = try #require(events.first)
+        #expect(press.action == GHOSTTY_ACTION_PRESS)
+        #expect(press.mods == GHOSTTY_MODS_CTRL)
+        #expect(press.consumed_mods == GHOSTTY_MODS_NONE)
+        #expect(press.keycode == 9)
+        #expect(press.unshifted_codepoint == 0x76)
+        #expect(press.text == nil)
+        #expect(press.composing == false)
+        #expect(events.last?.action == GHOSTTY_ACTION_RELEASE)
     }
 
     @Test
@@ -59,7 +74,7 @@ struct WorkspacePresentationUIContractTests {
         pasteboard.setString("clipboard text", forType: .string)
 
         let commandV = try #require(keyEvent(characters: "v", modifiers: .command))
-        #expect(terminalImagePasteFallback(for: commandV, pasteboard: pasteboard) == nil)
+        #expect(terminalImagePasteKeyEvents(for: commandV, pasteboard: pasteboard) == nil)
 
         pasteboard.clearContents()
         pasteboard.setData(Data([0x89, 0x50, 0x4E, 0x47]), forType: .png)
@@ -67,8 +82,8 @@ struct WorkspacePresentationUIContractTests {
             keyEvent(characters: "V", modifiers: [.command, .shift])
         )
         let controlV = try #require(keyEvent(characters: "\u{16}", modifiers: .control))
-        #expect(terminalImagePasteFallback(for: shiftedCommandV, pasteboard: pasteboard) == nil)
-        #expect(terminalImagePasteFallback(for: controlV, pasteboard: pasteboard) == nil)
+        #expect(terminalImagePasteKeyEvents(for: shiftedCommandV, pasteboard: pasteboard) == nil)
+        #expect(terminalImagePasteKeyEvents(for: controlV, pasteboard: pasteboard) == nil)
     }
 
     private func keyEvent(
