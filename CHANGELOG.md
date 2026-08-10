@@ -2,6 +2,10 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-08-10
+
+- Previously installed Argus Pi extensions now upgrade safely to the current Agent Status and turn-completion extension, and can be removed without touching unrelated extensions. ([37992fd](https://github.com/jeanduplessis/argus/commit/37992fd))
+
 ## 2026-08-09
 
 - Users can keep an Empty Workspace open after closing its final Terminal Tab, restore it without terminal panels, and create a new Terminal Tab from its empty state. ([e3fe82f](https://github.com/eshurakov/argus/commit/e3fe82f))
