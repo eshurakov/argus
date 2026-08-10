@@ -45,7 +45,7 @@ struct SidebarWorkspaceRow: View {
                 } else {
                     Image(systemName: workspace.workspaceType.icon)
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(isSelected ? Color.white : Color.secondary)
+                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                         .frame(width: 14)
                         .accessibilityHidden(true)
                 }
@@ -53,15 +53,20 @@ struct SidebarWorkspaceRow: View {
                 // Title and Workspace context
                 VStack(alignment: .leading, spacing: 1) {
                     Text(workspace.displayTitle)
-                        .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 13)))
-                        .foregroundColor(isSelected ? .white : .primary)
+                        .font(
+                            .system(
+                                size: appSettings.presentationMetrics.textSize(forBaseSize: 13),
+                                weight: isSelected ? .semibold : .regular
+                            )
+                        )
+                        .foregroundColor(.primary)
                         .lineLimit(1)
                         .truncationMode(.tail)
 
                     if let subtitle = workspaceSubtitle {
                         Text(subtitle)
                             .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 10)))
-                            .foregroundColor(isSelected ? .white.opacity(0.7) : .secondary)
+                            .foregroundColor(.secondary)
                             .lineLimit(1)
                             .truncationMode(.middle)
                             .help(workspaceSubtitleHelp)
@@ -87,6 +92,16 @@ struct SidebarWorkspaceRow: View {
                 RoundedRectangle(cornerRadius: 6)
                     .fill(backgroundColor)
             )
+            // Selection reads as a leading accent indicator so the row keeps
+            // sidebar contrast instead of inverting to a filled accent block.
+            .overlay(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                    .fill(Color.accentColor)
+                    .frame(width: 3)
+                    .padding(.vertical, 2)
+                    .opacity(isSelected ? 1 : 0)
+                    .accessibilityHidden(true)
+            }
             .overlay {
                 RoundedRectangle(cornerRadius: 6)
                     .stroke(focusColor, lineWidth: isFocused ? 1 : 0)
@@ -130,16 +145,16 @@ struct SidebarWorkspaceRow: View {
 
     private var backgroundColor: Color {
         if isSelected {
-            return Color.accentColor
+            return Color.accentColor.opacity(0.16)
         } else if isHovered || isFocused {
-            return Color.secondary.opacity(0.1)
+            return ChromeColors.hoveredTabFill
         } else {
             return Color.clear
         }
     }
 
     private var focusColor: Color {
-        isSelected ? Color.white.opacity(0.7) : Color.accentColor
+        Color.accentColor
     }
 
     private var workspaceAccessibilityLabel: String {

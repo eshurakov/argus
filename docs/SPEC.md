@@ -64,7 +64,7 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 5. Workspaces MUST support rename, close, selection, and reordering within a Project.
 6. Closing the last Workspace MUST create and select a fresh Standalone Workspace containing one Terminal Tab.
 7. Cmd+1 through Cmd+8 MUST select Workspaces by global left-sidebar order. Cmd+9 MUST select the last Workspace.
-8. The left sidebar MUST show Project and Workspace hierarchy, selection, Workspace type, branch when available, and Agent Status when present.
+8. The left sidebar MUST show Project and Workspace hierarchy, selection, Workspace type, branch when available, and Agent Status when present. The Selected Workspace row MUST be marked with a leading accent indicator and a restrained row fill, MUST keep normal sidebar foreground colors, and MUST NOT fill the complete row with the accent color.
 9. A Standalone Workspace MUST allow its Workspace Root to be changed from its left-sidebar context menu.
 10. The Workspace Root change workflow MUST support both directory browsing and direct path entry. An entered path MUST resolve to an existing directory.
 11. Changing a Standalone Workspace's Workspace Root MUST immediately update its Files View and Git Status Root. New Terminal tabs MUST start at the new Workspace Root without changing existing Terminal Working Directories.

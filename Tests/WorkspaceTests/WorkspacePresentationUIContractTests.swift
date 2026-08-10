@@ -126,6 +126,32 @@ struct WorkspacePresentationUIContractTests {
     }
 
     @Test
+    func selectedWorkspaceRowUsesALeadingAccentIndicatorRatherThanAFilledAccentRow() throws {
+        let row = try SourceContract("Argus/Views/Sidebar/SidebarView+WorkspaceRow.swift")
+        row.containsAll(
+            [
+                ".overlay(alignment: .leading) {",
+                ".fill(Color.accentColor)",
+                ".frame(width: 3)",
+                ".opacity(isSelected ? 1 : 0)",
+                "return Color.accentColor.opacity(0.16)",
+                "return ChromeColors.hoveredTabFill"
+            ], "selected Workspace row indicator and restrained selection fill")
+        row.excludes(
+            "return Color.accentColor\n",
+            "selection must not fill the complete Workspace row with the accent color"
+        )
+        row.excludes(
+            "isSelected ? Color.white",
+            "Workspace row content must keep sidebar foreground colors when selected"
+        )
+        row.excludes(
+            "isSelected ? .white",
+            "Workspace row text must keep sidebar foreground colors when selected"
+        )
+    }
+
+    @Test
     func standaloneWorkspaceRowShowsItsAbbreviatedWorkspaceRoot() throws {
         try SourceContract("Argus/Views/Sidebar/SidebarView+WorkspaceRow.swift").containsAll(
             [
