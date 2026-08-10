@@ -106,35 +106,43 @@ extension GitSidebarView {
         }
     }
 
+    @ViewBuilder
     private func statusContent(_ summary: GitStatusSummary, owner: GitStatusSnapshotOwner) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             branchBar(summary)
 
             if summary.isClean {
-                Label {
-                    Text("Working tree clean")
-                } icon: {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.green)
-                        .accessibilityHidden(true)
+                cleanWorkingTreeContent()
+            } else {
+                if summary.isFileDisplayCapped {
+                    Text("Showing first \(GitStatusSummary.displayFileLimit) of \(summary.totalFileCount) files")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 10)
                 }
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.green)
-                .padding(.horizontal, 12)
-                .padding(.top, 10)
-            }
 
-            if summary.isFileDisplayCapped {
-                Text("Showing first \(GitStatusSummary.displayFileLimit) of \(summary.totalFileCount) files")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 10)
+                changeSections(summary, owner: owner)
             }
-
-            changeSections(summary, owner: owner)
         }
+    }
+
+    private func cleanWorkingTreeContent() -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 24, weight: .regular))
+                .foregroundStyle(.green.opacity(0.8))
+                .accessibilityHidden(true)
+            Text("Working tree clean")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.secondary)
+            Text("No staged, unstaged, or untracked changes")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary.opacity(0.7))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 12)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func changeSections(
@@ -143,43 +151,56 @@ extension GitSidebarView {
     ) -> some View {
         ScrollView {
             VStack(spacing: 0) {
-                fileSection(
-                    GitChangeSectionContent(
-                        title: "Staged",
-                        sectionKey: "staged",
-                        count: summary.stagedCount,
-                        files: summary.stagedFiles
-                    ),
-                    isExpanded: $stagedExpanded,
-                    owner: owner
-                )
-                fileSection(
-                    GitChangeSectionContent(
-                        title: "Unstaged",
-                        sectionKey: "unstaged",
-                        count: summary.unstagedCount,
-                        files: summary.unstagedFiles
-                    ),
-                    isExpanded: $unstagedExpanded,
-                    owner: owner
-                )
-                fileSection(
-                    GitChangeSectionContent(
-                        title: "Untracked",
-                        sectionKey: "untracked",
-                        count: summary.untrackedCount,
-                        files: summary.untrackedFiles
-                    ),
-                    isExpanded: $untrackedExpanded,
-                    owner: owner
-                )
+                ForEach(populatedSections(summary), id: \.sectionKey) { section in
+                    fileSection(
+                        section,
+                        isExpanded: sectionExpansionBinding(section.sectionKey),
+                        owner: owner
+                    )
+                }
             }
+        }
+    }
+
+    private func populatedSections(_ summary: GitStatusSummary) -> [GitChangeSectionContent] {
+        [
+            GitChangeSectionContent(
+                title: "Staged",
+                sectionKey: "staged",
+                count: summary.stagedCount,
+                files: summary.stagedFiles
+            ),
+            GitChangeSectionContent(
+                title: "Unstaged",
+                sectionKey: "unstaged",
+                count: summary.unstagedCount,
+                files: summary.unstagedFiles
+            ),
+            GitChangeSectionContent(
+                title: "Untracked",
+                sectionKey: "untracked",
+                count: summary.untrackedCount,
+                files: summary.untrackedFiles
+            )
+        ]
+        .filter { $0.count > 0 }
+    }
+
+    private func sectionExpansionBinding(_ sectionKey: String) -> Binding<Bool> {
+        switch sectionKey {
+        case "staged":
+            return $stagedExpanded
+        case "unstaged":
+            return $unstagedExpanded
+        default:
+            return $untrackedExpanded
         }
     }
 
     private func branchBar(_ summary: GitStatusSummary) -> some View {
         let totals = totalDiffStats(summary)
-        let allCollapsed = allSectionsCollapsed(summary)
+        let sections = populatedSections(summary)
+        let allCollapsed = allSectionsCollapsed(sections)
         let actionName = allCollapsed ? "Expand all file sections" : "Collapse all file sections"
 
         return HStack(spacing: 6) {
@@ -212,11 +233,13 @@ extension GitSidebarView {
 
             Spacer(minLength: 0)
 
-            branchSectionActionButton(
-                allCollapsed: allCollapsed,
-                summary: summary,
-                actionName: actionName
-            )
+            if !sections.isEmpty {
+                branchSectionActionButton(
+                    allCollapsed: allCollapsed,
+                    sections: sections,
+                    actionName: actionName
+                )
+            }
         }
         .font(.system(size: 12, weight: .semibold, design: .monospaced))
         .padding(.horizontal, 12)
@@ -228,12 +251,12 @@ extension GitSidebarView {
 
     private func branchSectionActionButton(
         allCollapsed: Bool,
-        summary: GitStatusSummary,
+        sections: [GitChangeSectionContent],
         actionName: String
     ) -> some View {
         HoverStateView { isHovered in
             Button {
-                setAllSectionsExpanded(allCollapsed, summary: summary)
+                setAllSectionsExpanded(allCollapsed, sections: sections)
             } label: {
                 Image(
                     systemName: allCollapsed
@@ -265,14 +288,15 @@ extension GitSidebarView {
         }
     }
 
-    private func allSectionsCollapsed(_ summary: GitStatusSummary) -> Bool {
-        !stagedExpanded && !unstagedExpanded && !untrackedExpanded
+    private func allSectionsCollapsed(_ sections: [GitChangeSectionContent]) -> Bool {
+        guard !sections.isEmpty else { return false }
+        return sections.allSatisfy { !sectionExpansionBinding($0.sectionKey).wrappedValue }
     }
 
-    private func setAllSectionsExpanded(_ isExpanded: Bool, summary: GitStatusSummary) {
-        stagedExpanded = isExpanded
-        unstagedExpanded = isExpanded
-        untrackedExpanded = isExpanded
+    private func setAllSectionsExpanded(_ isExpanded: Bool, sections: [GitChangeSectionContent]) {
+        for section in sections {
+            sectionExpansionBinding(section.sectionKey).wrappedValue = isExpanded
+        }
     }
 
     private func upstreamText(_ summary: GitStatusSummary, upstreamName: String) -> String {

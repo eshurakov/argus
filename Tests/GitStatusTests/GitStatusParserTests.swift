@@ -206,7 +206,7 @@ struct GitStatusActionsUIContractTests {
         for expected in [
             "summary.totalFileCount", "totalDiffStats(summary)",
             "totals.additions", "totals.deletions",
-            "setAllSectionsExpanded(allCollapsed, summary: summary)",
+            "setAllSectionsExpanded(allCollapsed, sections: sections)",
             "Collapse all file sections", "Expand all file sections",
             "HoverStateView { isHovered in",
             "isHovered ? ChromeColors.hoveredTabFill : Color.clear",
@@ -215,6 +215,8 @@ struct GitStatusActionsUIContractTests {
         ] {
             #expect(branchBar.contains(expected))
         }
+
+        #expect(branchBar.contains("if !sections.isEmpty {"))
     }
 
     @Test

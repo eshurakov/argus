@@ -145,12 +145,12 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
    - Main-checkout Workspace: Project Repository Root;
    - Standalone Workspace: Workspace Root.
 2. Git status and mutations MUST NOT follow a Terminal Panel's live Terminal Working Directory.
-3. The Changes View MUST show branch and upstream information, ahead and behind counts, aggregate statistics, and Staged, Unstaged, and Untracked sections.
+3. The Changes View MUST show branch and upstream information, ahead and behind counts, aggregate statistics, and a Staged, Unstaged, or Untracked section for each of those groups that contains at least one Git File Change. A section with no changes MUST be hidden.
 4. Git File Changes MUST show their status, path, and available addition/deletion statistics.
 5. Changed paths MAY be grouped into a compacted Change Tree.
 6. Displayed changes MUST be capped at 500 while section counts and Section Operations continue to represent the full Git Status Snapshot.
 7. Git status MUST request individual untracked paths rather than treating an untracked directory as one opaque item.
-8. A clean repository MUST show a clean state. A non-repository directory MUST offer Git initialization.
+8. A clean repository MUST replace the file sections with a clean-state empty state. A non-repository directory MUST offer Git initialization.
 9. Refreshing the same Git Status Snapshot SHOULD keep current content visible and show progress in reserved chrome.
 10. Changing the snapshot owner MAY replace content with an initial loading state.
 

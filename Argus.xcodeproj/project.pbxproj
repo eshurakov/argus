@@ -81,6 +81,7 @@
 		6F37A27F399CF7C90403678B /* WorkspaceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91C4B07F7CA247F3E95F11A /* WorkspaceManager.swift */; };
 		70A03FBF810E62C0614FDCE9 /* TitlebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B4D60E83B20F24AA92F8F19 /* TitlebarView.swift */; };
 		731C90BF98E20510EDF3C7AB /* TerminalNSView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF781F36ADED8076735767AF /* TerminalNSView.swift */; };
+		74EF2866EEC883D1D40C4EA4 /* GitChangesEmptyStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E4ED5A34DFDB7515460CBDE /* GitChangesEmptyStateTests.swift */; };
 		760E71483559B9C4814A3C55 /* GitSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BC41CF5BFC955D50F929F5A /* GitSidebarView.swift */; };
 		77FD46F97F5A4D65CB9B0FED /* WorkspaceManager+Navigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20F83AF521A162C854D1D55 /* WorkspaceManager+Navigation.swift */; };
 		780958478201BE29D14FDE1D /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4522B14CD49E7A2F3CC4AD86 /* BrowserView.swift */; };
@@ -201,6 +202,7 @@
 		2A66AF57A5A40B3722A56592 /* TerminalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalView.swift; sourceTree = "<group>"; };
 		2BC41CF5BFC955D50F929F5A /* GitSidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitSidebarView.swift; sourceTree = "<group>"; };
 		2C6799AE81C5533761C5D201 /* TerminalPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalPanel.swift; sourceTree = "<group>"; };
+		2E4ED5A34DFDB7515460CBDE /* GitChangesEmptyStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitChangesEmptyStateTests.swift; sourceTree = "<group>"; };
 		3194FA21992F916DD0D62855 /* TerminalDirectorySnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalDirectorySnapshotTests.swift; sourceTree = "<group>"; };
 		31969B9823692A92F6DA9079 /* TurnCompletionUIContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnCompletionUIContractTests.swift; sourceTree = "<group>"; };
 		31F5743E7A55EE9FBC908770 /* GitDiffStatParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitDiffStatParserTests.swift; sourceTree = "<group>"; };
@@ -521,6 +523,7 @@
 			isa = PBXGroup;
 			children = (
 				75E5C691A8EE5685548AEBE8 /* ArgusDiffRenderingTests.swift */,
+				2E4ED5A34DFDB7515460CBDE /* GitChangesEmptyStateTests.swift */,
 				31F5743E7A55EE9FBC908770 /* GitDiffStatParserTests.swift */,
 				3D74EFE13FBE5E49414DB592 /* GitPreviewPanelTests.swift */,
 				B61F2A403CEF604900074280 /* GitPreviewServiceTests.swift */,
@@ -950,6 +953,7 @@
 				344B25CC7C2ADD72466CD792 /* ExistingBranchPickerTests.swift in Sources */,
 				F46179E18E48775C783E104A /* ExistingBranchWorktreeTests.swift in Sources */,
 				5B4BB7179424815BEF595AF7 /* ExistingWorktreeBranchChoiceTests.swift in Sources */,
+				74EF2866EEC883D1D40C4EA4 /* GitChangesEmptyStateTests.swift in Sources */,
 				0E12DBED45B56CCE6139ADA2 /* GitDiffStatParserTests.swift in Sources */,
 				15DFA75952566E938AECED46 /* GitPreviewPanelTests.swift in Sources */,
 				5974AE95C0C64669D0C96C1E /* GitPreviewServiceTests.swift in Sources */,
@@ -1151,7 +1155,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks",
@@ -1171,7 +1175,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks/GhosttyKit.xcframework/macos-arm64",
 				);
-				MARKETING_VERSION = 1.7.0;
+				MARKETING_VERSION = 1.8.0;
 				OTHER_LDFLAGS = (
 					"-lghostty",
 					"-framework Metal",
@@ -1199,7 +1203,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks",
@@ -1219,7 +1223,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks/GhosttyKit.xcframework/macos-arm64",
 				);
-				MARKETING_VERSION = 1.7.0;
+				MARKETING_VERSION = 1.8.0;
 				OTHER_LDFLAGS = (
 					"-lghostty",
 					"-framework Metal",
