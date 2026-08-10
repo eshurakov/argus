@@ -4,6 +4,7 @@ This file records changes pushed for local Argus releases. New entries use a `YY
 
 ## 2026-08-10
 
+- Pasting an image with Cmd+V in a terminal now reaches the running program instead of inserting a blank space, so agents like Pi and Kilo pick up the image from the clipboard. Cmd+V previously sent the keystroke through the paste path, which replaces control characters with a space. ([4b5e825](https://github.com/jeanduplessis/argus/commit/4b5e825))
 - The Changes panel now hides the Staged, Unstaged, and Untracked sections when they have no files in them, and shows a centered "Working tree clean" message when there is nothing to commit. ([d791ae1](https://github.com/jeanduplessis/argus/commit/d791ae1))
 - The selected workspace in the left sidebar is now marked with a leading accent bar and a light row tint, instead of filling the whole row with solid blue, so workspace names stay easy to read. ([3e6ea37](https://github.com/jeanduplessis/argus/commit/3e6ea37))
 - Previously installed Argus Pi extensions now upgrade safely to the current Agent Status and turn-completion extension, and can be removed without touching unrelated extensions. ([37992fd](https://github.com/jeanduplessis/argus/commit/37992fd))
