@@ -17,6 +17,10 @@ V1 includes:
 - session restore for Projects, Workspaces, and Terminal Panels;
 - process-local Agent Status presentation.
 
+Named Projects can also create Worktree Workspaces from GitHub Pull Request
+URLs or numbers through the active `gh` authentication context. The GitHub CLI
+is optional and is needed only for that intake flow.
+
 The Companion CLI is a scaffold and has no socket-backed commands. Argus supports Kilo turn-completion attention and Pi live Agent Status through an app-owned local socket and explicitly installed extensions. V1 does not include agent PID tracking, notification history, macOS notifications, or TTS. Future work is kept under `docs/proposals/`.
 
 ## Requirements
@@ -29,6 +33,10 @@ The Companion CLI is a scaffold and has no socket-backed commands. Argus support
 - the vendored `Frameworks/GhosttyKit.xcframework`
 
 Node.js is needed only when rebuilding the committed Pierre diff renderer bundle.
+
+The GitHub CLI is an optional runtime requirement for Pull Request Workspaces.
+Install and authenticate it with `brew install gh` and `gh auth login` when
+using that flow.
 
 Install the development tools with Homebrew:
 

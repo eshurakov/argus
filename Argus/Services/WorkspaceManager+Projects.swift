@@ -169,6 +169,144 @@ extension WorkspaceManager {
         }
     }
 
+    /// Resolves one Pull Request through the active GitHub CLI and attaches
+    /// its exact head to a Worktree Workspace in the initiating Project.
+    ///
+    /// Provider and Git work happen while this MainActor remains suspended;
+    /// Project identity and the Project Repository Root are revalidated before
+    /// durable Workspace state is changed.
+    @discardableResult
+    func createWorkspace(
+        fromPullRequest input: String,
+        in projectId: UUID
+    ) async throws -> Workspace {
+        lastPullRequestWorkspaceError = nil
+        do {
+            let parsedInput = try PullRequestInput.parse(input)
+            let context = try pullRequestProjectContext(for: projectId)
+            let metadata = try await pullRequestService.resolve(
+                parsedInput,
+                repositoryPath: context.repositoryRoot
+            )
+            let resolution = try await worktreeService.createPullRequestWorktree(
+                projectId: context.projectID,
+                repositoryPath: context.repositoryRoot,
+                metadata: metadata
+            )
+            return try await attachPullRequestWorkspace(
+                resolution,
+                metadata: metadata,
+                projectID: context.projectID,
+                repositoryRoot: context.repositoryRoot
+            )
+        } catch let error as PullRequestWorkspaceError {
+            lastPullRequestWorkspaceError = error
+            throw error
+        } catch {
+            let mapped = PullRequestWorkspaceError.worktreeCreationFailed(
+                error.localizedDescription
+            )
+            lastPullRequestWorkspaceError = mapped
+            throw mapped
+        }
+    }
+
+    private func pullRequestProjectContext(
+        for projectId: UUID
+    ) throws -> (projectID: UUID, repositoryRoot: String) {
+        guard let project = projects.first(where: { $0.id == projectId }) else {
+            throw PullRequestWorkspaceError.projectUnavailable
+        }
+        guard !project.isCatchAll else {
+            throw PullRequestWorkspaceError.catchAllProject
+        }
+        guard workspaces.count < Self.maxWorkspaces else {
+            throw PullRequestWorkspaceError.workspaceLimitReached
+        }
+        return (project.id, project.repositoryPath)
+    }
+
+    private func attachPullRequestWorkspace(
+        _ resolution: PullRequestWorktreeResolution,
+        metadata: PullRequestWorkspaceMetadata,
+        projectID: UUID,
+        repositoryRoot: String
+    ) async throws -> Workspace {
+        guard let currentProject = projects.first(where: { $0.id == projectID }),
+            !currentProject.isCatchAll,
+            canonicalPath(currentProject.repositoryPath) == canonicalPath(repositoryRoot)
+        else {
+            await cleanupPullRequestWorktreeIfNeeded(
+                resolution,
+                repositoryPath: repositoryRoot
+            )
+            throw PullRequestWorkspaceError.projectChanged
+        }
+
+        if let existingWorkspace = workspaces.first(where: { workspace in
+            workspace.projectId == projectID
+                && workspace.branchName == resolution.branchName
+                && canonicalPath(workspace.worktreePath ?? workspace.currentDirectory)
+                    == canonicalPath(resolution.worktreePath)
+        }) {
+            if existingWorkspace.customTitle?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false {
+                existingWorkspace.customTitle = metadata.title
+                saveSession()
+            }
+            selectedWorkspaceId = existingWorkspace.id
+            return existingWorkspace
+        }
+
+        guard workspaces.count < Self.maxWorkspaces else {
+            await cleanupPullRequestWorktreeIfNeeded(
+                resolution,
+                repositoryPath: repositoryRoot
+            )
+            throw PullRequestWorkspaceError.workspaceLimitReached
+        }
+
+        let workspace = Workspace(
+            title: resolution.branchName,
+            workingDirectory: resolution.worktreePath,
+            projectId: projectID,
+            branchName: resolution.branchName,
+            workspaceType: .worktree,
+            worktreePath: resolution.worktreePath
+        )
+        // GitHub's title is the authoritative custom title for newly
+        // created Pull Request Workspaces. Preserve it exactly as returned.
+        workspace.customTitle = metadata.title
+        workspaces.append(workspace)
+        currentProject.addWorkspace(workspace.id)
+        selectedWorkspaceId = workspace.id
+        saveSession()
+        return workspace
+    }
+
+    private func cleanupPullRequestWorktreeIfNeeded(
+        _ resolution: PullRequestWorktreeResolution,
+        repositoryPath: String
+    ) async {
+        guard !resolution.reusedExistingWorktree else { return }
+        do {
+            try await worktreeService.removeWorktree(
+                repositoryPath: repositoryPath,
+                worktreePath: resolution.worktreePath
+            )
+        } catch {
+            // Keep the original Project/Workspace error visible. The normal
+            // Orphaned Worktree scan remains the recovery path for cleanup
+            // failures; do not log provider or Git transport diagnostics here.
+        }
+    }
+
+    private func canonicalPath(_ path: String) -> String {
+        URL(fileURLWithPath: path)
+            .resolvingSymlinksInPath()
+            .standardizedFileURL
+            .path
+    }
+
     private func restoreSelectionAfterRemovingWorkspaces(_ removedIds: Set<UUID>) {
         guard let selectedWorkspaceId, removedIds.contains(selectedWorkspaceId) else { return }
         if workspaces.isEmpty {

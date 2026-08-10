@@ -42,10 +42,19 @@ final class WorkspaceManager: ObservableObject {
     var catchAllProject: Project!
 
     /// Shared worktree service for git operations.
-    let worktreeService = WorktreeService()
+    let worktreeService: WorktreeService
+
+    /// Provider boundary used only by explicit Pull Request intake.
+    let pullRequestService: GitHubPullRequestService
+
+    /// Compatibility spelling for callers that name the provider explicitly.
+    var githubPullRequestService: GitHubPullRequestService { pullRequestService }
 
     /// Last workspace creation error for user-visible sheet feedback.
     var lastWorkspaceCreationError: WorktreeError?
+
+    /// Last typed Pull Request creation error for diagnostics and sheet retry.
+    var lastPullRequestWorkspaceError: PullRequestWorkspaceError?
 
     /// Last worktree deletion error for user-visible close feedback.
     internal(set) var lastWorkspaceDeletionError: WorktreeError?
@@ -123,9 +132,13 @@ final class WorkspaceManager: ObservableObject {
     init(
         settings: AppSettings,
         sessionSnapshotURL: URL? = nil,
-        environment: [String: String] = ProcessInfo.processInfo.environment
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        worktreeService: WorktreeService = WorktreeService(),
+        pullRequestService: GitHubPullRequestService = GitHubPullRequestService()
     ) {
         self.settings = settings
+        self.worktreeService = worktreeService
+        self.pullRequestService = pullRequestService
         self.sessionSnapshotURL = Self.resolvedSessionSnapshotURL(
             suppliedURL: sessionSnapshotURL,
             environment: environment
@@ -163,6 +176,24 @@ final class WorkspaceManager: ObservableObject {
             else { return }
             self.focusPanel(surfaceId)
         }
+    }
+
+    /// Compatibility initializer for callers that use the provider-qualified
+    /// dependency name while retaining the shorter primary spelling.
+    convenience init(
+        settings: AppSettings,
+        sessionSnapshotURL: URL? = nil,
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        worktreeService: WorktreeService = WorktreeService(),
+        githubPullRequestService: GitHubPullRequestService
+    ) {
+        self.init(
+            settings: settings,
+            sessionSnapshotURL: sessionSnapshotURL,
+            environment: environment,
+            worktreeService: worktreeService,
+            pullRequestService: githubPullRequestService
+        )
     }
 
     deinit {
