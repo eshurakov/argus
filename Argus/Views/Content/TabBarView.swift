@@ -84,7 +84,7 @@ struct TabBarView: View {
             HoverStateView { isHovered in
                 Menu {
                     Button("New Terminal Tab") {
-                        workspace.addTerminalPanel()
+                        workspaceManager.addTab()
                     }
                     Button("New Browser Tab") {
                         workspaceManager.addBrowserTab()

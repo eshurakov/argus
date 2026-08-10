@@ -206,7 +206,7 @@ extension WorkspaceManager {
             && workspace.layout(for: tabId).leaves.contains(where: {
                 workspace.panels[$0]?.panelType == .terminal
             })
-        if closesLastTerminalTab {
+        if closesLastTerminalTab && !settings.keepWorkspaceOpenAfterLastTerminalCloses {
             NotificationCenter.default.post(
                 name: .showCloseWorkspaceConfirmation,
                 object: nil,
@@ -224,7 +224,7 @@ extension WorkspaceManager {
             agentStatusRuntime?.removeStatus(workspaceId: workspaceId, surfaceId: surfaceId)
         }
         workspace.closeTab(tabId)
-        if workspace.panelOrder.isEmpty {
+        if workspace.panelOrder.isEmpty && !closesLastTerminalTab {
             removeWorkspace(workspace.id)
         }
     }

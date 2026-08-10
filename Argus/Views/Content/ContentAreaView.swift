@@ -47,33 +47,58 @@ struct WorkspaceContentView: View {
             TabBarView(workspace: workspace)
 
             ZStack {
-                ForEach(workspace.panelOrder, id: \.self) { tabId in
-                    if workspace.panels[tabId]?.panelType == .terminal {
-                        let isVisible = tabId == workspace.activeTabId
+                if workspace.panelOrder.isEmpty {
+                    EmptyWorkspaceContentView()
+                } else {
+                    ForEach(workspace.panelOrder, id: \.self) { tabId in
+                        if workspace.panels[tabId]?.panelType == .terminal {
+                            let isVisible = tabId == workspace.activeTabId
+                            PanelSplitLayoutView(
+                                workspace: workspace,
+                                tabId: tabId,
+                                node: workspace.layout(for: tabId),
+                                isVisible: isVisible
+                            )
+                            .opacity(isVisible ? 1 : 0)
+                            .allowsHitTesting(isVisible)
+                            .accessibilityHidden(!isVisible)
+                        }
+                    }
+
+                    if let tabId = workspace.activeTabId,
+                        workspace.panels[tabId]?.panelType != .terminal
+                    {
                         PanelSplitLayoutView(
                             workspace: workspace,
                             tabId: tabId,
                             node: workspace.layout(for: tabId),
-                            isVisible: isVisible
+                            isVisible: true
                         )
-                        .opacity(isVisible ? 1 : 0)
-                        .allowsHitTesting(isVisible)
-                        .accessibilityHidden(!isVisible)
                     }
-                }
-
-                if let tabId = workspace.activeTabId,
-                    workspace.panels[tabId]?.panelType != .terminal
-                {
-                    PanelSplitLayoutView(
-                        workspace: workspace,
-                        tabId: tabId,
-                        node: workspace.layout(for: tabId),
-                        isVisible: true
-                    )
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+struct EmptyWorkspaceContentView: View {
+    @EnvironmentObject private var workspaceManager: WorkspaceManager
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "terminal")
+                .font(.system(size: 32, weight: .regular))
+                .foregroundStyle(.secondary.opacity(0.5))
+                .accessibilityHidden(true)
+            Text("No tabs open")
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+            Button("New Terminal Tab") {
+                workspaceManager.addTab()
+            }
+            .buttonStyle(.bordered)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

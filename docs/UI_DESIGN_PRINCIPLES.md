@@ -107,7 +107,7 @@ A top-level tab MAY own a split tree of terminal panes. The tab remains the unit
 shown, reordered, and closed in the tab bar; a pane remains the unit focused for
 keyboard input.
 
-- Exactly one top-level tab and one pane within its split tree MUST be active.
+- A nonempty Workspace MUST have exactly one active top-level tab and one pane within its split tree. An Empty Workspace has neither.
 - Split commands operate on the focused terminal pane and MUST NOT create
   another top-level tab.
 - A new split SHOULD inherit the focused pane's working directory and become
@@ -115,8 +115,10 @@ keyboard input.
 - Closing a focused pane in a multi-pane tab MUST close only that pane, collapse
   the remaining layout, and focus a surviving pane.
 - Closing the only pane MUST use the normal top-level tab lifecycle.
-- Closing the last terminal top-level tab MUST confirm Workspace closure. The
-  safe cancel action MUST leave that Terminal Panel active and unchanged.
+- Closing the last terminal top-level tab MUST confirm Workspace closure when
+  the keep-open preference is disabled. The safe cancel action MUST leave that
+  Terminal Panel active and unchanged. When the preference is enabled, closing
+  that tab removes its complete split tree and leaves an Empty Workspace.
 - Reordering a top-level tab MUST move its complete split tree.
 - Split dividers MUST provide an enlarged drag target and resize cursor.
 
@@ -283,6 +285,10 @@ and loaded states.
   operation is running.
 - Empty states state what is empty and, when useful, give the next available
   action.
+- An Empty Workspace keeps the Center Content Area Titlebar, Top-level Tab bar,
+  and Right Sidebar available, and offers a native “New Terminal Tab” action
+  in the content region. Rendering the state MUST NOT create a placeholder
+  Panel or change Workspace selection.
 - Error states include a concise title, useful detail, and a recovery action
   when recovery is possible.
 - Bounded or truncated data sets disclose the limit and the total when known.

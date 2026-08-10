@@ -141,8 +141,8 @@ struct ProjectAndWorktreeUIContractTests {
         )
 
         try SourceContract("Argus/Settings/SettingsView.swift").contains(
-            "TextField(\"Branch prefix\", text: $settings.newBranchPrefix",
-            "branch prefix setting is editable"
+            "TextField(\"\", text: $settings.newBranchPrefix",
+            "branch prefix setting remains editable in its labeled content row"
         )
     }
 
