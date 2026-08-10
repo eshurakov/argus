@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import Testing
 
@@ -33,6 +34,30 @@ struct PiIntegrationServiceTests {
             _ = try service.disable()
             #expect(!FileManager.default.fileExists(atPath: paths.extensionFile.path))
             #expect(FileManager.default.fileExists(atPath: paths.lockFile.path))
+        }
+    }
+
+    @Test
+    func historicalArgusExtensionIsUpgradedAndRemoved() throws {
+        try withFixture { fixture in
+            let historicalPlugin = Data(
+                "/* Historical Argus Pi extension */\nexport default {}\n".utf8
+            )
+            let service = fixture.service(historicalPluginPayload: historicalPlugin)
+            let paths = try service.resolvedPaths()
+            try FileManager.default.createDirectory(
+                at: paths.extensionDirectory,
+                withIntermediateDirectories: true
+            )
+            try historicalPlugin.write(to: paths.extensionFile)
+
+            #expect(!service.isInstalled(at: paths))
+            _ = try service.enable()
+            #expect(try Data(contentsOf: paths.extensionFile) == Data(contentsOf: fixture.plugin))
+
+            try historicalPlugin.write(to: paths.extensionFile)
+            _ = try service.disable()
+            #expect(!FileManager.default.fileExists(atPath: paths.extensionFile.path))
         }
     }
 
@@ -132,16 +157,22 @@ struct PiIntegrationServiceTests {
 
         func service(
             environment: [String: String] = [:],
-            homeDirectory: URL? = nil
+            homeDirectory: URL? = nil,
+            historicalPluginPayload: Data? = nil
         ) -> PiIntegrationService {
             var environment = environment
             if environment["PI_CODING_AGENT_DIR"] == nil {
                 environment["PI_CODING_AGENT_DIR"] = root.appendingPathComponent("agent").path
             }
+            let acceptedDigests =
+                historicalPluginPayload.map {
+                    Set([Data(SHA256.hash(data: $0))])
+                } ?? []
             return PiIntegrationService(
                 environment: environment,
                 homeDirectory: homeDirectory ?? root,
-                extensionSourceURL: plugin
+                extensionSourceURL: plugin,
+                acceptedHistoricalPluginDigests: acceptedDigests
             )
         }
     }

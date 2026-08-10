@@ -1,4 +1,5 @@
 import Combine
+import CryptoKit
 import Darwin
 import Foundation
 
@@ -67,14 +68,26 @@ final class PiIntegrationModel: ObservableObject {
 
 private enum PiIntegrationOperation { case enable, disable }
 
-/// Installs only Argus's Pi live Agent Status extension.
+/// Installs only Argus's Pi Agent Status and turn-completion extension.
 final class PiIntegrationService {
     static let extensionFileName = "argus-agent-status.js"
+
+    // Complete-file digests for Argus-managed extensions from previous versions.
+    private static let historicalPluginDigests: Set<Data> = [
+        // Live Agent Status-only extension from before Pi turn-completion support.
+        Data([
+            0x8f, 0x43, 0x1f, 0xc3, 0x1f, 0xc3, 0x07, 0x1f,
+            0x2b, 0x4d, 0x93, 0x6d, 0xd5, 0x8c, 0xac, 0x30,
+            0x56, 0x3c, 0x8c, 0xc5, 0xef, 0x02, 0x70, 0xf9,
+            0xd2, 0x30, 0x4e, 0x57, 0xc3, 0xff, 0x26, 0xdd
+        ])
+    ]
 
     let environment: [String: String]
     let homeDirectory: URL
     let extensionSourceURL: URL?
     private let fileManager: FileManager
+    private let acceptedHistoricalPluginDigests: Set<Data>
 
     init(
         environment: [String: String] = ProcessInfo.processInfo.environment,
@@ -83,12 +96,14 @@ final class PiIntegrationService {
             forResource: "ArgusPiAgentStatusPlugin",
             withExtension: "js"
         ),
-        fileManager: FileManager = .default
+        fileManager: FileManager = .default,
+        acceptedHistoricalPluginDigests: Set<Data> = PiIntegrationService.historicalPluginDigests
     ) {
         self.environment = environment
         self.homeDirectory = homeDirectory
         self.extensionSourceURL = extensionSourceURL
         self.fileManager = fileManager
+        self.acceptedHistoricalPluginDigests = acceptedHistoricalPluginDigests
     }
 
     struct Paths: Equatable {
@@ -159,7 +174,7 @@ final class PiIntegrationService {
         defer { flock(descriptor, LOCK_UN) }
 
         let existing = try existingData(at: paths.extensionFile)
-        if let existing, existing != expectedPluginData {
+        if let existing, !isOwned(existing, currentPluginData: expectedPluginData) {
             throw PiIntegrationError.pluginFileNotOwned(paths.extensionFile)
         }
 
@@ -176,6 +191,11 @@ final class PiIntegrationService {
 
     private func existingData(at url: URL) throws -> Data? {
         fileManager.fileExists(atPath: url.path) ? try Data(contentsOf: url) : nil
+    }
+
+    private func isOwned(_ data: Data, currentPluginData: Data) -> Bool {
+        data == currentPluginData
+            || acceptedHistoricalPluginDigests.contains(Data(SHA256.hash(data: data)))
     }
 
     private func pluginData() throws -> Data {
