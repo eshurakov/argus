@@ -6,17 +6,32 @@ import Testing
 @Suite
 struct ExistingBranchPickerTests {
     @Test(.timeLimit(.minutes(1)))
-    func defaultTimeoutIncludesDescendantsHoldingOutputPipesOpen() async throws {
+    func returnsWhenParentExitsEvenIfADescendantKeepsPipesOpen() async throws {
+        let service = WorktreeService(gitCommandTimeout: 2)
+        let start = Date()
+
+        let output = try await service.runProcess(
+            executableURL: URL(fileURLWithPath: "/bin/sh"),
+            args: ["-c", "printf ready; sleep 1 &"],
+            commandDescription: "pipe-holding fixture"
+        )
+
+        #expect(output == "ready")
+        #expect(Date().timeIntervalSince(start) < 0.5)
+    }
+
+    @Test(.timeLimit(.minutes(1)))
+    func timesOutWhileTheLaunchedProcessIsStillRunning() async throws {
         let service = WorktreeService(gitCommandTimeout: 0.2)
         let start = Date()
 
         do {
             _ = try await service.runProcess(
-                executableURL: URL(fileURLWithPath: "/bin/sh"),
-                args: ["-c", "sleep 1 &"],
-                commandDescription: "pipe-holding fixture"
+                executableURL: URL(fileURLWithPath: "/bin/sleep"),
+                args: ["2"],
+                commandDescription: "long-running fixture"
             )
-            Issue.record("pipe-holding subprocess should time out")
+            Issue.record("long-running subprocess should time out")
         } catch let error as WorktreeError {
             guard case .gitCommandTimedOut = error else {
                 Issue.record("unexpected timeout error: \(error)")
@@ -24,7 +39,7 @@ struct ExistingBranchPickerTests {
             }
         }
 
-        #expect(Date().timeIntervalSince(start) < 2)
+        #expect(Date().timeIntervalSince(start) < 1)
     }
 
     @Test(.timeLimit(.minutes(1)))

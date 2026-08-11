@@ -1,4 +1,3 @@
-import Darwin
 import Foundation
 
 // MARK: - Error Type
@@ -103,17 +102,14 @@ final class WorktreeService: Sendable {
             executableURL: URL(fileURLWithPath: Self.gitPath),
             args: args,
             workingDirectory: workingDirectory,
-            environment: ProcessInfo.processInfo.environment.merging([
-                "GIT_TERMINAL_PROMPT": "0",
-                "GIT_ASKPASS": "echo"
-            ]) { _, new in new },
+            environment: GitCommandEnvironment.standard,
             timeout: timeout,
             commandDescription: "git \(args.joined(separator: " "))"
         )
     }
     /// Runs a subprocess while draining both output pipes. The timeout covers
-    /// process exit and pipe EOF because git transport helpers can outlive git
-    /// while retaining inherited pipe handles.
+    /// the launched process only. Descendants that inherit pipe handles after
+    /// the parent exits must not keep the caller waiting.
     func runProcess(
         executableURL: URL,
         args: [String],
@@ -122,69 +118,38 @@ final class WorktreeService: Sendable {
         timeout: TimeInterval? = nil,
         commandDescription: String
     ) async throws -> String {
-        let process = Process()
-        process.executableURL = executableURL
-        process.arguments = args
-        process.environment = environment
-
-        if let workingDirectory {
-            process.currentDirectoryURL = URL(fileURLWithPath: workingDirectory)
-        }
-        let stdout = Pipe()
-        let stderr = Pipe()
-        process.standardOutput = stdout
-        process.standardError = stderr
-
-        try process.run()
-        try? stdout.fileHandleForWriting.close()
-        try? stderr.fileHandleForWriting.close()
-        let outputReader = WorktreeProcessOutputReader(stdout: stdout, stderr: stderr)
-        let deadline = Date().addingTimeInterval(timeout ?? gitCommandTimeout)
-        while (process.isRunning || !outputReader.isFinished) && Date() < deadline {
-            outputReader.drain()
-            if process.isRunning || !outputReader.isFinished {
-                try? await Task.sleep(nanoseconds: 10_000_000)
+        let result: ExternalProcessResult
+        do {
+            result = try await ExternalProcess.run(
+                executableURL: executableURL,
+                arguments: args,
+                workingDirectory: workingDirectory,
+                environment: environment,
+                timeout: timeout ?? gitCommandTimeout,
+                commandDescription: commandDescription
+            )
+        } catch let error as ExternalProcessError {
+            switch error {
+            case .timedOut(let command):
+                throw WorktreeError.gitCommandTimedOut(command)
             }
         }
-        outputReader.drain()
-        if process.isRunning || !outputReader.isFinished {
-            await stop(process)
-            outputReader.close()
-            throw WorktreeError.gitCommandTimedOut(commandDescription)
-        }
-        let processOutput = outputReader.output
 
         let output =
-            String(data: processOutput.stdout, encoding: .utf8)?
+            String(data: result.stdout, encoding: .utf8)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
-        guard process.terminationStatus == 0 else {
+        guard result.terminationStatus == 0 else {
             let errorOutput =
-                String(data: processOutput.stderr, encoding: .utf8)?
+                String(data: result.stderr, encoding: .utf8)?
                 .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             let detail = errorOutput.isEmpty ? output : errorOutput
             throw WorktreeError.gitCommandFailed(
                 "\(commandDescription): \(detail)",
-                process.terminationStatus
+                result.terminationStatus
             )
         }
         return output
-    }
-
-    private func stop(_ process: Process) async {
-        if process.isRunning {
-            process.terminate()
-        }
-        let terminationDeadline = Date().addingTimeInterval(0.5)
-        while process.isRunning && Date() < terminationDeadline {
-            try? await Task.sleep(nanoseconds: 25_000_000)
-        }
-        if process.isRunning {
-            Darwin.kill(process.processIdentifier, SIGKILL)
-        }
-        while process.isRunning {
-            try? await Task.sleep(nanoseconds: 25_000_000)
-        }
     }
     /// Runs a git command and returns whether it succeeded (exit code 0).
     func runGitQuiet(

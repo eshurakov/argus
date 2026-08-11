@@ -336,46 +336,28 @@ private struct GitPreviewCommandError: LocalizedError {
     var errorDescription: String? { message }
 }
 
-private final class GitPreviewDataBox: @unchecked Sendable {
-    var data = Data()
-}
-
 private func runPreviewCommand(_ command: GitPreviewCommand) throws -> GitPreviewCommandResult {
-    let process = Process()
-    process.executableURL = URL(fileURLWithPath: command.executablePath)
-    process.arguments = command.arguments
-    process.environment = ProcessInfo.processInfo.environment.merging([
-        "GIT_TERMINAL_PROMPT": "0",
-        "GIT_ASKPASS": "echo"
-    ]) { _, new in new }
-
-    let stdout = Pipe()
-    let stderr = Pipe()
-    process.standardOutput = stdout
-    process.standardError = stderr
-
-    try process.run()
-    let group = DispatchGroup()
-    let stdoutBox = GitPreviewDataBox()
-    let stderrBox = GitPreviewDataBox()
-    group.enter()
-    DispatchQueue.global(qos: .utility).async {
-        stdoutBox.data = stdout.fileHandleForReading.readDataToEndOfFile()
-        group.leave()
+    let result: ExternalProcessResult
+    do {
+        result = try ExternalProcess.runSynchronously(
+            executableURL: URL(fileURLWithPath: command.executablePath),
+            arguments: command.arguments,
+            environment: GitCommandEnvironment.standard,
+            timeout: 30,
+            commandDescription: "\(command.executablePath) \(command.arguments.joined(separator: " "))"
+        )
+    } catch let error as ExternalProcessError {
+        switch error {
+        case .timedOut(let description):
+            throw GitPreviewCommandError(message: "Preview command timed out: \(description)")
+        }
     }
-    group.enter()
-    DispatchQueue.global(qos: .utility).async {
-        stderrBox.data = stderr.fileHandleForReading.readDataToEndOfFile()
-        group.leave()
-    }
-    process.waitUntilExit()
-    group.wait()
 
-    guard command.successfulExitCodes.contains(process.terminationStatus) else {
-        let message = (String(bytes: stderrBox.data, encoding: .utf8) ?? "")
+    guard command.successfulExitCodes.contains(result.terminationStatus) else {
+        let message = (String(bytes: result.stderr, encoding: .utf8) ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         throw GitPreviewCommandError(message: message.isEmpty ? "preview command failed" : message)
     }
 
-    return GitPreviewCommandResult(stdout: stdoutBox.data, stderr: stderrBox.data)
+    return GitPreviewCommandResult(stdout: result.stdout, stderr: result.stderr)
 }

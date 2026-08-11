@@ -316,45 +316,27 @@ struct GitCommandResult: Sendable {
     let stderr: String
 }
 
-final class GitStatusDataBox: @unchecked Sendable {
-    var data = Data()
-}
-
 func runGit(args: [String]) throws -> GitCommandResult {
-    let process = Process()
-    process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
-    process.arguments = args
-    process.environment = ProcessInfo.processInfo.environment.merging([
-        "GIT_TERMINAL_PROMPT": "0",
-        "GIT_ASKPASS": "echo"
-    ]) { _, new in new }
-
-    let stdout = Pipe()
-    let stderr = Pipe()
-    process.standardOutput = stdout
-    process.standardError = stderr
-
-    try process.run()
-    let outputGroup = DispatchGroup()
-    let stdoutBox = GitStatusDataBox()
-    let stderrBox = GitStatusDataBox()
-    outputGroup.enter()
-    DispatchQueue.global(qos: .utility).async {
-        stdoutBox.data = stdout.fileHandleForReading.readDataToEndOfFile()
-        outputGroup.leave()
+    let result: ExternalProcessResult
+    do {
+        result = try ExternalProcess.runSynchronously(
+            executableURL: URL(fileURLWithPath: "/usr/bin/git"),
+            arguments: args,
+            environment: GitCommandEnvironment.standard,
+            timeout: 30,
+            commandDescription: "git \(args.joined(separator: " "))"
+        )
+    } catch let error as ExternalProcessError {
+        switch error {
+        case .timedOut(let command):
+            throw GitStatusServiceError.commandFailed("Git command timed out: \(command)")
+        }
     }
-    outputGroup.enter()
-    DispatchQueue.global(qos: .utility).async {
-        stderrBox.data = stderr.fileHandleForReading.readDataToEndOfFile()
-        outputGroup.leave()
-    }
-    process.waitUntilExit()
-    outputGroup.wait()
 
-    let stdoutText = String(data: stdoutBox.data, encoding: .utf8) ?? ""
-    let stderrText = String(data: stderrBox.data, encoding: .utf8) ?? ""
+    let stdoutText = String(data: result.stdout, encoding: .utf8) ?? ""
+    let stderrText = String(data: result.stderr, encoding: .utf8) ?? ""
 
-    guard process.terminationStatus == 0 else {
+    guard result.terminationStatus == 0 else {
         if stderrText.contains("not a git repository") || stderrText.contains("not a git repo") {
             throw GitStatusServiceError.notRepository
         }
