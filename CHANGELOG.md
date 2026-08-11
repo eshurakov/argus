@@ -4,6 +4,7 @@ This file records changes pushed for local Argus releases. New entries use a `YY
 
 ## 2026-08-11
 
+- Git status and preview commands no longer leave the test run waiting after git has exited, so release verification can finish. ([b2479f0](https://github.com/jeanduplessis/argus/commit/b2479f0))
 - Restored terminal tabs now fill the window width on launch. They previously stayed at Ghostty's default column count until the window was resized. ([a50fea6](https://github.com/jeanduplessis/argus/commit/a50fea6))
 - Closing a terminal tab, pane, workspace, or the app now asks first when a process is still running, so an accidental close does not kill it. ([9d37bae](https://github.com/jeanduplessis/argus/commit/9d37bae))
 
