@@ -2,6 +2,10 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-08-11
+
+- Closing a terminal tab, pane, workspace, or the app now asks first when a process is still running, so an accidental close does not kill it. ([9d37bae](https://github.com/jeanduplessis/argus/commit/9d37bae))
+
 ## 2026-08-10
 
 - Pasting an image with Cmd+V in a terminal now reaches the running program instead of inserting a blank space, so agents like Pi and Kilo pick up the image from the clipboard. Cmd+V previously sent the keystroke through the paste path, which replaces control characters with a space. ([4b5e825](https://github.com/jeanduplessis/argus/commit/4b5e825))
