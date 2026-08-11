@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 // MainWindowView.swift
 // Argus
 // Root three-column Workspace window.
@@ -87,7 +88,7 @@ private struct WorkspaceDeletionProgressView: View {
     }
 }
 
-struct MainWindowView: View {
+struct MainWindowView: View {  // swiftlint:disable:this type_body_length
     @EnvironmentObject var workspaceManager: WorkspaceManager
     @ObservedObject private var ghosttyApp = GhosttyApp.shared
     @StateObject private var sidebarState = SidebarState()
@@ -108,6 +109,7 @@ struct MainWindowView: View {
     @State private var renameWorkspaceId: UUID?
     @State private var renameWorkspaceText = ""
     @State private var closeWorkspaceRequest: CloseWorkspaceRequest?
+    @State private var runningProcessRequest: RunningProcessCloseRequest?
     @State private var workspaceDeletionStage: WorkspaceDeletionStage?
     @State private var showWorkspaceDeletionError = false
     @State private var workspaceDeletionErrorMessage = ""
@@ -178,6 +180,12 @@ struct MainWindowView: View {
                     onCancel: { self.closeWorkspaceRequest = nil },
                     onCloseOnly: { closeWorkspace(closeWorkspaceRequest) },
                     onDeleteWorktree: { deleteWorktreeAndCloseWorkspace(closeWorkspaceRequest.id) }
+                )
+            } else if let runningProcessRequest {
+                RunningProcessConfirmationView(
+                    request: runningProcessRequest,
+                    onCancel: { cancelRunningProcessClose(runningProcessRequest) },
+                    onConfirm: { confirmRunningProcessClose(runningProcessRequest) }
                 )
             } else if let workspaceDeletionStage {
                 ZStack {
@@ -283,8 +291,17 @@ struct MainWindowView: View {
                     worktreePath: workspace.worktreePath ?? "",
                     requestedByLastTerminalTab: requestedByLastTerminalTab,
                     canDeleteWorktree:
-                        workspaceManager.shouldConfirmWorktreeDeletionBeforeClosing(workspaceId)
+                        workspaceManager.shouldConfirmWorktreeDeletionBeforeClosing(workspaceId),
+                    runningProcessCount: workspace.runningProcessCount
                 )
+                runningProcessRequest = nil
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .showRunningProcessConfirmation)) { notification in
+            guard let request = notification.object as? RunningProcessCloseRequest else { return }
+            runningProcessRequest = request
+            if case .application = request.scope {
+                closeWorkspaceRequest = nil
             }
         }
         .task {
@@ -296,6 +313,37 @@ struct MainWindowView: View {
         guard closeWorkspaceRequest == request else { return }
         closeWorkspaceRequest = nil
         workspaceManager.removeWorkspace(request.id)
+    }
+
+    private func cancelRunningProcessClose(_ request: RunningProcessCloseRequest) {
+        guard runningProcessRequest == request else { return }
+        runningProcessRequest = nil
+        if case .application = request.scope {
+            NotificationCenter.default.post(name: .cancelApplicationQuit, object: nil)
+        }
+    }
+
+    private func confirmRunningProcessClose(_ request: RunningProcessCloseRequest) {
+        guard runningProcessRequest == request else { return }
+        runningProcessRequest = nil
+        switch request.scope {
+        case .pane(let workspaceId, let panelId):
+            workspaceManager.requestClosePane(
+                panelId,
+                in: workspaceId,
+                confirmingRunningProcess: true
+            )
+        case .tab(let workspaceId, let tabId):
+            workspaceManager.requestCloseTab(
+                tabId,
+                in: workspaceId,
+                confirmingRunningProcess: true
+            )
+        case .surface(_, let surfaceId):
+            workspaceManager.completeSurfaceClose(surfaceId)
+        case .application:
+            NotificationCenter.default.post(name: .confirmApplicationQuit, object: nil)
+        }
     }
 
     private func deleteWorktreeAndCloseWorkspace(_ workspaceId: UUID) {

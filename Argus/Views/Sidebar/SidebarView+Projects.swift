@@ -79,15 +79,7 @@ struct ProjectSection: View {
                             .disabled(workspace.worktreePath == nil)
                             Divider()
                             Button("Close Workspace") {
-                                if workspaceManager.shouldConfirmWorktreeDeletionBeforeClosing(workspace.id) {
-                                    NotificationCenter.default.post(
-                                        name: .showCloseWorkspaceConfirmation,
-                                        object: nil,
-                                        userInfo: ["workspaceId": workspace.id]
-                                    )
-                                } else {
-                                    workspaceManager.removeWorkspace(workspace.id)
-                                }
+                                workspaceManager.requestCloseWorkspace(workspace.id)
                             }
                         }
                     }

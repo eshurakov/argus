@@ -2,7 +2,7 @@
 
 ## Status
 
-Stable v1 baseline, updated 2026-08-08.
+Stable v1 baseline, updated 2026-08-11.
 
 This document defines behavior implemented by the current Argus application. Future work belongs under `docs/proposals/` until it is implemented and incorporated here.
 
@@ -94,9 +94,11 @@ selection, or existing Git Preview Tabs.
 8. Tab reuse MUST be scoped to the initiating Workspace.
 9. Cmd+[ and Cmd+] MUST select the previous and next Top-level Tab with wraparound.
 10. Cmd+W MUST close the Focused Pane when a terminal split has multiple panes; otherwise it MUST close the Active Tab.
-11. Closing the final Terminal Tab MUST require Workspace-close confirmation before changing state when the keep-open preference is disabled. When the preference is enabled, it MUST close the complete Terminal Tab and retain an Empty Workspace.
-12. Closing a final Browser, File, Git Preview, or Release Notes Tab MUST retain the existing generic Workspace-close lifecycle regardless of the keep-open preference.
-13. The empty content region of a Selected Empty Workspace MUST show the normal Workspace chrome, a restrained terminal symbol, “No tabs open”, and a native “New Terminal Tab” action. The action MUST use the normal Terminal Tab creation path and initialize the new Terminal Working Directory from the Workspace Root.
+11. Closing a Terminal Pane or Terminal Tab MUST require confirmation when Ghostty reports that any affected Terminal Surface still has a running process. Cancel MUST leave the Pane, Tab, Workspace selection, and process unchanged. Confirmation MUST state that closing will terminate the running process.
+12. Closing the final Terminal Tab MUST require Workspace-close confirmation before changing state when the keep-open preference is disabled. When that confirmation is shown, it MUST include any running-process consequence instead of presenting a second dialog. When the preference is enabled, it MUST close the complete Terminal Tab and retain an Empty Workspace after any required running-process confirmation.
+13. Closing a Workspace that contains a Terminal Surface with a running process MUST require confirmation and MUST combine that consequence with any worktree-deletion choice rather than presenting a second dialog.
+14. Closing a final Browser, File, Git Preview, or Release Notes Tab MUST retain the existing generic Workspace-close lifecycle regardless of the keep-open preference.
+15. The empty content region of a Selected Empty Workspace MUST show the normal Workspace chrome, a restrained terminal symbol, “No tabs open”, and a native “New Terminal Tab” action. The action MUST use the normal Terminal Tab creation path and initialize the new Terminal Working Directory from the Workspace Root.
 
 ### Terminal splits
 
@@ -121,6 +123,8 @@ selection, or existing Git Preview Tabs.
 10. Terminal Working Directory MUST remain distinct from Workspace Root and Git Status Root.
 11. Cmd+V with an image-only system clipboard MUST reach the running terminal program as Ctrl+V. Text-capable clipboard contents MUST retain Ghostty's normal paste behavior.
 12. That Ctrl+V MUST be delivered as a key event so it is encoded with the keyboard protocol the running program negotiated. It MUST NOT be delivered as pasted text, because the paste path replaces control bytes with a space.
+13. Argus MUST use Ghostty's per-surface close-confirmation heuristic, including the user's Ghostty `confirm-close-surface` configuration, to decide whether a Terminal Surface still has a running process. Argus MUST NOT invent a separate process-group scan.
+14. Closing the application or the main window MUST require confirmation when any Terminal Surface still has a running process. Cancel MUST leave the application, window, Workspaces, and processes unchanged.
 
 ## Right Sidebar
 

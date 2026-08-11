@@ -185,9 +185,15 @@ struct ProjectAndWorktreeUIContractTests {
         try SourceContract("Argus/Views/Sidebar/SidebarView.swift").containsAll(
             [
                 "static let showCloseWorkspaceConfirmation",
-                "workspaceManager.shouldConfirmWorktreeDeletionBeforeClosing(workspace.id)",
-                "name: .showCloseWorkspaceConfirmation"
+                "workspaceManager.requestCloseWorkspace(workspace.id)"
             ], "sidebar close confirmation")
+        manager.containsAll(
+            [
+                "func requestCloseWorkspace(_ workspaceId: UUID)",
+                "shouldConfirmWorktreeDeletionBeforeClosing(workspaceId)",
+                "shouldConfirmRunningProcessBeforeClosingWorkspace(workspaceId)",
+                "name: .showCloseWorkspaceConfirmation"
+            ], "workspace close confirmation owner")
         try SourceContract("Argus/Views/Content/TabBarView.swift").contains(
             "workspaceManager.requestCloseTab(panelId, in: workspace.id)",
             "tab close routing"

@@ -98,6 +98,7 @@
 		871E8DB039626348E04BBB45 /* ArgusDiffHTMLTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5D03CF9AE8CC60343A9BE16 /* ArgusDiffHTMLTemplate.swift */; };
 		87493FA1AF978AF6E9AFD2ED /* RightSidebarView+WorkspaceFilesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD6973DE1B19391C64DF8AA0 /* RightSidebarView+WorkspaceFilesViewModel.swift */; };
 		88BC7D1396D8D58FE838DAAC /* WorktreeService+Discovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925161D329354881878FAB0E /* WorktreeService+Discovery.swift */; };
+		8970715BFB505E2C762F235F /* RunningProcessConfirmationUIContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4DBB008CA1822F486F734DB /* RunningProcessConfirmationUIContractTests.swift */; };
 		8A13FAE2D036AA563674A79E /* CloseWorkspaceConfirmationUIContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BF114B3FC0859D6A88F6BAD /* CloseWorkspaceConfirmationUIContractTests.swift */; };
 		8BE566ED8CA78019794102A0 /* AgentStatusStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A63FF7DA0FD201FB28190CA /* AgentStatusStoreTests.swift */; };
 		8CD385A27A680D924404954B /* AgentStatusRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57E96BBBDC4C5F3459D8D06F /* AgentStatusRuntimeTests.swift */; };
@@ -146,6 +147,8 @@
 		CCBA30F3C0A6DB329DE695B2 /* GhosttyInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AAE1F6D2D88EDCBC72EA3AF /* GhosttyInput.swift */; };
 		CD3A7008FD8EA79C557C634C /* GhosttyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1902C84B53CB6CA56DE23B2 /* GhosttyApp.swift */; };
 		CEF870EB346EBD44B4FE2FB4 /* GitStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 564CED7FFF04C34E03455980 /* GitStatus.swift */; };
+		CFFE74F5EEF51AF2FBAD1CE6 /* RunningProcessConfirmationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA6FC1DCFCD860E2AC03EE2 /* RunningProcessConfirmationTests.swift */; };
+		D1A87F5583150E2963B10D95 /* RunningProcessConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 592791F9F27A74E3630CFBDE /* RunningProcessConfirmationView.swift */; };
 		D35C1A0AE42B8588626875B1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C46B327656627D8D71A2C84F /* Assets.xcassets */; };
 		D4896009B04CCC4154BC4CA3 /* RightSidebarView+WorkspaceFilesRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60943ED18C50AF13F94B9691 /* RightSidebarView+WorkspaceFilesRows.swift */; };
 		D5CC9F277D7D725722527A4D /* GitStatusViewModel+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8262E7069B94AF259CF0905 /* GitStatusViewModel+Actions.swift */; };
@@ -252,6 +255,7 @@
 		561DA71BC944546467544524 /* RandomBranchNameGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomBranchNameGenerator.swift; sourceTree = "<group>"; };
 		564CED7FFF04C34E03455980 /* GitStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitStatus.swift; sourceTree = "<group>"; };
 		57E96BBBDC4C5F3459D8D06F /* AgentStatusRuntimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentStatusRuntimeTests.swift; sourceTree = "<group>"; };
+		592791F9F27A74E3630CFBDE /* RunningProcessConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunningProcessConfirmationView.swift; sourceTree = "<group>"; };
 		5A7DCFCA3143FA38266A9C08 /* RightSidebarView+WorkspaceFilesActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RightSidebarView+WorkspaceFilesActions.swift"; sourceTree = "<group>"; };
 		5B15831275B325CA2E8A4D69 /* SidebarDivider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarDivider.swift; sourceTree = "<group>"; };
 		5B4D60E83B20F24AA92F8F19 /* TitlebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitlebarView.swift; sourceTree = "<group>"; };
@@ -338,6 +342,7 @@
 		D1A031E57FC9BCBBCA5EDE23 /* RandomBranchNameGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomBranchNameGeneratorTests.swift; sourceTree = "<group>"; };
 		D2FE31B230E300291D165856 /* GitSidebarView+Content.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GitSidebarView+Content.swift"; sourceTree = "<group>"; };
 		D3FB117AE6DF223AE2B1A0A0 /* ExistingWorktreeBranchChoiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExistingWorktreeBranchChoiceTests.swift; sourceTree = "<group>"; };
+		D4DBB008CA1822F486F734DB /* RunningProcessConfirmationUIContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunningProcessConfirmationUIContractTests.swift; sourceTree = "<group>"; };
 		D606C09272FA91886158DAD8 /* ArgusKiloTurnCompletionPlugin.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = ArgusKiloTurnCompletionPlugin.js; sourceTree = "<group>"; };
 		D6739A9DD84516F1F20ABA6B /* Workspace+Panels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workspace+Panels.swift"; sourceTree = "<group>"; };
 		D681607918630CD263C690CE /* ExistingBranchPickerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExistingBranchPickerTests.swift; sourceTree = "<group>"; };
@@ -350,6 +355,7 @@
 		DC3870BE2DAE279DC4BF8974 /* WorkspaceTitleFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceTitleFormatter.swift; sourceTree = "<group>"; };
 		DD4D09EA6FAC693CBEC13B64 /* PullRequestWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PullRequestWorkspace.swift; sourceTree = "<group>"; };
 		DEEC7DB717D1E63F5D12D2EF /* GitSidebarPlaceholder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitSidebarPlaceholder.swift; sourceTree = "<group>"; };
+		DFA6FC1DCFCD860E2AC03EE2 /* RunningProcessConfirmationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunningProcessConfirmationTests.swift; sourceTree = "<group>"; };
 		DFE0FA88546FBFAD28E1D952 /* ProjectAndWorktreeUIContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectAndWorktreeUIContractTests.swift; sourceTree = "<group>"; };
 		E1902C84B53CB6CA56DE23B2 /* GhosttyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GhosttyApp.swift; sourceTree = "<group>"; };
 		E52E13DF9804EA3070FE3B7F /* WorkspaceFilesViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceFilesViewModelTests.swift; sourceTree = "<group>"; };
@@ -458,6 +464,8 @@
 				F8D1C8CBCD5980B96C02A3E7 /* EmptyWorkspaceUIContractTests.swift */,
 				04A77AE31C15EB2829A05321 /* MacOS27UIContractTests.swift */,
 				9AC77E6BD2DA84BD16B57890 /* ReleaseNotesTests.swift */,
+				DFA6FC1DCFCD860E2AC03EE2 /* RunningProcessConfirmationTests.swift */,
+				D4DBB008CA1822F486F734DB /* RunningProcessConfirmationUIContractTests.swift */,
 				D753CE6E1FFD67B19A85930F /* SidebarLayoutTests.swift */,
 				B85B710CD787E14321AB971B /* SidebarStatePersistenceTests.swift */,
 				0F8DC3D70F2D5B9E7C22810E /* WorkspacePresentationUIContractTests.swift */,
@@ -500,6 +508,7 @@
 				704AC69ACE9114900992E244 /* NewProjectSheet.swift */,
 				8C01FB15CE585853A5C6581E /* NewWorkspaceSheet.swift */,
 				4FA4A99862B8FD090D3E03DF /* OrphanedWorktreesSheet.swift */,
+				592791F9F27A74E3630CFBDE /* RunningProcessConfirmationView.swift */,
 			);
 			path = Dialogs;
 			sourceTree = "<group>";
@@ -949,6 +958,7 @@
 				53DAA267643538C145ADEE37 /* RightSidebarView+WorkspaceFilesView.swift in Sources */,
 				87493FA1AF978AF6E9AFD2ED /* RightSidebarView+WorkspaceFilesViewModel.swift in Sources */,
 				DE064802D532B067D46A9753 /* RightSidebarView.swift in Sources */,
+				D1A87F5583150E2963B10D95 /* RunningProcessConfirmationView.swift in Sources */,
 				CABB52CC6A3EC4A1CC25627C /* SessionSnapshot.swift in Sources */,
 				BC08B676B189800ED35AEFFF /* SettingsView.swift in Sources */,
 				610D4501B3ABABFC57F88B64 /* SettingsWindowController.swift in Sources */,
@@ -1033,6 +1043,8 @@
 				47D1A9CA1A992DF453F71680 /* RandomBranchNameGeneratorTests.swift in Sources */,
 				4F81BDEFFCEA1A6FE07CD163 /* ReleaseNotesTests.swift in Sources */,
 				AB121FB0384DC0B18B8FDC43 /* RepositoryRootNormalizationTests.swift in Sources */,
+				CFFE74F5EEF51AF2FBAD1CE6 /* RunningProcessConfirmationTests.swift in Sources */,
+				8970715BFB505E2C762F235F /* RunningProcessConfirmationUIContractTests.swift in Sources */,
 				A0C1428612E01868D6B2BD69 /* SessionReconciliationTests.swift in Sources */,
 				EE31F58DE3DF374DB8E6C07E /* SessionSnapshotTests.swift in Sources */,
 				E20DFC66EAE40A5C68EC4F09 /* SidebarLayoutTests.swift in Sources */,
@@ -1215,7 +1227,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks",
@@ -1235,7 +1247,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks/GhosttyKit.xcframework/macos-arm64",
 				);
-				MARKETING_VERSION = 1.9.0;
+				MARKETING_VERSION = 1.10.0;
 				OTHER_LDFLAGS = (
 					"-lghostty",
 					"-framework Metal",
@@ -1263,7 +1275,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks",
@@ -1283,7 +1295,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks/GhosttyKit.xcframework/macos-arm64",
 				);
-				MARKETING_VERSION = 1.9.0;
+				MARKETING_VERSION = 1.10.0;
 				OTHER_LDFLAGS = (
 					"-lghostty",
 					"-framework Metal",

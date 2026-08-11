@@ -6,6 +6,7 @@ struct CloseWorkspaceRequest: Equatable {
     let worktreePath: String
     let requestedByLastTerminalTab: Bool
     let canDeleteWorktree: Bool
+    let runningProcessCount: Int
 }
 
 /// In-view confirmation avoids presenting an alert while a SwiftUI context menu
@@ -65,14 +66,39 @@ struct CloseWorkspaceConfirmationView: View {
 
     private var message: String {
         if request.requestedByLastTerminalTab {
-            var text =
-                "Closing the last terminal tab will close \(request.title). "
-                + "Do you want to close the workspace?"
+            var text = "Closing the last terminal tab will close \(request.title)."
+            text += processConsequenceSentence
+            text += " Do you want to close the workspace?"
             if request.canDeleteWorktree {
                 text += " You can also delete its git worktree at \(request.worktreePath)."
             }
             return text
         }
-        return "Do you also want to delete the git worktree for \(request.title) at \(request.worktreePath)?"
+        if request.canDeleteWorktree && request.runningProcessCount > 0 {
+            return
+                "Closing \(request.title) will terminate \(processPhrase). "
+                + "Do you also want to delete its git worktree at \(request.worktreePath)?"
+        }
+        if request.canDeleteWorktree {
+            return "Do you also want to delete the git worktree for \(request.title) at \(request.worktreePath)?"
+        }
+        return "Closing \(request.title) will terminate \(processPhrase)."
+    }
+
+    private var processConsequenceSentence: String {
+        switch request.runningProcessCount {
+        case 0:
+            return ""
+        case 1:
+            return " That will terminate a running process."
+        default:
+            return " That will terminate \(request.runningProcessCount) running processes."
+        }
+    }
+
+    private var processPhrase: String {
+        request.runningProcessCount == 1
+            ? "a running process"
+            : "\(request.runningProcessCount) running processes"
     }
 }

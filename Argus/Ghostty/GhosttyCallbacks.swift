@@ -100,7 +100,11 @@ func ghosttyCloseSurfaceCallback(
 ) {
     guard let surfaceId = callbackSurfaceId(from: userdata) else { return }
     DispatchQueue.main.async {
-        NotificationCenter.default.post(name: .argusCloseSurface, object: surfaceId)
+        NotificationCenter.default.post(
+            name: .argusCloseSurface,
+            object: surfaceId,
+            userInfo: ["processAlive": processAlive]
+        )
     }
 }
 

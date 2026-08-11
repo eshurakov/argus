@@ -16,5 +16,13 @@ struct WorkspaceCloseUIContractTests {
         )
         confirmation.excludes("NSAlert", "Workspace close must not open an AppKit alert")
         confirmation.excludes("runModal()", "Workspace close must not start a modal run loop")
+        confirmation.containsAll(
+            [
+                "let runningProcessCount: Int",
+                "That will terminate a running process.",
+                #"Closing \(request.title) will terminate \(processPhrase)."#
+            ],
+            "Workspace close names a running-process consequence"
+        )
     }
 }

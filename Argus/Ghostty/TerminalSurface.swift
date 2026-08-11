@@ -329,8 +329,15 @@ final class TerminalSurface: ObservableObject, Identifiable {
         return ghostty_surface_process_exited(surface)
     }
 
+    /// Test override for Ghostty's process-sensitive close heuristic.
+    /// Production code must leave this `nil`.
+    var needsConfirmQuitOverride: Bool?
+
     /// Whether the surface needs quit confirmation (running process).
     var needsConfirmQuit: Bool {
+        if let needsConfirmQuitOverride {
+            return needsConfirmQuitOverride
+        }
         guard let surface else { return false }
         return ghostty_surface_needs_confirm_quit(surface)
     }

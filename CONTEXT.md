@@ -151,6 +151,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 - Do not infer git scope from Terminal Working Directory; resolve and pass the Git Status Root.
 - Do not assume every Workspace has a git context; a Standalone Workspace may be an ordinary directory.
 - Do not use Panel, Top-level Tab, Pane, and Terminal Surface interchangeably.
+- Use Ghostty's per-surface close-confirmation heuristic for running-process prompts; do not scan process groups or invent a second process-liveness API.
 - Say **Selected Workspace**, **Active Tab**, and **Focused Pane** for their distinct state levels.
 - Qualify "status" as Git Status Snapshot, Git File Status, Agent Status Entry, or a specific load state.
 - Qualify "notification" as Agent Notification, Foundation Notification, macOS notification, or TTS announcement.

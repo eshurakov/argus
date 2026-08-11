@@ -8,7 +8,7 @@ import SwiftUI
 /// to `WorkspaceManager` on first window appear so it can update the
 /// window title when the active workspace changes.
 @MainActor
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this type_body_length
 
     private var workspaceManager: WorkspaceManager?
     private var turnCompletionRuntime: TurnCompletionRuntime?
@@ -25,6 +25,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var configuredWindows: Set<ObjectIdentifier> = []
     private var windowTitleObserver: NSObjectProtocol?
     private var windowKeyObservers: [NSObjectProtocol] = []
+    private var quitConfirmationObservers: [NSObjectProtocol] = []
+    private let mainWindowCloseGuard = MainWindowCloseGuard()
+    private var allowTermination = false
+    private var isWaitingForQuitReply = false
 
     func configureTurnCompletion(
         workspaceManager: WorkspaceManager,
@@ -97,10 +101,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil,
             queue: .main
         ) { [weak self] notification in
-            guard let self,
-                let window = notification.object as? NSWindow
-            else { return }
-            self.configureWindow(window)
+            guard let window = notification.object as? NSWindow else { return }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.configureWindow(window)
+                if window.identifier?.rawValue == "main" {
+                    self.installMainWindowCloseGuard(window)
+                }
+            }
         }
 
         windowTitleObserver = NotificationCenter.default.addObserver(
@@ -130,6 +138,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             ) { _ in }
         ]
         startAgentSocketIfReady()
+        observeQuitConfirmation()
 
         // Start Ghostty after the initial view hierarchy is mounted. GhosttyApp
         // restores the C numeric locale synchronously before startup returns.
@@ -138,12 +147,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        if allowTermination || !hasRunningProcessRequiringConfirmation {
+            return .terminateNow
+        }
+        isWaitingForQuitReply = true
+        requestApplicationQuitConfirmation()
+        return .terminateLater
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         workspaceManager?.saveSession()
         if let windowTitleObserver {
             NotificationCenter.default.removeObserver(windowTitleObserver)
         }
         windowKeyObservers.forEach(NotificationCenter.default.removeObserver)
+        quitConfirmationObservers.forEach(NotificationCenter.default.removeObserver)
         if let agentSocketServer {
             let shutdown = DispatchSemaphore(value: 0)
             Task.detached {
@@ -185,6 +204,80 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Set initial title (visible in Mission Control / Exposé).
         window.title = "Argus"
+        installMainWindowCloseGuard(window)
+    }
+
+    private var hasRunningProcessRequiringConfirmation: Bool {
+        (workspaceManager?.totalRunningProcessCount ?? 0) > 0
+    }
+
+    private func installMainWindowCloseGuard(_ window: NSWindow) {
+        mainWindowCloseGuard.onShouldClose = { [weak self] in
+            guard let self else { return true }
+            return MainActor.assumeIsolated {
+                self.allowMainWindowClose()
+            }
+        }
+        mainWindowCloseGuard.attach(to: window)
+    }
+
+    private func allowMainWindowClose() -> Bool {
+        if allowTermination || !hasRunningProcessRequiringConfirmation {
+            return true
+        }
+        requestApplicationQuitConfirmation()
+        return false
+    }
+
+    private func requestApplicationQuitConfirmation() {
+        let processCount = workspaceManager?.totalRunningProcessCount ?? 0
+        NotificationCenter.default.post(
+            name: .showRunningProcessConfirmation,
+            object: RunningProcessCloseRequest(
+                scope: .application,
+                processCount: max(processCount, 1)
+            )
+        )
+    }
+
+    private func observeQuitConfirmation() {
+        quitConfirmationObservers = [
+            NotificationCenter.default.addObserver(
+                forName: .confirmApplicationQuit,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.confirmApplicationQuit()
+                }
+            },
+            NotificationCenter.default.addObserver(
+                forName: .cancelApplicationQuit,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.cancelApplicationQuit()
+                }
+            }
+        ]
+    }
+
+    private func confirmApplicationQuit() {
+        allowTermination = true
+        if isWaitingForQuitReply {
+            isWaitingForQuitReply = false
+            NSApp.reply(toApplicationShouldTerminate: true)
+            return
+        }
+        NSApp.terminate(nil)
+    }
+
+    private func cancelApplicationQuit() {
+        if isWaitingForQuitReply {
+            isWaitingForQuitReply = false
+            NSApp.reply(toApplicationShouldTerminate: false)
+        }
     }
 
     /// Updates the window title to reflect the active workspace.
@@ -221,5 +314,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self.agentSocketServer = nil
             }
         }
+    }
+}
+
+/// Forwards SwiftUI's window delegate while intercepting close so a running
+/// terminal process can be confirmed before the last window disappears.
+@MainActor
+private final class MainWindowCloseGuard: NSObject, NSWindowDelegate {
+    weak var originalDelegate: NSWindowDelegate?
+    var onShouldClose: () -> Bool = { true }
+
+    func attach(to window: NSWindow) {
+        if window.delegate === self { return }
+        originalDelegate = window.delegate
+        window.delegate = self
+    }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        guard onShouldClose() else { return false }
+        return originalDelegate?.windowShouldClose?(sender) ?? true
+    }
+
+    override func responds(to aSelector: Selector) -> Bool {
+        if super.responds(to: aSelector) { return true }
+        return originalDelegate?.responds(to: aSelector) ?? false
+    }
+
+    override func forwardingTarget(for aSelector: Selector) -> Any? {
+        originalDelegate
     }
 }

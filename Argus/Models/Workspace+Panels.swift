@@ -287,4 +287,16 @@ extension Workspace {
     func setCustomTitle(_ newTitle: String?) {
         customTitle = newTitle?.trimmingCharacters(in: .whitespacesAndNewlines)
     }
+
+    func terminalNeedsConfirmQuit(_ panelId: UUID) -> Bool {
+        (panels[panelId] as? TerminalPanel)?.surface.needsConfirmQuit == true
+    }
+
+    func runningProcessCount(inTab tabId: UUID) -> Int {
+        layout(for: tabId).leaves.filter(terminalNeedsConfirmQuit).count
+    }
+
+    var runningProcessCount: Int {
+        panels.keys.filter(terminalNeedsConfirmQuit).count
+    }
 }

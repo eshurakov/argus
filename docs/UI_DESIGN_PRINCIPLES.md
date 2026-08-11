@@ -120,10 +120,18 @@ keyboard input.
 - Closing a focused pane in a multi-pane tab MUST close only that pane, collapse
   the remaining layout, and focus a surviving pane.
 - Closing the only pane MUST use the normal top-level tab lifecycle.
+- Closing a Terminal Pane or Terminal Tab that still has a running process MUST
+  confirm that the process will be terminated. Cancel MUST leave that Pane or
+  Tab active and unchanged.
 - Closing the last terminal top-level tab MUST confirm Workspace closure when
-  the keep-open preference is disabled. The safe cancel action MUST leave that
-  Terminal Panel active and unchanged. When the preference is enabled, closing
-  that tab removes its complete split tree and leaves an Empty Workspace.
+  the keep-open preference is disabled. That confirmation MUST include any
+  running-process consequence instead of presenting a second dialog. The safe
+  cancel action MUST leave that Terminal Panel active and unchanged. When the
+  preference is enabled, closing that tab removes its complete split tree and
+  leaves an Empty Workspace after any required running-process confirmation.
+- Closing a Workspace or quitting the application MUST confirm when any
+  affected Terminal Surface still has a running process. Workspace confirmation
+  MUST combine that warning with any worktree-deletion choice.
 - Reordering a top-level tab MUST move its complete split tree.
 - Split dividers MUST provide an enlarged drag target and resize cursor.
 
@@ -284,8 +292,8 @@ click-based reordering. Reordering MUST NOT create or destroy resources.
 ## Destructive actions
 
 Any action that can permanently remove user data, uncommitted work, a worktree,
-or a project MUST require explicit confirmation. This applies to both one-item
-and bulk operations.
+a project, or a running terminal process MUST require explicit confirmation.
+This applies to both one-item and bulk operations.
 
 Confirmation UI MUST:
 

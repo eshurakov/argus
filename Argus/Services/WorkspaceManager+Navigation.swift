@@ -150,11 +150,29 @@ extension WorkspaceManager {
         else { return }
 
         if (workspace.activeTabLayout?.leaves.count ?? 1) > 1 {
-            closePane(activePanelId, in: workspace)
+            requestClosePane(activePanelId, in: workspace.id)
             return
         }
 
         requestCloseTab(activeTabId, in: workspace.id)
+    }
+
+    func requestCloseWorkspace(_ workspaceId: UUID) {
+        guard workspaces.contains(where: { $0.id == workspaceId }) else { return }
+        if shouldConfirmWorktreeDeletionBeforeClosing(workspaceId)
+            || shouldConfirmRunningProcessBeforeClosingWorkspace(workspaceId)
+        {
+            NotificationCenter.default.post(
+                name: .showCloseWorkspaceConfirmation,
+                object: nil,
+                userInfo: [
+                    "workspaceId": workspaceId,
+                    "requestedByLastTerminalTab": false
+                ]
+            )
+            return
+        }
+        removeWorkspace(workspaceId)
     }
 
     /// Removes a workspace, optionally deleting its associated git worktree first.
@@ -196,7 +214,11 @@ extension WorkspaceManager {
         return true
     }
 
-    func requestCloseTab(_ tabId: UUID, in workspaceId: UUID) {
+    func requestCloseTab(
+        _ tabId: UUID,
+        in workspaceId: UUID,
+        confirmingRunningProcess: Bool = false
+    ) {
         guard let workspace = workspaces.first(where: { $0.id == workspaceId }),
             workspace.panelOrder.contains(tabId)
         else { return }
@@ -218,6 +240,18 @@ extension WorkspaceManager {
             return
         }
 
+        let runningProcessCount = workspace.runningProcessCount(inTab: tabId)
+        if !confirmingRunningProcess && runningProcessCount > 0 {
+            NotificationCenter.default.post(
+                name: .showRunningProcessConfirmation,
+                object: RunningProcessCloseRequest(
+                    scope: .tab(workspaceId: workspaceId, tabId: tabId),
+                    processCount: runningProcessCount
+                )
+            )
+            return
+        }
+
         turnCompletionRuntime?.removeAttention(workspaceId: workspaceId, tabId: tabId)
         for surfaceId in workspace.layout(for: tabId).leaves
         where workspace.panels[surfaceId]?.panelType == .terminal {
@@ -227,6 +261,36 @@ extension WorkspaceManager {
         if workspace.panelOrder.isEmpty && !closesLastTerminalTab {
             removeWorkspace(workspace.id)
         }
+    }
+
+    func requestClosePane(
+        _ panelId: UUID,
+        in workspaceId: UUID,
+        confirmingRunningProcess: Bool = false
+    ) {
+        guard let workspace = workspaces.first(where: { $0.id == workspaceId }) else { return }
+        guard let tabId = workspace.panelOrder.first(where: { workspace.layout(for: $0).contains(panelId) }) else {
+            return
+        }
+        if workspace.layout(for: tabId).leaves.count == 1 {
+            requestCloseTab(
+                tabId,
+                in: workspaceId,
+                confirmingRunningProcess: confirmingRunningProcess
+            )
+            return
+        }
+        if !confirmingRunningProcess && workspace.terminalNeedsConfirmQuit(panelId) {
+            NotificationCenter.default.post(
+                name: .showRunningProcessConfirmation,
+                object: RunningProcessCloseRequest(
+                    scope: .pane(workspaceId: workspaceId, panelId: panelId),
+                    processCount: 1
+                )
+            )
+            return
+        }
+        closePane(panelId, in: workspace)
     }
 
     func handleWorkspaceShortcut(number: Int) {

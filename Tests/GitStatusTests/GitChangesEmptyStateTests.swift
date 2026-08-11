@@ -29,17 +29,11 @@ struct GitChangesEmptyStateTests {
     func onlySectionsWithChangesAreListed() throws {
         let view = try SourceContract("Argus/Views/GitSidebar/GitSidebarView.swift")
 
-        let sections = try view.section(
-            after: "private func populatedSections(",
-            before: "private func sectionExpansionBinding")
-        #expect(sections.contains(".filter { $0.count > 0 }"))
-        for title in ["\"Staged\"", "\"Unstaged\"", "\"Untracked\""] {
-            #expect(sections.contains(title))
-        }
-
         let changeSections = try view.section(
             after: "private func changeSections(",
-            before: "private func populatedSections")
-        #expect(changeSections.contains("ForEach(populatedSections(summary), id: \\.sectionKey)"))
+            before: "private func branchBar")
+        #expect(changeSections.contains("ForEach(summary.sections)"))
+        #expect(!changeSections.contains("populatedSections"))
+        #expect(!changeSections.contains(".filter { $0.count > 0 }"))
     }
 }

@@ -18,6 +18,9 @@ extension Notification.Name {
     static let showRenameWorkspaceSheet = Notification.Name("ArgusShowRenameWorkspaceSheet")
     static let showChangeWorkspaceRootSheet = Notification.Name("ArgusShowChangeWorkspaceRootSheet")
     static let showCloseWorkspaceConfirmation = Notification.Name("ArgusShowCloseWorkspaceConfirmation")
+    static let showRunningProcessConfirmation = Notification.Name("ArgusShowRunningProcessConfirmation")
+    static let confirmApplicationQuit = Notification.Name("ArgusConfirmApplicationQuit")
+    static let cancelApplicationQuit = Notification.Name("ArgusCancelApplicationQuit")
 }
 
 // MARK: - SidebarView

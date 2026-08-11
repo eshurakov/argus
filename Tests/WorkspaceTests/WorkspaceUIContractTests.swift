@@ -181,7 +181,7 @@ struct WorkspaceUIContractTests {
                 "workspace.closeTab(panelId)"
             ], "close commands preserve Pane and Top-level Tab scope")
         try SourceContract("Argus/Services/WorkspaceManager+Navigation.swift").contains(
-            "closePane(activePanelId, in: workspace)",
+            "requestClosePane(activePanelId, in: workspace.id)",
             "active Pane closure stays in the navigation owner"
         )
         try SourceContract("Argus/Views/Content/ContentAreaView.swift").containsAll(

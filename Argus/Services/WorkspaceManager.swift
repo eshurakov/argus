@@ -161,7 +161,8 @@ final class WorkspaceManager: ObservableObject {
             guard let self,
                 let surfaceId = notification.object as? UUID
             else { return }
-            self.handleSurfaceClosed(surfaceId)
+            let processAlive = notification.userInfo?["processAlive"] as? Bool
+            self.handleSurfaceClosed(surfaceId, processAlive: processAlive)
         }
 
         // Track the focused split pane so split commands target the pane the
@@ -326,7 +327,25 @@ final class WorkspaceManager: ObservableObject {
 
     /// Handles a surface-closed notification by removing the corresponding
     /// panel from its workspace.
-    private func handleSurfaceClosed(_ surfaceId: UUID) {
+    private func handleSurfaceClosed(_ surfaceId: UUID, processAlive: Bool?) {
+        guard let workspace = workspace(containingPanel: surfaceId) else { return }
+        let needsConfirm = processAlive ?? workspace.terminalNeedsConfirmQuit(surfaceId)
+        if needsConfirm {
+            NotificationCenter.default.post(
+                name: .showRunningProcessConfirmation,
+                object: RunningProcessCloseRequest(
+                    scope: .surface(workspaceId: workspace.id, surfaceId: surfaceId),
+                    processCount: 1
+                )
+            )
+            return
+        }
+        completeSurfaceClose(surfaceId)
+    }
+
+    /// Completes a Ghostty-initiated surface close after any running-process
+    /// confirmation has already been accepted or is unnecessary.
+    func completeSurfaceClose(_ surfaceId: UUID) {
         guard let workspace = workspace(containingPanel: surfaceId) else { return }
         guard let tabId = workspace.panelOrder.first(where: { workspace.layout(for: $0).contains(surfaceId) }) else {
             return
@@ -393,6 +412,15 @@ final class WorkspaceManager: ObservableObject {
             !project.isCatchAll
         else { return false }
         return true
+    }
+
+    var totalRunningProcessCount: Int {
+        workspaces.reduce(0) { $0 + $1.runningProcessCount }
+    }
+
+    func shouldConfirmRunningProcessBeforeClosingWorkspace(_ workspaceId: UUID) -> Bool {
+        guard let workspace = workspaces.first(where: { $0.id == workspaceId }) else { return false }
+        return workspace.runningProcessCount > 0
     }
 
     func removeWorkspaceFromState(_ workspaceId: UUID) {
