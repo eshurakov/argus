@@ -1,21 +1,23 @@
 # Releasing a feature
 
-A feature release increments the minor version. For example, a feature completed after `1.0.0` is released as
-`1.1.0` and tagged `v1.1.0`.
+A feature release increments the minor version. A bugfix release increments the patch version. For example, a
+feature completed after `1.0.0` is released as `1.1.0` and tagged `v1.1.0`; a later bugfix is `1.1.1` and `v1.1.1`.
 
 Run the release from `main`. Do not mix unrelated work into the release commits.
 
 ## 1. Prepare the version
 
-`VERSION` is the canonical machine-readable version manifest. Prepare the next feature release with:
+`VERSION` is the canonical machine-readable version manifest. Prepare the next release with:
 
 ```sh
 ./scripts/release.sh prepare minor
+./scripts/release.sh prepare patch
 ```
 
-The command increments the minor semantic version, resets the patch version to zero, increments the build number,
-synchronizes `project.yml` and `ArgusCLI/main.swift`, regenerates the Xcode project, and verifies every generated
-consumer. For a release from version `1.0.0` with build number `1`, it prepares version `1.1.0` and build number `2`.
+`prepare minor` increments the minor semantic version and resets the patch version to zero. `prepare patch`
+increments the patch version. Both increment the build number, synchronize `project.yml` and `ArgusCLI/main.swift`,
+regenerate the Xcode project, and verify every generated consumer. For a release from version `1.0.0` with build
+number `1`, `prepare minor` prepares version `1.1.0` and build number `2`.
 
 Do not edit generated version consumers independently or edit `Argus.xcodeproj/project.pbxproj` by hand. Run
 `python3 scripts/version.py verify` to check consistency without changing files.

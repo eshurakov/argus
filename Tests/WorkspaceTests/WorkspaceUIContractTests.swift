@@ -115,15 +115,20 @@ struct WorkspaceUIContractTests {
             [
                 "nsView.synchronizeSurfaceGeometry(to: targetSize)",
                 "nsView.surface?.refresh()",
-                "surface.setOcclusion(!isVisible)"
+                "surface.setOcclusion(!isVisible)",
+                "return CGSize(width: width, height: height)"
             ], "terminal visibility must reconcile geometry, redraw, and occlusion")
         try SourceContract("Argus/Ghostty/TerminalSurface.swift").contains(
             "ghostty_surface_set_occlusion(surface, !occluded)",
             "Ghostty visibility must invert the Argus occlusion state"
         )
-        try SourceContract("Argus/Ghostty/TerminalNSViewSupport.swift").contains(
-            "guard let window else { return }",
-            "terminal geometry must wait for an attached window's backing scale"
+        try SourceContract("Argus/Ghostty/TerminalNSViewSupport.swift").containsAll(
+            [
+                "guard let window else { return }",
+                "lastResolvedSize = targetSize",
+                "return lastResolvedSize"
+            ],
+            "terminal geometry must remember the Pane size until Ghostty is ready"
         )
     }
 
@@ -306,7 +311,8 @@ struct WorkspaceTabAndChromeUIContractTests {
         )
         for fragment in [
             "guard let hostedView = _hostedView else { return }",
-            "nsview: Unmanaged.passUnretained(hostedView).toOpaque()"
+            "nsview: Unmanaged.passUnretained(hostedView).toOpaque()",
+            "hostedView.synchronizeSurfaceGeometry()"
         ] {
             #expect(creation.contains(fragment))
         }
@@ -314,9 +320,10 @@ struct WorkspaceTabAndChromeUIContractTests {
         surface.containsAll(
             [
                 "self?.createSurface()",
-                "guard let hostedView = _hostedView else { return }"
+                "guard let hostedView = _hostedView else { return }",
+                "hostedView.synchronizeSurfaceGeometry()"
             ],
-            "restored Terminal Surfaces must wait for their retained TerminalNSView"
+            "restored Terminal Surfaces must wait for their retained TerminalNSView and apply its Pane size"
         )
     }
 

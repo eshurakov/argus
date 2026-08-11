@@ -66,7 +66,15 @@ struct TerminalView: NSViewRepresentable {
         nsView: TerminalNSView,
         context: Context
     ) -> CGSize? {
-        nil
+        // Adopt GeometryReader's resolved Pane size. Returning nil uses the
+        // NSView fitting size, which stays at Ghostty's default grid until a
+        // later window resize.
+        guard let width = proposal.width, let height = proposal.height,
+            width > 0, height > 0
+        else {
+            return nil
+        }
+        return CGSize(width: width, height: height)
     }
 
     final class Coordinator {

@@ -47,6 +47,8 @@ struct ProcessCloseUIContractTests {
         try SourceContract("Argus/App/AppDelegate.swift").containsAll(
             [
                 "func applicationShouldTerminate",
+                "isRunningUnderTest || allowTermination",
+                "bundleURL.pathExtension == \"xctest\"",
                 "requestApplicationQuitConfirmation()",
                 "MainWindowCloseGuard"
             ], "application and window close confirm running processes"

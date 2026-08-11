@@ -10,12 +10,17 @@ extension TerminalNSView {
     /// Reconciles Ghostty and Metal with SwiftUI's resolved Pane size.
     /// SwiftUI can reattach a retained NSView without a final frame callback.
     func synchronizeSurfaceGeometry(to targetSize: CGSize? = nil) {
+        // Remember SwiftUI's Pane size even before the retained view is in a
+        // window. Restored tabs often learn that size one turn before Ghostty
+        // can create the surface.
+        if let targetSize, targetSize.width > 0, targetSize.height > 0 {
+            lastResolvedSize = targetSize
+        }
+
         // A detached retained view has no authoritative backing scale. Updating
         // it at 1x corrupts the drawable and Ghostty viewport on Retina windows.
         guard let window else { return }
-
-        let pointSize = targetSize ?? bounds.size
-        guard pointSize.width > 0, pointSize.height > 0 else { return }
+        guard let pointSize = resolvedPointSize(from: targetSize) else { return }
 
         let scale = window.backingScaleFactor
         let width = UInt32(max((pointSize.width * scale).rounded(), 0))
@@ -25,6 +30,23 @@ extension TerminalNSView {
         if let metalLayer = layer as? CAMetalLayer {
             metalLayer.drawableSize = CGSize(width: Int(width), height: Int(height))
         }
+    }
+
+    /// Prefers the current SwiftUI Pane size, then the AppKit frame, then the
+    /// last positive size seen before Ghostty was ready.
+    func resolvedPointSize(from targetSize: CGSize?) -> CGSize? {
+        if let targetSize, targetSize.width > 0, targetSize.height > 0 {
+            lastResolvedSize = targetSize
+            return targetSize
+        }
+        if bounds.size.width > 0, bounds.size.height > 0 {
+            lastResolvedSize = bounds.size
+            return bounds.size
+        }
+        if let lastResolvedSize, lastResolvedSize.width > 0, lastResolvedSize.height > 0 {
+            return lastResolvedSize
+        }
+        return nil
     }
 
     func updateCursor(shape: ghostty_action_mouse_shape_e) {

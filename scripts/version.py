@@ -116,16 +116,24 @@ def verify(version: str, build: int) -> None:
     print(f"Version consumers match {version} ({build})")
 
 
-def prepare_minor() -> None:
+def next_version(version: str, increment: str) -> str:
+    major, minor, patch = (int(component) for component in version.split("."))
+    if increment == "minor":
+        return f"{major}.{minor + 1}.0"
+    if increment == "patch":
+        return f"{major}.{minor}.{patch + 1}"
+    fail(f"unsupported increment: {increment}")
+
+
+def prepare(increment: str) -> None:
     version, build = load_manifest()
-    major, minor, _ = (int(component) for component in version.split("."))
-    next_version = f"{major}.{minor + 1}.0"
+    prepared_version = next_version(version, increment)
     next_build = build + 1
-    write_manifest(next_version, next_build)
-    synchronize(next_version, next_build)
+    write_manifest(prepared_version, next_build)
+    synchronize(prepared_version, next_build)
     generate_project()
-    verify(next_version, next_build)
-    print(f"Prepared {next_version} ({next_build})")
+    verify(prepared_version, next_build)
+    print(f"Prepared {prepared_version} ({next_build})")
 
 
 def fail(message: str) -> NoReturn:
@@ -137,12 +145,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Synchronize and verify Argus version metadata.")
     subparsers = parser.add_subparsers(dest="command", required=True)
     prepare_parser = subparsers.add_parser("prepare", help="Prepare the next release version.")
-    prepare_parser.add_argument("increment", choices=["minor"])
+    prepare_parser.add_argument("increment", choices=["minor", "patch"])
     subparsers.add_parser("verify", help="Verify all generated version consumers.")
     arguments = parser.parse_args()
 
     if arguments.command == "prepare":
-        prepare_minor()
+        prepare(arguments.increment)
     else:
         verify(*load_manifest())
 

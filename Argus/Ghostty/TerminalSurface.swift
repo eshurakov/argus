@@ -233,7 +233,13 @@ final class TerminalSurface: ObservableObject, Identifiable {
 
         if surface == nil {
             NSLog("TerminalSurface: ghostty_surface_new returned nil")
+            return
         }
+
+        // Restored tabs create the Ghostty surface after SwiftUI's first layout.
+        // Apply the remembered Pane size so the grid is not left at Ghostty's
+        // default columns until the next window resize.
+        hostedView.synchronizeSurfaceGeometry()
     }
 
     /// Build the environment variables to inject into the shell.

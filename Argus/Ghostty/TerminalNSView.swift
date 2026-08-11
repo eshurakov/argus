@@ -18,6 +18,10 @@ class TerminalNSView: NSView {
     private var trackingArea: NSTrackingArea?
     var currentCursor: NSCursor = .iBeam
 
+    /// Last positive Pane size from SwiftUI or AppKit. Restored surfaces are
+    /// often created after the first layout pass, when bounds may still be zero.
+    var lastResolvedSize: CGSize?
+
     // MARK: - NSView Configuration
 
     override var acceptsFirstResponder: Bool { true }

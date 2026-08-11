@@ -6,11 +6,13 @@ runner="$project_root/scripts/run-with-timeout.py"
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") prepare minor
+Usage: $(basename "$0") prepare <minor|patch>
        $(basename "$0") verify
 
 Commands:
-  prepare minor  Increment the minor version and build number, synchronize consumers,
+  prepare minor  Increment the minor version, reset patch to zero, increment the build
+                 number, synchronize consumers, regenerate the Xcode project, and verify.
+  prepare patch  Increment the patch version and build number, synchronize consumers,
                  regenerate the Xcode project, and verify version consistency.
   verify         Run bounded release verification stages and retain diagnostics.
 EOF
@@ -45,8 +47,12 @@ run_stage() {
 command="${1:-}"
 case "$command" in
   prepare)
-    [[ "${2:-}" == "minor" && $# -eq 2 ]] || { usage >&2; exit 2; }
-    exec python3 "$project_root/scripts/version.py" prepare minor
+    increment="${2:-}"
+    [[ "$increment" == "minor" || "$increment" == "patch" ]] && [[ $# -eq 2 ]] || {
+      usage >&2
+      exit 2
+    }
+    exec python3 "$project_root/scripts/version.py" prepare "$increment"
     ;;
   verify)
     [[ $# -eq 1 ]] || { usage >&2; exit 2; }

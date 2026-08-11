@@ -148,7 +148,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this 
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        if allowTermination || !hasRunningProcessRequiringConfirmation {
+        if isRunningUnderTest || allowTermination || !hasRunningProcessRequiringConfirmation {
             return .terminateNow
         }
         isWaitingForQuitReply = true
@@ -211,6 +211,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this 
         (workspaceManager?.totalRunningProcessCount ?? 0) > 0
     }
 
+    private var isRunningUnderTest: Bool {
+        let environment = ProcessInfo.processInfo.environment
+        if environment["XCTestConfigurationFilePath"] != nil
+            || environment["ARGUS_DISABLE_SESSION_RESTORE"] == "1"
+            || environment["ARGUS_UNDER_TEST"] == "1"
+        {
+            return true
+        }
+        return Bundle.allBundles.contains { $0.bundleURL.pathExtension == "xctest" }
+    }
+
     private func installMainWindowCloseGuard(_ window: NSWindow) {
         mainWindowCloseGuard.onShouldClose = { [weak self] in
             guard let self else { return true }
@@ -222,7 +233,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this 
     }
 
     private func allowMainWindowClose() -> Bool {
-        if allowTermination || !hasRunningProcessRequiringConfirmation {
+        if isRunningUnderTest || allowTermination || !hasRunningProcessRequiringConfirmation {
             return true
         }
         requestApplicationQuitConfirmation()
