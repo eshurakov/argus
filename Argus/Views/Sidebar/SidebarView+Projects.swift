@@ -8,6 +8,7 @@ import UniformTypeIdentifiers
 /// workspace rows.
 struct ProjectSection: View {
     @ObservedObject var project: Project
+    var showsHeader: Bool = true
     @EnvironmentObject var workspaceManager: WorkspaceManager
     @EnvironmentObject private var appSettings: AppSettings
 
@@ -20,10 +21,12 @@ struct ProjectSection: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ProjectHeaderRow(project: project)
-                .padding(.top, 4)
+            if showsHeader {
+                ProjectHeaderRow(project: project)
+                    .padding(.top, 4)
+            }
 
-            if project.isExpanded {
+            if project.isExpanded || !showsHeader {
                 ForEach(childWorkspaces, id: \.id) { workspace in
                     if let globalIndex = workspaceManager.globalSidebarIndex(for: workspace.id) {
                         SidebarWorkspaceRow(

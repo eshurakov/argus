@@ -172,6 +172,7 @@ struct WorkspacePresentationUIContractTests {
             [
                 "if workspace.workspaceType == .external",
                 "WorkspacePathFormatter.abbreviatedPath(workspace.currentDirectory)",
+                ".foregroundColor(.secondary.opacity(workspace.workspaceType == .external ? 0.55 : 1))",
                 ".help(workspaceSubtitleHelp)",
                 "parts.append(\"directory \\(workspace.currentDirectory)\")"
             ], "Standalone Workspace Root subtitle")

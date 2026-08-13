@@ -36,7 +36,7 @@ enum WorkspaceType: String, Codable, Sendable {
         switch self {
         case .mainCheckout: return "folder.fill"
         case .worktree: return "arrow.triangle.branch"
-        case .external: return "folder.badge.questionmark"
+        case .external: return "folder"
         }
     }
 }

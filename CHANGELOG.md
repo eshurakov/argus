@@ -2,6 +2,10 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-08-13
+
+- The left sidebar now treats Workspaces as a top-level section like Projects. Its plus button creates a standalone Workspace, the Projects plus button only creates a Project, standalone Workspace icons no longer show a question mark, and Workspace paths are lighter so the title stands out.
+
 ## 2026-08-11
 
 - Git status and preview commands no longer leave the test run waiting after git has exited, so release verification can finish. ([b2479f0](https://github.com/jeanduplessis/argus/commit/b2479f0))

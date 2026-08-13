@@ -66,7 +66,7 @@ struct SidebarWorkspaceRow: View {
                     if let subtitle = workspaceSubtitle {
                         Text(subtitle)
                             .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 10)))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.secondary.opacity(workspace.workspaceType == .external ? 0.55 : 1))
                             .lineLimit(1)
                             .truncationMode(.middle)
                             .help(workspaceSubtitleHelp)

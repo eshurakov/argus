@@ -46,38 +46,45 @@ struct ProjectAndWorktreeUIContractTests {
         let sidebar = try SourceContract("Argus/Views/Sidebar/SidebarView.swift")
         sidebar.containsAll(
             [
-                "Menu {",
-                "Text(\"New Workspace\")",
-                "Image(systemName: \"terminal\")",
-                "Text(\"New Project…\")",
-                "Image(systemName: \"folder.badge.plus\")",
-                "Image(systemName: \"plus\")",
-                "if project.isCatchAll {",
+                "help: \"New Project\"",
+                "accessibilityLabel: \"New Project\"",
+                "name: .showNewProjectSheet",
+                "help: \"New Workspace\"",
+                "accessibilityLabel: \"New Workspace\"",
                 "workspaceManager.addWorkspace()",
+                "if project.isCatchAll {",
                 "name: .showNewWorkspaceSheet",
                 "userInfo: [\"projectId\": project.id]",
                 "Button(\"Add Workspace…\")"
             ], "project and catch-all add controls")
+        sidebar.excludes(
+            "New Workspace or Project",
+            "section plus buttons must not share a combined add menu"
+        )
+        sidebar.excludes(
+            "Image(systemName: \"folder.badge.plus\")",
+            "Projects plus creates a Project directly"
+        )
     }
 
     @Test
     func sidebarAddMenuUsesIconActionAffordances() throws {
         let sidebar = try SourceContract("Argus/Views/Sidebar/SidebarView.swift")
-        let header = try sidebar.section(
-            after: "private struct SidebarHeader: View",
+        let addButton = try sidebar.section(
+            after: "private struct SidebarSectionAddButton: View",
             before: "// MARK: - ProjectSection")
 
         for expected in [
-            "@State private var isAddMenuHovered = false",
+            "@State private var isHovered = false",
             ".frame(width: 20, height: 20)",
-            "isAddMenuHovered ? ChromeColors.hoveredTabFill : Color.clear",
+            "isHovered ? ChromeColors.hoveredTabFill : Color.clear",
             ".contentShape(Rectangle())",
             ".cursor(.pointingHand)",
-            ".help(\"New Workspace or Project\")",
-            ".accessibilityLabel(\"New Workspace or Project\")",
-            ".onHover { isAddMenuHovered = $0 }"
+            ".help(help)",
+            ".accessibilityLabel(accessibilityLabel)",
+            ".onHover { isHovered = $0 }"
         ] {
-            #expect(header.contains(expected))
+            #expect(addButton.contains(expected))
         }
     }
 
@@ -85,10 +92,12 @@ struct ProjectAndWorktreeUIContractTests {
     func catchAllProjectHasDistinctWorkspaceSectionStyling() throws {
         try SourceContract("Argus/Views/Sidebar/SidebarView.swift").containsAll(
             [
-                ".fill(ChromeColors.separator)",
-                ".frame(height: 1)",
-                ".textCase(project.isCatchAll ? .uppercase : nil)"
-            ], "catch-all Project separator and Workspace section label")
+                "private struct WorkspacesSectionHeader: View",
+                "Text(\"Workspaces\")",
+                ".textCase(.uppercase)",
+                "ProjectSection(project: catchAll, showsHeader: false)",
+                "if project.isExpanded || !showsHeader"
+            ], "catch-all Workspaces section uses a Projects-style top-level header")
     }
 
     @Test
