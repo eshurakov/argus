@@ -257,6 +257,20 @@ struct RunningProcessConfirmationTests {
         #expect(manager.totalRunningProcessCount == 2)
     }
 
+    @Test
+    @MainActor
+    func runningProcessCountIncludesSplitPanesInOneTab() throws {
+        let manager = try makeManager(suiteName: "ArgusTests.RunningProcessSplitCount")
+        let workspace = try #require(manager.selectedWorkspace)
+        let first = try #require(workspace.activePanelId)
+        let split = try #require(workspace.splitActiveTerminal(direction: .vertical))
+        setNeedsConfirmQuit(true, on: first, in: workspace)
+        setNeedsConfirmQuit(true, on: split.id, in: workspace)
+
+        #expect(workspace.panelCount == 1)
+        #expect(workspace.runningProcessCount == 2)
+    }
+
     @MainActor
     private func makeManager(
         suiteName: String,

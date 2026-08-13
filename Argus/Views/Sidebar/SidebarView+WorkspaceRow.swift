@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - SidebarWorkspaceRow
 
 /// Individual workspace row showing global index, type icon, display title,
-/// branch name, and panel count badge.
+/// branch name, and running-process count badge.
 struct SidebarWorkspaceRow: View {
     @ObservedObject var workspace: Workspace
     @EnvironmentObject var agentStatusStore: AgentStatusStore
@@ -16,6 +16,14 @@ struct SidebarWorkspaceRow: View {
     @FocusState private var isFocused: Bool
 
     var body: some View {
+        // Ghostty only exposes process liveness as a query, so re-evaluate the
+        // badge on a short interval instead of inventing a second process model.
+        TimelineView(.periodic(from: .now, by: 1)) { _ in
+            workspaceRowButton
+        }
+    }
+
+    private var workspaceRowButton: some View {
         Button(action: onSelect) {
             HStack(spacing: 8) {
                 // 1-based global index (for Cmd+N shortcut reference)
@@ -75,15 +83,16 @@ struct SidebarWorkspaceRow: View {
 
                 Spacer()
 
-                // Panel count badge (shown when > 1 tab)
-                if workspace.panelCount > 1 {
-                    Text("\(workspace.panelCount)")
+                // Running-process count badge (shown when any Terminal Surface is busy)
+                if runningProcessCount > 0 {
+                    Text("\(runningProcessCount)")
                         .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 10)))
                         .foregroundColor(.secondary)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 1)
                         .background(Color.secondary.opacity(0.15))
                         .cornerRadius(4)
+                        .help(runningProcessCountAccessibilityText)
                 }
             }
             .padding(.horizontal, 8)
@@ -132,6 +141,16 @@ struct SidebarWorkspaceRow: View {
         turnCompletionAttentionStore.workspaceHasAttention(workspace.id)
     }
 
+    private var runningProcessCount: Int {
+        workspace.runningProcessCount
+    }
+
+    private var runningProcessCountAccessibilityText: String {
+        runningProcessCount == 1
+            ? "1 running process"
+            : "\(runningProcessCount) running processes"
+    }
+
     private var workspaceSubtitle: String? {
         if workspace.workspaceType == .external {
             return WorkspacePathFormatter.abbreviatedPath(workspace.currentDirectory)
@@ -165,8 +184,8 @@ struct SidebarWorkspaceRow: View {
         if workspace.workspaceType == .external {
             parts.append("directory \(workspace.currentDirectory)")
         }
-        if workspace.panelCount > 1 {
-            parts.append("\(workspace.panelCount) tabs")
+        if runningProcessCount > 0 {
+            parts.append(runningProcessCountAccessibilityText)
         }
         return parts.joined(separator: ", ")
     }

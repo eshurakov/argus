@@ -177,4 +177,22 @@ struct WorkspacePresentationUIContractTests {
                 "parts.append(\"directory \\(workspace.currentDirectory)\")"
             ], "Standalone Workspace Root subtitle")
     }
+
+    @Test
+    func workspaceRowBadgeShowsRunningProcessCountInsteadOfTabCount() throws {
+        let row = try SourceContract("Argus/Views/Sidebar/SidebarView+WorkspaceRow.swift")
+        row.containsAll(
+            [
+                "TimelineView(.periodic(from: .now, by: 1))",
+                "workspace.runningProcessCount",
+                "if runningProcessCount > 0",
+                "Text(\"\\(runningProcessCount)\")",
+                "1 running process",
+                "\\(runningProcessCount) running processes"
+            ],
+            "Workspace row badge counts Terminal Surfaces with a running process"
+        )
+        row.excludes("workspace.panelCount > 1", "Workspace row badge must not show Top-level Tab count")
+        row.excludes("\\(workspace.panelCount) tabs", "Workspace accessibility must not announce tab count")
+    }
 }
