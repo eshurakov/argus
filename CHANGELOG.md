@@ -4,10 +4,11 @@ This file records changes pushed for local Argus releases. New entries use a `YY
 
 ## 2026-08-13
 
-- Deleting a worktree no longer gets stuck reporting "Git command timed out". An earlier attempt that ran out of time could leave the worktree in a state Git itself refused to remove, so every later attempt failed the same way. Deleting a worktree now finishes the job and frees the branch name for reuse, and it allows much more time before giving up. Deleting a worktree with unsaved changes still asks first and keeps those files.
-- Quitting Argus now names the Project and Workspace that still have a running process, so you can find that terminal without guessing.
-- The left sidebar now treats Workspaces as a top-level section like Projects. Its plus button creates a standalone Workspace, the Projects plus button only creates a Project, standalone Workspace icons no longer show a question mark, and Workspace paths are lighter so the title stands out.
-- Workspace rows now show how many terminals still have a running process, instead of how many tabs are open. The badge hides when nothing is running.
+- The Files and Changes panels now remember which folders and sections you expanded. Switching between the two panels, changing workspace, or hiding and showing the right sidebar no longer collapses everything back to the top level. Nested folders reopen as they were, and a workspace's remembered state is discarded when you close it. ([95c2a96](https://github.com/jeanduplessis/argus/commit/95c2a96))
+- Deleting a worktree no longer gets stuck reporting "Git command timed out". An earlier attempt that ran out of time could leave the worktree in a state Git itself refused to remove, so every later attempt failed the same way. Deleting a worktree now finishes the job and frees the branch name for reuse, and it allows much more time before giving up. Deleting a worktree with unsaved changes still asks first and keeps those files. ([d2f810c](https://github.com/jeanduplessis/argus/commit/d2f810c))
+- Quitting Argus now names the Project and Workspace that still have a running process, so you can find that terminal without guessing. ([f64e920](https://github.com/jeanduplessis/argus/commit/f64e920))
+- The left sidebar now treats Workspaces as a top-level section like Projects. Its plus button creates a standalone Workspace, the Projects plus button only creates a Project, standalone Workspace icons no longer show a question mark, and Workspace paths are lighter so the title stands out. ([91ef134](https://github.com/jeanduplessis/argus/commit/91ef134))
+- Workspace rows now show how many terminals still have a running process, instead of how many tabs are open. The badge hides when nothing is running. ([f0111ab](https://github.com/jeanduplessis/argus/commit/f0111ab))
 
 ## 2026-08-11
 
