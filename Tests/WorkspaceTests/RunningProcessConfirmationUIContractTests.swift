@@ -14,7 +14,9 @@ struct ProcessCloseUIContractTests {
                 ".foregroundStyle(.red)",
                 "This terminal still has a running process.",
                 "Closing it will terminate that process.",
-                "Quit Argus?"
+                "Quit Argus?",
+                "RunningProcessConfirmationCopy.applicationMessage(",
+                "locationLabels: request.locations.map(\\.label)"
             ], "in-view running-process close choices"
         )
         confirmation.excludes("NSAlert", "Running-process close must not open an AppKit alert")
@@ -33,7 +35,8 @@ struct ProcessCloseUIContractTests {
                 "workspace.runningProcessCount(inTab: tabId)",
                 "workspace.terminalNeedsConfirmQuit(panelId)",
                 "name: .showRunningProcessConfirmation",
-                "func completeSurfaceClose(_ surfaceId: UUID)"
+                "func completeSurfaceClose(_ surfaceId: UUID)",
+                "func runningProcessLocations()"
             ], "close paths consult Ghostty before teardown"
         )
         try SourceContract("Argus/Ghostty/TerminalSurface.swift").contains(
@@ -50,6 +53,7 @@ struct ProcessCloseUIContractTests {
                 "isRunningUnderTest || allowTermination",
                 "bundleURL.pathExtension == \"xctest\"",
                 "requestApplicationQuitConfirmation()",
+                "runningProcessLocations()",
                 "MainWindowCloseGuard"
             ], "application and window close confirm running processes"
         )

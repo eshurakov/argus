@@ -418,6 +418,23 @@ final class WorkspaceManager: ObservableObject {
         workspaces.reduce(0) { $0 + $1.runningProcessCount }
     }
 
+    /// Sidebar-ordered Workspaces that still have a running process, labeled
+    /// with the same Project or directory context used in the titlebar.
+    func runningProcessLocations() -> [RunningProcessLocation] {
+        sidebarOrderedWorkspaces.compactMap { _, workspace in
+            let processCount = workspace.runningProcessCount
+            guard processCount > 0 else { return nil }
+            return RunningProcessLocation(
+                workspaceId: workspace.id,
+                label: WorkspaceTitleFormatter.title(
+                    workspaceTitle: workspace.displayTitle,
+                    contextName: activeWorkspaceContextName(for: workspace)
+                ),
+                processCount: processCount
+            )
+        }
+    }
+
     func shouldConfirmRunningProcessBeforeClosingWorkspace(_ workspaceId: UUID) -> Bool {
         guard let workspace = workspaces.first(where: { $0.id == workspaceId }) else { return false }
         return workspace.runningProcessCount > 0

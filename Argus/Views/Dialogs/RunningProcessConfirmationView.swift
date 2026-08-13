@@ -7,9 +7,57 @@ enum RunningProcessCloseScope: Equatable {
     case application
 }
 
+struct RunningProcessLocation: Equatable, Sendable {
+    let workspaceId: UUID
+    let label: String
+    let processCount: Int
+}
+
 struct RunningProcessCloseRequest: Equatable {
     let scope: RunningProcessCloseScope
     let processCount: Int
+    let locations: [RunningProcessLocation]
+
+    init(
+        scope: RunningProcessCloseScope,
+        processCount: Int,
+        locations: [RunningProcessLocation] = []
+    ) {
+        self.scope = scope
+        self.processCount = processCount
+        self.locations = locations
+    }
+}
+
+enum RunningProcessConfirmationCopy {
+    static func applicationMessage(
+        processCount: Int,
+        locationLabels: [String]
+    ) -> String {
+        let labels = locationLabels.map {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines)
+        }.filter { !$0.isEmpty }
+        let consequence =
+            processCount == 1
+            ? "Quitting will terminate that process."
+            : "Quitting will terminate those processes."
+
+        switch labels.count {
+        case 0:
+            if processCount == 1 {
+                return "A terminal still has a running process. \(consequence)"
+            }
+            return "One or more terminals still have a running process. \(consequence)"
+        case 1:
+            if processCount == 1 {
+                return "A terminal in \(labels[0]) still has a running process. \(consequence)"
+            }
+            return "Terminals in \(labels[0]) still have a running process. \(consequence)"
+        default:
+            let names = ListFormatter.localizedString(byJoining: labels)
+            return "Terminals in \(names) still have a running process. \(consequence)"
+        }
+    }
 }
 
 /// In-view confirmation avoids presenting an alert while a SwiftUI context menu
@@ -82,10 +130,10 @@ struct RunningProcessConfirmationView: View {
     private var message: String {
         switch request.scope {
         case .application:
-            if request.processCount == 1 {
-                return "A terminal still has a running process. Quitting will terminate that process."
-            }
-            return "One or more terminals still have a running process. Quitting will terminate those processes."
+            return RunningProcessConfirmationCopy.applicationMessage(
+                processCount: request.processCount,
+                locationLabels: request.locations.map(\.label)
+            )
         case .tab where request.processCount > 1:
             return
                 "This tab has \(request.processCount) terminals with running processes. "

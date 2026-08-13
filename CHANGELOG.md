@@ -4,6 +4,7 @@ This file records changes pushed for local Argus releases. New entries use a `YY
 
 ## 2026-08-13
 
+- Quitting Argus now names the Project and Workspace that still have a running process, so you can find that terminal without guessing.
 - The left sidebar now treats Workspaces as a top-level section like Projects. Its plus button creates a standalone Workspace, the Projects plus button only creates a Project, standalone Workspace icons no longer show a question mark, and Workspace paths are lighter so the title stands out.
 - Workspace rows now show how many terminals still have a running process, instead of how many tabs are open. The badge hides when nothing is running.
 

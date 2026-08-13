@@ -131,7 +131,9 @@ keyboard input.
   leaves an Empty Workspace after any required running-process confirmation.
 - Closing a Workspace or quitting the application MUST confirm when any
   affected Terminal Surface still has a running process. Workspace confirmation
-  MUST combine that warning with any worktree-deletion choice.
+  MUST combine that warning with any worktree-deletion choice. Application-quit
+  confirmation MUST name each affected Workspace and its Named Project or
+  Standalone Workspace directory context.
 - Reordering a top-level tab MUST move its complete split tree.
 - Split dividers MUST provide an enlarged drag target and resize cursor.
 

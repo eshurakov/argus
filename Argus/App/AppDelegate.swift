@@ -246,7 +246,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this 
             name: .showRunningProcessConfirmation,
             object: RunningProcessCloseRequest(
                 scope: .application,
-                processCount: max(processCount, 1)
+                processCount: max(processCount, 1),
+                locations: workspaceManager?.runningProcessLocations() ?? []
             )
         )
     }

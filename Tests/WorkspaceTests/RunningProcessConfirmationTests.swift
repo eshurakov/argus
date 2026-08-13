@@ -271,6 +271,39 @@ struct RunningProcessConfirmationTests {
         #expect(workspace.runningProcessCount == 2)
     }
 
+    @Test
+    @MainActor
+    func runningProcessLocationsNameProjectAndStandaloneWorkspaceContext() throws {
+        let manager = try makeManager(suiteName: "ArgusTests.RunningProcessLocations")
+        let standalone = try #require(manager.selectedWorkspace)
+        standalone.customTitle = "Scratch"
+        standalone.currentDirectory = "/Users/jdp/notes"
+        let standaloneTerminal = try #require(standalone.activePanelId)
+        setNeedsConfirmQuit(true, on: standaloneTerminal, in: standalone)
+
+        let project = Project(
+            repositoryPath: "/tmp/argus",
+            displayName: "Argus",
+            mainBranch: "main"
+        )
+        let namedWorkspace = Workspace(
+            title: "feature-ui",
+            workingDirectory: "/tmp/argus",
+            projectId: project.id,
+            branchName: "feature-ui",
+            workspaceType: .worktree
+        )
+        let namedTerminal = try #require(namedWorkspace.activePanelId)
+        setNeedsConfirmQuit(true, on: namedTerminal, in: namedWorkspace)
+        project.addWorkspace(namedWorkspace.id)
+        manager.workspaces.append(namedWorkspace)
+        manager.projects.insert(project, at: 0)
+
+        let locations = manager.runningProcessLocations()
+        #expect(locations.map(\.label) == ["feature-ui — Argus", "Scratch — notes"])
+        #expect(locations.map(\.processCount) == [1, 1])
+    }
+
     @MainActor
     private func makeManager(
         suiteName: String,

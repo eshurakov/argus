@@ -43,6 +43,26 @@ struct WorkspaceTitleFormatterTests {
         )
     }
 
+    @Test
+    func applicationQuitCopyNamesAffectedWorkspaces() {
+        assertEqual(
+            RunningProcessConfirmationCopy.applicationMessage(
+                processCount: 1,
+                locationLabels: ["feature-ui — Argus"]
+            ),
+            "A terminal in feature-ui — Argus still has a running process. Quitting will terminate that process.",
+            "one named workspace is included in the quit warning"
+        )
+        assertEqual(
+            RunningProcessConfirmationCopy.applicationMessage(
+                processCount: 3,
+                locationLabels: ["feature-ui — Argus", "Notes — notes"]
+            ),
+            "Terminals in \(ListFormatter.localizedString(byJoining: ["feature-ui — Argus", "Notes — notes"])) still have a running process. Quitting will terminate those processes.",
+            "multiple named workspaces are listed in the quit warning"
+        )
+    }
+
     private func assertEqual(_ actual: String, _ expected: String, _ message: String) {
         #expect(actual == expected, Comment(rawValue: message))
     }
