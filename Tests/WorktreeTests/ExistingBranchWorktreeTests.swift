@@ -104,6 +104,114 @@ struct ExistingBranchWorktreeTests {
         )
     }
 
+    /// A removal that was interrupted after Git deleted the worktree's `.git`
+    /// link leaves a directory that `git worktree remove` permanently refuses.
+    /// Deleting the Worktree Workspace must still succeed, and the branch must
+    /// become reusable, otherwise the user is stuck with an undeletable
+    /// Workspace and an unusable branch name.
+    @Test
+    func forcedRemovalRecoversAWorktreeGitCanNoLongerRemove() async throws {
+        let temporaryDirectory = try TestTemporaryDirectory(prefix: "argus-interrupted-removal")
+        let temp = temporaryDirectory.url
+        let repo = temp.appendingPathComponent("repo", isDirectory: true)
+        try FileManager.default.createDirectory(at: repo, withIntermediateDirectories: true)
+        defer { temporaryDirectory.remove() }
+
+        try run("git", ["init", "-b", "main", "."], cwd: repo.path)
+        try run("git", ["config", "user.email", "test@example.com"], cwd: repo.path)
+        try run("git", ["config", "user.name", "Test User"], cwd: repo.path)
+        try "initial".write(
+            to: repo.appendingPathComponent("README.md"), atomically: true, encoding: .utf8)
+        try run("git", ["add", "README.md"], cwd: repo.path)
+        try run("git", ["commit", "-m", "initial"], cwd: repo.path)
+
+        let service = WorktreeService(
+            worktreeBaseURL: temp.appendingPathComponent("managed-worktrees", isDirectory: true))
+        let projectId = UUID()
+        let worktreePath = try await service.createWorktree(
+            projectId: projectId,
+            repositoryPath: repo.path,
+            branchName: "interrupted"
+        )
+
+        // Reproduce the state an interrupted removal leaves behind: Git has
+        // already unlinked the worktree's `.git` file, but the files and the
+        // registration remain.
+        try FileManager.default.removeItem(
+            at: URL(fileURLWithPath: worktreePath).appendingPathComponent(".git"))
+        try "unsaved".write(
+            to: URL(fileURLWithPath: worktreePath).appendingPathComponent("scratch.txt"),
+            atomically: true,
+            encoding: .utf8
+        )
+
+        try await service.removeWorktree(
+            repositoryPath: repo.path,
+            worktreePath: worktreePath,
+            force: true
+        )
+
+        assertFalse(
+            FileManager.default.fileExists(atPath: worktreePath),
+            "forced removal deletes a worktree git can no longer remove"
+        )
+        let registeredWorktrees = try capture(
+            "git", ["worktree", "list", "--porcelain"], cwd: repo.path)
+        assertFalse(
+            registeredWorktrees.contains(worktreePath),
+            "forced removal prunes the stale registration"
+        )
+        // The branch is only genuinely reusable if the registration is gone.
+        _ = try await service.createWorktree(
+            projectId: projectId,
+            repositoryPath: repo.path,
+            branchName: "interrupted",
+            createNewBranch: false
+        )
+    }
+
+    /// Recovery is limited to forced removal. An ordinary removal must keep
+    /// refusing a dirty worktree so uncommitted work is never discarded.
+    @Test
+    func unforcedRemovalPreservesADirtyWorktree() async throws {
+        let temporaryDirectory = try TestTemporaryDirectory(prefix: "argus-unforced-removal")
+        let temp = temporaryDirectory.url
+        let repo = temp.appendingPathComponent("repo", isDirectory: true)
+        try FileManager.default.createDirectory(at: repo, withIntermediateDirectories: true)
+        defer { temporaryDirectory.remove() }
+
+        try run("git", ["init", "-b", "main", "."], cwd: repo.path)
+        try run("git", ["config", "user.email", "test@example.com"], cwd: repo.path)
+        try run("git", ["config", "user.name", "Test User"], cwd: repo.path)
+        try "initial".write(
+            to: repo.appendingPathComponent("README.md"), atomically: true, encoding: .utf8)
+        try run("git", ["add", "README.md"], cwd: repo.path)
+        try run("git", ["commit", "-m", "initial"], cwd: repo.path)
+
+        let service = WorktreeService(
+            worktreeBaseURL: temp.appendingPathComponent("managed-worktrees", isDirectory: true))
+        let worktreePath = try await service.createWorktree(
+            projectId: UUID(),
+            repositoryPath: repo.path,
+            branchName: "keep-me"
+        )
+        let uncommittedFile = URL(fileURLWithPath: worktreePath)
+            .appendingPathComponent("uncommitted.txt")
+        try "unsaved work".write(to: uncommittedFile, atomically: true, encoding: .utf8)
+
+        await #expect(throws: WorktreeError.self) {
+            try await service.removeWorktree(
+                repositoryPath: repo.path,
+                worktreePath: worktreePath
+            )
+        }
+
+        assertTrue(
+            FileManager.default.fileExists(atPath: uncommittedFile.path),
+            "unforced removal leaves uncommitted work in place"
+        )
+    }
+
     private func run(_ executable: String, _ args: [String], cwd: String) throws {
         _ = try capture(executable, args, cwd: cwd)
     }

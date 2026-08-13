@@ -4,6 +4,7 @@ This file records changes pushed for local Argus releases. New entries use a `YY
 
 ## 2026-08-13
 
+- Deleting a worktree no longer gets stuck reporting "Git command timed out". An earlier attempt that ran out of time could leave the worktree in a state Git itself refused to remove, so every later attempt failed the same way. Deleting a worktree now finishes the job and frees the branch name for reuse, and it allows much more time before giving up. Deleting a worktree with unsaved changes still asks first and keeps those files.
 - Quitting Argus now names the Project and Workspace that still have a running process, so you can find that terminal without guessing.
 - The left sidebar now treats Workspaces as a top-level section like Projects. Its plus button creates a standalone Workspace, the Projects plus button only creates a Project, standalone Workspace icons no longer show a question mark, and Workspace paths are lighter so the title stands out.
 - Workspace rows now show how many terminals still have a running process, instead of how many tabs are open. The badge hides when nothing is running.

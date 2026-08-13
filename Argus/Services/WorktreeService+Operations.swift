@@ -47,6 +47,21 @@ extension WorktreeService {
         return worktreeURL.path
     }
 
+    /// Deleting a Managed Worktree has to survive a partially completed
+    /// earlier attempt. `git worktree remove` deletes the worktree's `.git`
+    /// link before it finishes, so an attempt that was killed midway (for
+    /// example by this service's own command timeout) leaves a directory that
+    /// every later `git worktree remove` refuses with "validation failed".
+    /// Retrying the same command can therefore never succeed on its own.
+    ///
+    /// A forced removal owns the outcome rather than the exact command: when
+    /// Git cannot complete it, the worktree files are deleted directly and the
+    /// stale registration is pruned. Pruning matters beyond tidiness, because a
+    /// leftover registration keeps the branch marked as checked out and blocks
+    /// creating that Worktree Workspace again.
+    ///
+    /// A non-forced removal keeps deferring to Git, so an unexpectedly dirty
+    /// worktree still fails loudly instead of silently discarding user work.
     func removeWorktree(
         repositoryPath: String,
         worktreePath: String,
@@ -58,14 +73,40 @@ extension WorktreeService {
             arguments += ["--force", "--force"]
         }
         arguments.append(worktreePath)
+
+        let gitRemovalError: Error?
         do {
-            _ = try await runGit(args: arguments, workingDirectory: repositoryPath)
+            _ = try await runGit(
+                args: arguments,
+                workingDirectory: repositoryPath,
+                timeout: Self.worktreeRemovalTimeout
+            )
+            gitRemovalError = nil
         } catch {
-            throw WorktreeError.worktreeRemovalFailed(error.localizedDescription)
+            guard force else {
+                throw WorktreeError.worktreeRemovalFailed(error.localizedDescription)
+            }
+            gitRemovalError = error
         }
-        if FileManager.default.fileExists(atPath: worktreePath) {
-            try FileManager.default.removeItem(atPath: worktreePath)
+
+        do {
+            if FileManager.default.fileExists(atPath: worktreePath) {
+                try FileManager.default.removeItem(atPath: worktreePath)
+            }
+        } catch {
+            throw WorktreeError.worktreeRemovalFailed(
+                (gitRemovalError ?? error).localizedDescription
+            )
         }
+
+        guard gitRemovalError != nil else { return }
+
+        // The files are gone, so the registration must go too or the branch
+        // stays unusable for a new Worktree Workspace.
+        _ = try? await runGit(
+            args: ["-C", repositoryPath, "worktree", "prune"],
+            workingDirectory: repositoryPath
+        )
     }
 
     func listBranches(repositoryPath: String) async throws -> [String] {

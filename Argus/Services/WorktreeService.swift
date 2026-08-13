@@ -66,6 +66,11 @@ final class WorktreeService: Sendable {
     /// Interactive git operations must eventually return control to the UI.
     private let gitCommandTimeout: TimeInterval
 
+    /// Removal deletes every file in a worktree, so it is allowed to take much
+    /// longer than a query. A short budget is worse than a slow delete here: an
+    /// interrupted removal leaves a worktree Git itself can no longer remove.
+    static let worktreeRemovalTimeout: TimeInterval = 300
+
     /// Base directory for all Argus-managed worktrees.
     static let worktreeBaseURL: URL = {
         FileManager.default

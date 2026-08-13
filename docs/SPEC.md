@@ -228,15 +228,17 @@ selection, or existing Git Preview Tabs.
 5. Existing local and remote branches MAY be selected for a Worktree Workspace.
 6. Branch choices MUST exclude branches already checked out in another worktree.
 7. Worktree removal MUST invoke `git worktree remove`; Project cleanup MAY force removal.
-8. Argus MUST scan its managed storage for Orphaned Worktrees not represented by Workspace state.
-9. Orphaned Worktrees MUST support adopt, delete, and dismiss actions.
-10. "Delete Worktree and Close" MUST remove the worktree before deleting Workspace state.
-11. If worktree removal fails, the Workspace MUST remain open and the underlying error MUST be shown.
-12. Worktree deletion progress MUST reflect actual removal and Workspace-close operation boundaries.
-13. V1 does not model Managed Worktree ownership separately from every possible external secondary worktree. Code MUST NOT infer safe deletion solely from the generic Worktree Workspace type.
-14. Pull Request intake MUST validate the Pull Request base Repository Identity against a fetch URL of the initiating Named Project. It MUST support HTTPS, SSH, and SCP-style GitHub fetch URLs, prefer `origin` when identities match multiple remotes, and MUST ignore push-only URLs.
-15. Pull Request intake MUST fetch `refs/pull/<number>/head`, resolve `FETCH_HEAD^{commit}` as the authoritative head for the attempt, and create or reuse the requested local head branch at that exact commit. Fork Pull Requests MUST work without adding a Git remote.
-16. Pull Request intake MUST reuse an exact existing branch, registered worktree, and matching Workspace. A same-name local branch at another commit MUST fail without resetting, force-updating, renaming, or deleting that branch or its worktree. Pull Request metadata and provider association remain transient; the ordinary Worktree Workspace is what the Session Snapshot restores.
+8. Forced worktree removal MUST complete even when `git worktree remove` cannot. When that command fails, Argus MUST delete the worktree directory directly and prune the stale worktree registration so the branch becomes available again. Unforced removal MUST NOT fall back this way, so a dirty worktree still fails and retains its uncommitted files.
+9. Worktree removal MUST allow substantially more time than a Git query, because an interrupted removal can leave a worktree that `git worktree remove` permanently refuses.
+10. Argus MUST scan its managed storage for Orphaned Worktrees not represented by Workspace state.
+11. Orphaned Worktrees MUST support adopt, delete, and dismiss actions.
+12. "Delete Worktree and Close" MUST remove the worktree before deleting Workspace state.
+13. If worktree removal fails, the Workspace MUST remain open and the underlying error MUST be shown.
+14. Worktree deletion progress MUST reflect actual removal and Workspace-close operation boundaries.
+15. V1 does not model Managed Worktree ownership separately from every possible external secondary worktree. Code MUST NOT infer safe deletion solely from the generic Worktree Workspace type.
+16. Pull Request intake MUST validate the Pull Request base Repository Identity against a fetch URL of the initiating Named Project. It MUST support HTTPS, SSH, and SCP-style GitHub fetch URLs, prefer `origin` when identities match multiple remotes, and MUST ignore push-only URLs.
+17. Pull Request intake MUST fetch `refs/pull/<number>/head`, resolve `FETCH_HEAD^{commit}` as the authoritative head for the attempt, and create or reuse the requested local head branch at that exact commit. Fork Pull Requests MUST work without adding a Git remote.
+18. Pull Request intake MUST reuse an exact existing branch, registered worktree, and matching Workspace. A same-name local branch at another commit MUST fail without resetting, force-updating, renaming, or deleting that branch or its worktree. Pull Request metadata and provider association remain transient; the ordinary Worktree Workspace is what the Session Snapshot restores.
 
 ### GitHub CLI Pull Request boundary
 

@@ -105,20 +105,17 @@ extension WorktreeService {
         }
     }
 
+    /// An Orphaned Worktree has no Workspace state left to protect, so it uses
+    /// the same forced removal contract as "Delete Worktree and Close".
     func cleanupOrphanedWorktree(
         repositoryPath: String,
         worktreePath: String
     ) async throws {
-        do {
-            _ = try await runGit(
-                args: ["-C", repositoryPath, "worktree", "remove", "--force", worktreePath],
-                workingDirectory: repositoryPath
-            )
-        } catch {
-            if FileManager.default.fileExists(atPath: worktreePath) {
-                try FileManager.default.removeItem(atPath: worktreePath)
-            }
-        }
+        try await removeWorktree(
+            repositoryPath: repositoryPath,
+            worktreePath: worktreePath,
+            force: true
+        )
         _ = try? await runGit(
             args: ["-C", repositoryPath, "worktree", "prune"],
             workingDirectory: repositoryPath
