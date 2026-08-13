@@ -81,6 +81,20 @@ enum WorkspaceFileTree {
         }
     }
 
+    static func directoryPaths(fromExpandedIds ids: Set<String>) -> [String] {
+        ids.compactMap { id in
+            guard id.hasPrefix("directory:") else { return nil }
+            let path = String(id.dropFirst("directory:".count))
+            return path.isEmpty ? nil : path
+        }
+        .sorted { lhs, rhs in
+            let lhsDepth = lhs.split(separator: "/").count
+            let rhsDepth = rhs.split(separator: "/").count
+            if lhsDepth != rhsDepth { return lhsDepth < rhsDepth }
+            return lhs.localizedStandardCompare(rhs) == .orderedAscending
+        }
+    }
+
     static func containsDirectory(path: String, in nodes: [WorkspaceFileTreeNode]) -> Bool {
         nodes.contains { node in
             guard case .directory(let children) = node.content else { return false }

@@ -25,18 +25,21 @@ struct RightSidebarView: View {
         VStack(spacing: 0) {
             header
 
-            Group {
-                switch selectedPanel {
-                case .files:
-                    WorkspaceFilesView(
-                        viewModel: filesViewModel,
-                        workspaceId: workspaceManager.selectedWorkspace?.id,
-                        rootPath: workspaceManager.selectedWorkspace?.currentDirectory,
-                        showHiddenFiles: appSettings.showHiddenFiles
-                    )
-                case .changes:
-                    GitSidebarView(showsHeader: false)
-                }
+            ZStack {
+                WorkspaceFilesView(
+                    viewModel: filesViewModel,
+                    workspaceId: workspaceManager.selectedWorkspace?.id,
+                    rootPath: workspaceManager.selectedWorkspace?.currentDirectory,
+                    showHiddenFiles: appSettings.showHiddenFiles
+                )
+                .opacity(selectedPanel == .files ? 1 : 0)
+                .allowsHitTesting(selectedPanel == .files)
+                .accessibilityHidden(selectedPanel != .files)
+
+                GitSidebarView(showsHeader: false)
+                    .opacity(selectedPanel == .changes ? 1 : 0)
+                    .allowsHitTesting(selectedPanel == .changes)
+                    .accessibilityHidden(selectedPanel != .changes)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

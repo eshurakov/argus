@@ -60,6 +60,7 @@
 		47D1A9CA1A992DF453F71680 /* RandomBranchNameGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A031E57FC9BCBBCA5EDE23 /* RandomBranchNameGeneratorTests.swift */; };
 		48E62BE8320ACBDE490E28A2 /* GitStatusAutoRefreshController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4CAD208D03EF627A5AADF06 /* GitStatusAutoRefreshController.swift */; };
 		4A4B99DDC421F63FA251D902 /* BrowserPanelConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8AA912E36F6B912DF8F8D2 /* BrowserPanelConfiguration.swift */; };
+		4B6E47296FB10A4717405864 /* RightSidebarSessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D444842FB896D791CB80AD5E /* RightSidebarSessionState.swift */; };
 		4B7BD698C037E123F109CA97 /* NewWorkspaceSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C01FB15CE585853A5C6581E /* NewWorkspaceSheet.swift */; };
 		4D1C3908D831F340E8ACEED0 /* TerminalDirectorySnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3194FA21992F916DD0D62855 /* TerminalDirectorySnapshotTests.swift */; };
 		4F81BDEFFCEA1A6FE07CD163 /* ReleaseNotesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AC77E6BD2DA84BD16B57890 /* ReleaseNotesTests.swift */; };
@@ -85,6 +86,7 @@
 		6AD570442875DC6B2D9D6581 /* WorkspaceItemDeletionConfirmation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B8200F602B2E637431B245 /* WorkspaceItemDeletionConfirmation.swift */; };
 		6B2966BA3AC4CBB303041FF7 /* AppSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0874A663598ED4B3DC8DDCB0 /* AppSettingsTests.swift */; };
 		6F37A27F399CF7C90403678B /* WorkspaceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91C4B07F7CA247F3E95F11A /* WorkspaceManager.swift */; };
+		70582A874872DA5BEE260116 /* RightSidebarSessionStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58D2FD06208386788CD6EAE7 /* RightSidebarSessionStateTests.swift */; };
 		70A03FBF810E62C0614FDCE9 /* TitlebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B4D60E83B20F24AA92F8F19 /* TitlebarView.swift */; };
 		731C90BF98E20510EDF3C7AB /* TerminalNSView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF781F36ADED8076735767AF /* TerminalNSView.swift */; };
 		74EF2866EEC883D1D40C4EA4 /* GitChangesEmptyStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E4ED5A34DFDB7515460CBDE /* GitChangesEmptyStateTests.swift */; };
@@ -262,6 +264,7 @@
 		564CED7FFF04C34E03455980 /* GitStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitStatus.swift; sourceTree = "<group>"; };
 		57E96BBBDC4C5F3459D8D06F /* AgentStatusRuntimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentStatusRuntimeTests.swift; sourceTree = "<group>"; };
 		5829E829591A4B9BB28161FD /* GitStatusServiceConcurrencyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitStatusServiceConcurrencyTests.swift; sourceTree = "<group>"; };
+		58D2FD06208386788CD6EAE7 /* RightSidebarSessionStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RightSidebarSessionStateTests.swift; sourceTree = "<group>"; };
 		592791F9F27A74E3630CFBDE /* RunningProcessConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunningProcessConfirmationView.swift; sourceTree = "<group>"; };
 		5A7DCFCA3143FA38266A9C08 /* RightSidebarView+WorkspaceFilesActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RightSidebarView+WorkspaceFilesActions.swift"; sourceTree = "<group>"; };
 		5B15831275B325CA2E8A4D69 /* SidebarDivider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarDivider.swift; sourceTree = "<group>"; };
@@ -349,6 +352,7 @@
 		D1A031E57FC9BCBBCA5EDE23 /* RandomBranchNameGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomBranchNameGeneratorTests.swift; sourceTree = "<group>"; };
 		D2FE31B230E300291D165856 /* GitSidebarView+Content.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GitSidebarView+Content.swift"; sourceTree = "<group>"; };
 		D3FB117AE6DF223AE2B1A0A0 /* ExistingWorktreeBranchChoiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExistingWorktreeBranchChoiceTests.swift; sourceTree = "<group>"; };
+		D444842FB896D791CB80AD5E /* RightSidebarSessionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RightSidebarSessionState.swift; sourceTree = "<group>"; };
 		D4DBB008CA1822F486F734DB /* RunningProcessConfirmationUIContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunningProcessConfirmationUIContractTests.swift; sourceTree = "<group>"; };
 		D606C09272FA91886158DAD8 /* ArgusKiloTurnCompletionPlugin.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = ArgusKiloTurnCompletionPlugin.js; sourceTree = "<group>"; };
 		D6739A9DD84516F1F20ABA6B /* Workspace+Panels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Workspace+Panels.swift"; sourceTree = "<group>"; };
@@ -596,6 +600,7 @@
 				EAEA40E4A41292D6EBE0E95B /* GitStatusUIContractTests.swift */,
 				6A13E31CBADD56D584A29886 /* GitStatusViewModelSectionAndPreviewTests.swift */,
 				51F91E726725C5D06375AA8E /* GitStatusViewModelTests.swift */,
+				58D2FD06208386788CD6EAE7 /* RightSidebarSessionStateTests.swift */,
 				9A24DE4AA9295D21C06F5C39 /* TitlebarGitContextFormatterTests.swift */,
 				9E5DA20601C0F85B1927FF74 /* TitlebarGitStatusViewModelTests.swift */,
 				E52E13DF9804EA3070FE3B7F /* WorkspaceFilesViewModelTests.swift */,
@@ -614,6 +619,7 @@
 				39B7F4539F94C01EAA98ADC9 /* GitSidebarView+Sections.swift */,
 				4B65BCC437F1421231D69ACC /* GitStatusViewModel.swift */,
 				E8262E7069B94AF259CF0905 /* GitStatusViewModel+Actions.swift */,
+				D444842FB896D791CB80AD5E /* RightSidebarSessionState.swift */,
 				6DE597954219DB5FD5F02E2E /* RightSidebarView.swift */,
 				3A5341177B2D47B156B6A161 /* RightSidebarView+WorkspaceFileModels.swift */,
 				5A7DCFCA3143FA38266A9C08 /* RightSidebarView+WorkspaceFilesActions.swift */,
@@ -964,6 +970,7 @@
 				DC8C7D2F1E716195BBA5EB9D /* RandomBranchNameGenerator.swift in Sources */,
 				11D39C3061F589896484986D /* ReleaseNotesPanelView.swift in Sources */,
 				BB01D0A98368F3A152BBF173 /* ReleaseNotesService.swift in Sources */,
+				4B6E47296FB10A4717405864 /* RightSidebarSessionState.swift in Sources */,
 				119DE14EA5609D09869E6820 /* RightSidebarView+WorkspaceFileModels.swift in Sources */,
 				9092C8AB076AD8FC641588B2 /* RightSidebarView+WorkspaceFileTree.swift in Sources */,
 				BDC7BC7F2CBFED6BA6D6548A /* RightSidebarView+WorkspaceFilesActions.swift in Sources */,
@@ -1058,6 +1065,7 @@
 				47D1A9CA1A992DF453F71680 /* RandomBranchNameGeneratorTests.swift in Sources */,
 				4F81BDEFFCEA1A6FE07CD163 /* ReleaseNotesTests.swift in Sources */,
 				AB121FB0384DC0B18B8FDC43 /* RepositoryRootNormalizationTests.swift in Sources */,
+				70582A874872DA5BEE260116 /* RightSidebarSessionStateTests.swift in Sources */,
 				CFFE74F5EEF51AF2FBAD1CE6 /* RunningProcessConfirmationTests.swift in Sources */,
 				8970715BFB505E2C762F235F /* RunningProcessConfirmationUIContractTests.swift in Sources */,
 				A0C1428612E01868D6B2BD69 /* SessionReconciliationTests.swift in Sources */,
@@ -1243,7 +1251,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks",
@@ -1263,7 +1271,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks/GhosttyKit.xcframework/macos-arm64",
 				);
-				MARKETING_VERSION = 1.10.1;
+				MARKETING_VERSION = 1.11.0;
 				OTHER_LDFLAGS = (
 					"-lghostty",
 					"-framework Metal",
@@ -1291,7 +1299,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks",
@@ -1311,7 +1319,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks/GhosttyKit.xcframework/macos-arm64",
 				);
-				MARKETING_VERSION = 1.10.1;
+				MARKETING_VERSION = 1.11.0;
 				OTHER_LDFLAGS = (
 					"-lghostty",
 					"-framework Metal",

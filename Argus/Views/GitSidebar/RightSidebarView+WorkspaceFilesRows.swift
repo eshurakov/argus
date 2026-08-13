@@ -1,3 +1,6 @@
+// Row rendering and Workspace Item Operations for the Files View share this
+// view's private state, so they stay in one file rather than widening access.
+// swiftlint:disable file_length
 import Foundation
 import SwiftUI
 
@@ -8,8 +11,8 @@ struct WorkspaceFilesView: View {
     let showHiddenFiles: Bool
     @EnvironmentObject private var workspaceManager: WorkspaceManager
     @EnvironmentObject var appSettings: AppSettings
+    @EnvironmentObject private var sessionState: RightSidebarSessionState
     @State private var autoRefreshController = WorkspaceFilesAutoRefreshController()
-    @State private var expandedDirectoryIds: Set<String> = []
     @State private var selectedItemId: String?
     @State private var selectedItemPath: String?
     @State private var pendingDeletion: WorkspaceItemDeletionRequest?
@@ -19,7 +22,6 @@ struct WorkspaceFilesView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .id(request)
             .task(id: request) {
-                expandedDirectoryIds = []
                 selectedItemId = nil
                 selectedItemPath = nil
                 pendingDeletion = nil
@@ -31,7 +33,7 @@ struct WorkspaceFilesView: View {
                 autoRefreshController.start(rootPath: request.rootPath) {
                     await viewModel.refresh(request: request)
                 }
-                await viewModel.refresh(request: request)
+                await restoreExpandedDirectories(request: request)
             }
             .onDisappear {
                 autoRefreshController.stop()
@@ -242,9 +244,26 @@ extension WorkspaceFilesView {
         selectWorkspaceItem(file)
     }
 
+    private var expandedDirectoryIds: Set<String> {
+        guard let request else { return [] }
+        return sessionState.expandedDirectoryIds(
+            workspaceId: request.workspaceId,
+            rootPath: request.rootPath
+        )
+    }
+
     private func toggleWorkspaceDirectory(_ directory: WorkspaceFileTreeNode, rootPath: String) {
+        guard let initiatingRequest = request,
+            initiatingRequest.rootPath == rootPath
+        else {
+            return
+        }
         if expandedDirectoryIds.contains(directory.id) {
-            expandedDirectoryIds.remove(directory.id)
+            sessionState.collapseDirectory(
+                directory.id,
+                workspaceId: initiatingRequest.workspaceId,
+                rootPath: initiatingRequest.rootPath
+            )
         } else {
             openWorkspaceDirectory(directory, rootPath: rootPath)
         }
@@ -257,10 +276,20 @@ extension WorkspaceFilesView {
             return
         }
         selectDirectory(directory)
-        guard !expandedDirectoryIds.contains(directory.id) else { return }
-        expandedDirectoryIds.insert(directory.id)
+        sessionState.expandDirectory(
+            directory.id,
+            workspaceId: initiatingRequest.workspaceId,
+            rootPath: initiatingRequest.rootPath
+        )
         Task {
             await viewModel.loadChildren(request: initiatingRequest, directoryPath: directory.path)
+        }
+    }
+
+    private func restoreExpandedDirectories(request: WorkspaceFileTreeRequest) async {
+        await viewModel.refresh(request: request)
+        for directoryPath in WorkspaceFileTree.directoryPaths(fromExpandedIds: expandedDirectoryIds) {
+            await viewModel.loadChildren(request: request, directoryPath: directoryPath)
         }
     }
 
@@ -375,7 +404,11 @@ extension WorkspaceFilesView {
         }
         selectedItemId = "\(item.idPrefix):\(newPath)"
         selectedItemPath = newPath
-        expandedDirectoryIds = []
+        sessionState.setExpandedDirectoryIds(
+            [],
+            workspaceId: initiatingRequest.workspaceId,
+            rootPath: initiatingRequest.rootPath
+        )
     }
 
     func workspaceTreeRowLeadingPadding(depth: Int) -> CGFloat {

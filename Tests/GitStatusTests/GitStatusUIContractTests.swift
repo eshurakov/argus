@@ -311,8 +311,53 @@ struct WorkspaceFilesUIContractTests {
         try SourceContract("Argus/Views/MainWindowView.swift").containsAll(
             [
                 "RightSidebarView()",
-                "// Right side panel"
+                "// Right side panel",
+                "@StateObject private var rightSidebarSessionState = RightSidebarSessionState()",
+                ".environmentObject(rightSidebarSessionState)",
+                "rightSidebarSessionState.retainWorkspaces(ids)"
             ], "right sidebar host")
+    }
+
+    @Test
+    func switchingRightSidebarViewsKeepsBothViewsMounted() throws {
+        let rightView = try SourceContract("Argus/Views/GitSidebar/RightSidebarView.swift")
+        let body = try rightView.section(
+            after: "var body: some View {",
+            before: "private var header"
+        )
+
+        #expect(body.contains("ZStack {"))
+        #expect(!body.contains("switch selectedPanel"))
+        try SourceContract("Argus/Views/GitSidebar/RightSidebarView+WorkspaceFilesRows.swift")
+            .containsAll(
+                [
+                    "@EnvironmentObject private var sessionState: RightSidebarSessionState",
+                    "sessionState.expandDirectory(",
+                    "sessionState.collapseDirectory(",
+                    "restoreExpandedDirectories(request: request)"
+                ],
+                "Files View expansion must live in the window session store"
+            )
+        try SourceContract("Argus/Views/GitSidebar/GitSidebarView.swift").containsAll(
+            [
+                "@EnvironmentObject var sessionState: RightSidebarSessionState",
+                "sessionState.expandedSectionKinds(for: workspaceId)",
+                "sessionState.toggleCollapsedDirectory("
+            ],
+            "Changes View expansion must live in the window session store"
+        )
+        for expected in [
+            "WorkspaceFilesView(",
+            ".opacity(selectedPanel == .files ? 1 : 0)",
+            ".allowsHitTesting(selectedPanel == .files)",
+            ".accessibilityHidden(selectedPanel != .files)",
+            "GitSidebarView(showsHeader: false)",
+            ".opacity(selectedPanel == .changes ? 1 : 0)",
+            ".allowsHitTesting(selectedPanel == .changes)",
+            ".accessibilityHidden(selectedPanel != .changes)"
+        ] {
+            #expect(body.contains(expected))
+        }
     }
 
     @Test
@@ -383,6 +428,27 @@ struct WorkspaceFilesUIContractTests {
     }
 
     @Test
+    func deletingWorkspaceItemsPreservesExpandedDirectories() throws {
+        let rows = try SourceContract(
+            "Argus/Views/GitSidebar/RightSidebarView+WorkspaceFilesRows.swift"
+        )
+        let deleteBody = try rows.section(
+            after: "func deleteWorkspaceItem(",
+            before: "func renameWorkspaceItem("
+        )
+        #expect(
+            !deleteBody.contains("expandedDirectoryIds = []"),
+            "deleting a Workspace Item must not collapse the Workspace File Tree"
+        )
+    }
+}
+
+/// Row, operation, and File Tab contracts for the Files View. These share the
+/// same source contracts, so they stay together and away from the broader
+/// Right Sidebar layout expectations.
+@Suite
+struct WorkspaceFileRowUIContractTests {
+    @Test
     func filesPanelRowsSupportSelectionOpenAndContextActions() throws {
         let rightView = try SourceContract("Argus/Views/GitSidebar/RightSidebarView.swift")
         assertWorkspaceFileRows(in: rightView)
@@ -397,21 +463,6 @@ struct WorkspaceFilesUIContractTests {
         confirmation.excludes("NSAlert", "Workspace Item deletion must not open an AppKit alert")
         confirmation.excludes("runModal()", "Workspace Item deletion must not start a modal run loop")
         try assertFilePanelIntegration()
-    }
-
-    @Test
-    func deletingWorkspaceItemsPreservesExpandedDirectories() throws {
-        let rows = try SourceContract(
-            "Argus/Views/GitSidebar/RightSidebarView+WorkspaceFilesRows.swift"
-        )
-        let deleteBody = try rows.section(
-            after: "func deleteWorkspaceItem(",
-            before: "func renameWorkspaceItem("
-        )
-        #expect(
-            !deleteBody.contains("expandedDirectoryIds = []"),
-            "deleting a Workspace Item must not collapse the Workspace File Tree"
-        )
     }
 
     private func assertWorkspaceFileRows(in rightView: SourceContract) {
@@ -508,5 +559,4 @@ struct WorkspaceFilesUIContractTests {
                 "alignment: .topLeading"
             ], "file tab content rendering")
     }
-
 }  // swiftlint:disable:this file_length

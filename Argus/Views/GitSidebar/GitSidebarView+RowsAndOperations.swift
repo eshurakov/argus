@@ -23,11 +23,7 @@ extension GitSidebarView {
             canPerformActions: canPerformActions,
             onAddToGitignore: addToGitignore
         ) {
-            if collapsedDirectoryIds.contains(directory.id) {
-                collapsedDirectoryIds.remove(directory.id)
-            } else {
-                collapsedDirectoryIds.insert(directory.id)
-            }
+            sessionState.toggleCollapsedDirectory(directory.id, workspaceId: owner.workspaceId)
         }
     }
 
@@ -342,6 +338,11 @@ extension GitSidebarView {
         autoRefreshController.start(rootPath: owner.rootPath) {
             await refresh(owner: owner)
         }
+    }
+
+    var collapsedDirectoryIds: Set<String> {
+        guard let workspaceId = selectedSnapshotOwner?.workspaceId else { return [] }
+        return sessionState.collapsedDirectoryIds(for: workspaceId)
     }
 
     var selectedSnapshotOwner: GitStatusSnapshotOwner? {

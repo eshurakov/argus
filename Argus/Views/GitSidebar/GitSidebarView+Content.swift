@@ -266,15 +266,15 @@ extension GitSidebarView {
     }
 
     private func isSectionExpanded(_ kind: GitChangeSectionKind) -> Bool {
-        expandedSectionKinds.contains(kind)
+        guard let workspaceId = selectedSnapshotOwner?.workspaceId else {
+            return RightSidebarSessionState.defaultExpandedSectionKinds.contains(kind)
+        }
+        return sessionState.expandedSectionKinds(for: workspaceId).contains(kind)
     }
 
     private func setSectionExpanded(_ kind: GitChangeSectionKind, isExpanded: Bool) {
-        if isExpanded {
-            expandedSectionKinds.insert(kind)
-        } else {
-            expandedSectionKinds.remove(kind)
-        }
+        guard let workspaceId = selectedSnapshotOwner?.workspaceId else { return }
+        sessionState.setSectionExpanded(kind, isExpanded: isExpanded, workspaceId: workspaceId)
     }
 
     private func sectionExpansionBinding(for kind: GitChangeSectionKind) -> Binding<Bool> {

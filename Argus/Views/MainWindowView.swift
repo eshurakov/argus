@@ -94,6 +94,7 @@ struct MainWindowView: View {  // swiftlint:disable:this type_body_length
     @StateObject private var sidebarState = SidebarState()
     @StateObject private var gitSidebarState = GitSidebarState()
     @StateObject private var gitStatusViewModel = GitStatusViewModel()
+    @StateObject private var rightSidebarSessionState = RightSidebarSessionState()
 
     // MARK: - Sheet State
 
@@ -199,6 +200,10 @@ struct MainWindowView: View {  // swiftlint:disable:this type_body_length
         .environmentObject(sidebarState)
         .environmentObject(gitSidebarState)
         .environmentObject(gitStatusViewModel)
+        .environmentObject(rightSidebarSessionState)
+        .onChange(of: workspaceIDs, initial: true) { _, ids in
+            rightSidebarSessionState.retainWorkspaces(ids)
+        }
         .environment(\.colorScheme, ghosttyApp.chromePalette.isDark ? .dark : .light)
         .onReceive(NotificationCenter.default.publisher(for: .toggleSidebar)) { _ in
             sidebarState.toggle()
@@ -389,6 +394,10 @@ struct MainWindowView: View {  // swiftlint:disable:this type_body_length
             orphanedWorktrees = allOrphans
             showOrphanedWorktreesSheet = true
         }
+    }
+
+    private var workspaceIDs: Set<UUID> {
+        Set(workspaceManager.workspaces.map(\.id))
     }
 
     private func clampSidebarWidths(windowWidth: CGFloat) {

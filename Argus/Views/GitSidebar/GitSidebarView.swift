@@ -319,9 +319,8 @@ struct GitSidebarView: View {
     @EnvironmentObject var workspaceManager: WorkspaceManager
     @EnvironmentObject var viewModel: GitStatusViewModel
     @EnvironmentObject var appSettings: AppSettings
+    @EnvironmentObject var sessionState: RightSidebarSessionState
     @State var autoRefreshController = GitStatusAutoRefreshController()
-    @State var expandedSectionKinds = Set(GitChangeSectionKind.allCases)
-    @State var collapsedDirectoryIds: Set<String> = []
 
     init(showsHeader: Bool = true) {
         self.showsHeader = showsHeader

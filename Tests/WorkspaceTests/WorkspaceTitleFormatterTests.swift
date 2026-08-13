@@ -53,12 +53,16 @@ struct WorkspaceTitleFormatterTests {
             "A terminal in feature-ui — Argus still has a running process. Quitting will terminate that process.",
             "one named workspace is included in the quit warning"
         )
+        let joinedLabels = ListFormatter.localizedString(
+            byJoining: ["feature-ui — Argus", "Notes — notes"]
+        )
         assertEqual(
             RunningProcessConfirmationCopy.applicationMessage(
                 processCount: 3,
                 locationLabels: ["feature-ui — Argus", "Notes — notes"]
             ),
-            "Terminals in \(ListFormatter.localizedString(byJoining: ["feature-ui — Argus", "Notes — notes"])) still have a running process. Quitting will terminate those processes.",
+            "Terminals in \(joinedLabels) still have a running process. "
+                + "Quitting will terminate those processes.",
             "multiple named workspaces are listed in the quit warning"
         )
     }
