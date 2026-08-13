@@ -175,6 +175,7 @@
 		E20DFC66EAE40A5C68EC4F09 /* SidebarLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D753CE6E1FFD67B19A85930F /* SidebarLayoutTests.swift */; };
 		E3FCCA98DDAA416589EF30A8 /* NewProjectSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 704AC69ACE9114900992E244 /* NewProjectSheet.swift */; };
 		E4830742CCBF697A5503CDFB /* GhosttyConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93A28C47CFFC35C8515E0B8F /* GhosttyConfig.swift */; };
+		E86FD6F6D14B7A6DE416A093 /* RightSidebarView+WorkspaceFileLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 621BDE2A45BFFDC6F008EE55 /* RightSidebarView+WorkspaceFileLabels.swift */; };
 		EAB3343A6EE57205E148A50E /* GitFileStatusStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1ED524D3519A8D6A0A46D0 /* GitFileStatusStyle.swift */; };
 		EE31F58DE3DF374DB8E6C07E /* SessionSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EA813F930B12FDBB09C67C8 /* SessionSnapshotTests.swift */; };
 		EF04235849461CCB3B6C16E5 /* Panel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E5CB1EAA0A66B7411EB8C71 /* Panel.swift */; };
@@ -271,6 +272,7 @@
 		5B4D60E83B20F24AA92F8F19 /* TitlebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitlebarView.swift; sourceTree = "<group>"; };
 		5F828578257356A65F90D274 /* BranchAvailabilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BranchAvailabilityTests.swift; sourceTree = "<group>"; };
 		60943ED18C50AF13F94B9691 /* RightSidebarView+WorkspaceFilesRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RightSidebarView+WorkspaceFilesRows.swift"; sourceTree = "<group>"; };
+		621BDE2A45BFFDC6F008EE55 /* RightSidebarView+WorkspaceFileLabels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RightSidebarView+WorkspaceFileLabels.swift"; sourceTree = "<group>"; };
 		66ABF976438B37B162B557DA /* GitStatusPresentationLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitStatusPresentationLayoutTests.swift; sourceTree = "<group>"; };
 		673F5E881AC0083D421778FD /* pierre-diffs-bundle.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "pierre-diffs-bundle.js"; sourceTree = "<group>"; };
 		67AA67ACDD9DBF4C86C13295 /* GitStatusService+Operations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GitStatusService+Operations.swift"; sourceTree = "<group>"; };
@@ -621,6 +623,7 @@
 				E8262E7069B94AF259CF0905 /* GitStatusViewModel+Actions.swift */,
 				D444842FB896D791CB80AD5E /* RightSidebarSessionState.swift */,
 				6DE597954219DB5FD5F02E2E /* RightSidebarView.swift */,
+				621BDE2A45BFFDC6F008EE55 /* RightSidebarView+WorkspaceFileLabels.swift */,
 				3A5341177B2D47B156B6A161 /* RightSidebarView+WorkspaceFileModels.swift */,
 				5A7DCFCA3143FA38266A9C08 /* RightSidebarView+WorkspaceFilesActions.swift */,
 				60943ED18C50AF13F94B9691 /* RightSidebarView+WorkspaceFilesRows.swift */,
@@ -971,6 +974,7 @@
 				11D39C3061F589896484986D /* ReleaseNotesPanelView.swift in Sources */,
 				BB01D0A98368F3A152BBF173 /* ReleaseNotesService.swift in Sources */,
 				4B6E47296FB10A4717405864 /* RightSidebarSessionState.swift in Sources */,
+				E86FD6F6D14B7A6DE416A093 /* RightSidebarView+WorkspaceFileLabels.swift in Sources */,
 				119DE14EA5609D09869E6820 /* RightSidebarView+WorkspaceFileModels.swift in Sources */,
 				9092C8AB076AD8FC641588B2 /* RightSidebarView+WorkspaceFileTree.swift in Sources */,
 				BDC7BC7F2CBFED6BA6D6548A /* RightSidebarView+WorkspaceFilesActions.swift in Sources */,

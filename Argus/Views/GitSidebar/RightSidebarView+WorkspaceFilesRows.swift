@@ -1,6 +1,3 @@
-// Row rendering and Workspace Item Operations for the Files View share this
-// view's private state, so they stay in one file rather than widening access.
-// swiftlint:disable file_length
 import Foundation
 import SwiftUI
 
@@ -136,40 +133,6 @@ extension WorkspaceFilesView {
         }
     }
 
-    private func workspaceDirectoryLabel(
-        _ directory: WorkspaceFileTreeNode,
-        isExpanded: Bool,
-        isLoading: Bool,
-        isSelected: Bool
-    ) -> some View {
-        HStack(spacing: 7) {
-            Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                .accessibilityHidden(true)
-                .frame(width: 12)
-            ZStack {
-                if isLoading {
-                    ProgressView()
-                        .controlSize(.small)
-                } else {
-                    Image(systemName: isExpanded ? "folder.fill" : "folder")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                        .accessibilityHidden(true)
-                }
-            }
-            .frame(width: 14)
-            Text(directory.name)
-                .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 11)))
-                .lineLimit(1)
-                .truncationMode(.tail)
-            Spacer(minLength: 0)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-    }
-
     private func workspaceFileRow(
         _ file: WorkspaceFileTreeNode,
         depth: Int,
@@ -209,26 +172,6 @@ extension WorkspaceFilesView {
             .accessibilityValue(isSelected ? "Selected" : "")
             .accessibilityAddTraits(isSelected ? .isSelected : [])
         }
-    }
-
-    private func workspaceFileLabel(
-        _ file: WorkspaceFileTreeNode,
-        isSelected: Bool
-    ) -> some View {
-        HStack(spacing: 7) {
-            Image(systemName: WorkspaceFileIcon.systemName(for: file.name))
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                .accessibilityHidden(true)
-                .frame(width: 14)
-            Text(file.name)
-                .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 11)))
-                .lineLimit(1)
-                .truncationMode(.tail)
-            Spacer(minLength: 0)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
     }
 
     private func selectWorkspaceItem(_ item: WorkspaceFileTreeNode) {
@@ -411,7 +354,4 @@ extension WorkspaceFilesView {
         )
     }
 
-    func workspaceTreeRowLeadingPadding(depth: Int) -> CGFloat {
-        12 + CGFloat(depth * 16)
-    }
 }

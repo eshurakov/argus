@@ -25,11 +25,11 @@ This file records changes pushed for local Argus releases. New entries use a `YY
 
 ## 2026-08-09
 
-- Users can keep an Empty Workspace open after closing its final Terminal Tab, restore it without terminal panels, and create a new Terminal Tab from its empty state. ([e3fe82f](https://github.com/eshurakov/argus/commit/e3fe82f))
+- Users can keep an Empty Workspace open after closing its final Terminal Tab, restore it without terminal panels, and create a new Terminal Tab from its empty state. ([e3fe82f](https://github.com/jeanduplessis/argus/commit/e3fe82f))
 
-- The Changes View can now combine working changes and show committed changes against the base branch, with independent settings and read-only previews. ([48c6964](https://github.com/jeanduplessis/argus/commit/48c6964))
+- The Changes View can now combine working changes and show committed changes against the base branch, with independent settings and read-only previews. ([9b58e1c](https://github.com/jeanduplessis/argus/commit/9b58e1c))
 
-- Named Projects can now create a Worktree Workspace from a GitHub Pull Request URL or number, including fork Pull Requests, through the active GitHub CLI context. ([d447f6a](https://github.com/jeanduplessis/argus/commit/d447f6a))
+- Named Projects can now create a Worktree Workspace from a GitHub Pull Request URL or number, including fork Pull Requests, through the active GitHub CLI context. ([938826e](https://github.com/jeanduplessis/argus/commit/938826e))
 
 ## 2026-08-08
 

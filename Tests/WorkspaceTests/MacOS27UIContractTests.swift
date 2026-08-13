@@ -98,7 +98,7 @@ struct MacOS27UIContractTests {
         #expect(startup.contains("fatalError("))
 
         let files = try SourceContract(
-            "Argus/Views/GitSidebar/RightSidebarView+WorkspaceFilesRows.swift"
+            "Argus/Views/GitSidebar/RightSidebarView+WorkspaceFileLabels.swift"
         )
         files.containsAll(
             [
