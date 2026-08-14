@@ -4,6 +4,7 @@ This file records changes pushed for local Argus releases. New entries use a `YY
 
 ## 2026-08-14
 
+- Git diffs now use native macOS text rendering instead of an embedded web view, improving selection, copying, scrolling, and accessibility. Split and Unified layouts remain available; long lines scroll horizontally. Argus now requires macOS 26 and Xcode 26. ([a7350de](https://github.com/jeanduplessis/argus/commit/a7350de))
 - The Changes panel now gives the branch name its own line, with file totals and upstream status on a smaller second line. Long branch and upstream names no longer crowd out ahead/behind counts. ([6c2bc8d](https://github.com/jeanduplessis/argus/commit/6c2bc8d))
 - The app now uses one consistent style for interface details. Text in sidebar headers, the branch bar, file counts, and file headers follows the Interface Text Size setting like the rest of the chrome; the running-process badge on workspaces and the count on the Changes tab share one badge style; tab and workspace icons share one size and weight; and hover backgrounds use one shared treatment. ([3576e05](https://github.com/jeanduplessis/argus/commit/3576e05))
 - Empty, error, and "not a repository" messages in the Files and Changes panels, file previews, and release notes now share one layout with consistent icon size, title, and action button styling. ([3576e05](https://github.com/jeanduplessis/argus/commit/3576e05))
