@@ -36,7 +36,7 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 4. An explicitly supplied Standalone Workspace directory MUST take precedence over the configured default. The configured default MUST take precedence over the user's home directory.
 5. Appearance settings MUST include interface text size, document text size, and compact or comfortable interface density.
 6. Terminal settings MUST include the audible-bell preference. Ghostty configuration remains authoritative for terminal font, colors other than Argus's background override, and keybindings.
-7. Files and Changes settings MUST include hidden Workspace Item visibility, initial source wrapping, initial Markdown and SVG display modes, initial diff layout, initial diff overflow behavior, and these two global Changes View toggles:
+7. Files and Changes settings MUST include hidden Workspace Item visibility, initial source wrapping, initial Markdown and SVG display modes, initial diff layout, and these two global Changes View toggles:
    - **Combine working changes**;
    - **Show committed changes against Base Branch**.
    Both toggles MUST default to off, persist independently outside the Session Snapshot, and apply immediately. Combining Working Changes MUST alter only presentation and MUST NOT alter the index. Against Base MUST be additive, read-only, and computed from Git data already stored locally without contacting or updating a remote.
@@ -202,7 +202,8 @@ selection, or existing Git Preview Tabs.
 1. Diff and Blame MUST open Git Preview Tabs in the initiating Workspace. Reopening a matching Preview Kind, Git Status Root, path, and comparison context SHOULD refresh and select the existing tab.
 2. Uncommitted Diff MUST compare `HEAD` with the complete working-tree content, using empty content for an absent side. A canceled net change MUST show an explanatory state rather than a blank or failing diff.
 3. Against Base Diff MUST compare the merge base with `HEAD`; Against Base Blame MUST target `HEAD` so Working Changes do not alter the committed preview.
-4. Existing binary, size, line-length, and failure behavior MUST remain unchanged.
+4. Structured diffs MUST render natively with Split or Unified layout. Long lines MUST scroll horizontally.
+5. Existing binary, size, line-length, and failure behavior MUST remain unchanged.
 
 #### Refresh, clean state, and UI rules
 
@@ -305,12 +306,11 @@ selection, or existing Git Preview Tabs.
 
 1. `scripts/build.sh` MUST build the app and, by default, the Companion CLI scaffold, bundle the CLI at `Contents/Resources/bin/argus` relative to the built application, and ad-hoc sign the result.
 2. Debug MUST remain the default configuration; `--release` MUST select Release.
-3. The build script MUST support build, web-asset rebuild, CLI-only build, run, install, clean, and Xcode-project generation commands.
-4. Normal app builds MUST use the committed Pierre diff renderer bundle and MUST NOT require Node.js.
-5. Rebuilding that bundle MUST use the pinned `ArgusWeb` dependencies. The generated bundle MUST be the only tracked artifact changed by the rebuild.
-6. Run and install operations MUST ask a running Argus instance to quit, wait up to approximately five seconds, and then terminate it if needed.
-7. Launching a newly built app MUST strip inherited Argus identity environment variables.
-8. V1 build tooling does not check for active coding-agent processes before replacing the app.
+3. The build script MUST support build, CLI-only build, run, install, clean, and Xcode-project generation commands.
+4. Structured Git Preview diffs MUST render with the native `SwiftDiffs` package. Normal app builds MUST NOT require Node.js or a committed JavaScript renderer bundle.
+5. Run and install operations MUST ask a running Argus instance to quit, wait up to approximately five seconds, and then terminate it if needed.
+6. Launching a newly built app MUST strip inherited Argus identity environment variables.
+7. V1 build tooling does not check for active coding-agent processes before replacing the app.
 
 ## Known v1 limitations
 

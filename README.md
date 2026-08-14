@@ -25,14 +25,12 @@ The Companion CLI is a scaffold and has no socket-backed commands. Argus support
 
 ## Requirements
 
-- macOS 14 or later
-- Xcode 16 or later
+- macOS 26 or later
+- Xcode 26 or later
 - Swift 6
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen)
 - [SwiftLint](https://github.com/realm/SwiftLint) for repository validation
 - the vendored `Frameworks/GhosttyKit.xcframework`
-
-Node.js is needed only when rebuilding the committed Pierre diff renderer bundle.
 
 The GitHub CLI is an optional runtime requirement for Pull Request Workspaces.
 Install and authenticate it with `brew install gh` and `gh auth login` when
@@ -75,7 +73,6 @@ Documents have distinct roles:
 ```text
 Argus/          macOS application source
 ArgusCLI/       Companion CLI scaffold
-ArgusWeb/       Build-time source for the committed diff renderer bundle
 Frameworks/     Vendored GhosttyKit framework
 Tests/          Swift Testing suites grouped by product domain
 docs/           Product, UI, development, release, proposal, and architecture docs

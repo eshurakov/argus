@@ -6,9 +6,6 @@
 __pycache__/
 *.pyc
 
-# JavaScript build dependencies
-ArgusWeb/node_modules/
-
 # GhosttyKit.xcframework is a symlink to a machine-local build (see
 # Frameworks/README.md / scripts/build-ghosttykit.sh) — never commit it.
 Frameworks/GhosttyKit.xcframework

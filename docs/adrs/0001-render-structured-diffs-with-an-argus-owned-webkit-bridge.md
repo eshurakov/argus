@@ -1,6 +1,6 @@
 # ADR 0001: Render structured diffs with an Argus-owned WebKit bridge
 
-- Status: Accepted
+- Status: Superseded by `0002-render-structured-diffs-with-native-swift-diffs.md`
 - Date: 2026-07-09
 
 ## Context

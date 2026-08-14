@@ -31,7 +31,6 @@ struct AppSettingsTests {
             #expect(!settings.openMarkdownInPreview)
             #expect(!settings.openSVGInPreview)
             #expect(settings.defaultDiffStyle == .split)
-            #expect(settings.defaultDiffOverflow == .scroll)
             #expect(!settings.combineWorkingChangeSections)
             #expect(!settings.showBaseBranchChanges)
             #expect(settings.homepage.isEmpty)
@@ -218,12 +217,10 @@ struct AppSettingsTests {
         #expect(settings.presentationMetrics.projectHeaderVerticalPadding == 2)
         #expect(settings.presentationMetrics.changeSectionHeaderVerticalPadding == 7)
         #expect(settings.defaultDiffStyle.argusDiffStyle == .split)
-        #expect(settings.defaultDiffOverflow.argusDiffOverflow == .scroll)
 
         settings.interfaceTextSize = 14
         settings.interfaceDensity = .comfortable
         settings.defaultDiffStyle = .unified
-        settings.defaultDiffOverflow = .wrap
 
         #expect(settings.presentationMetrics.textSize(forBaseSize: 11) == 14)
         #expect(settings.presentationMetrics.treeRowVerticalPadding == 5)
@@ -231,7 +228,6 @@ struct AppSettingsTests {
         #expect(settings.presentationMetrics.projectHeaderVerticalPadding == 4)
         #expect(settings.presentationMetrics.changeSectionHeaderVerticalPadding == 9)
         #expect(settings.defaultDiffStyle.argusDiffStyle == .unified)
-        #expect(settings.defaultDiffOverflow.argusDiffOverflow == .wrap)
     }
 
     @Test

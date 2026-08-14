@@ -177,11 +177,6 @@ struct SettingsView: View {
                         Text(style.title).tag(style)
                     }
                 }
-                Picker("Default diff overflow", selection: $settings.defaultDiffOverflow) {
-                    ForEach(AppSettings.DiffOverflow.allCases) { overflow in
-                        Text(overflow.title).tag(overflow)
-                    }
-                }
                 Toggle(isOn: $settings.combineWorkingChangeSections) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Combine working changes")

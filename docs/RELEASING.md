@@ -15,8 +15,7 @@ The CLI version in `ArgusCLI/main.swift` must match the application version. `sc
 
 1. Confirm `docs/SPEC.md` describes the behavior being released.
 2. Update the version values when the release identity changes.
-3. Rebuild and commit the Pierre bundle if `ArgusWeb` changed.
-4. Run:
+3. Run:
 
    ```sh
    ./scripts/test.sh

@@ -307,7 +307,6 @@ struct PanelContentView: View {
                 GitPreviewPanelContentView(
                     panel: previewPanel,
                     initialDiffStyle: appSettings.defaultDiffStyle.argusDiffStyle,
-                    initialOverflow: appSettings.defaultDiffOverflow.argusDiffOverflow,
                     documentTextSize: appSettings.documentTextSize
                 )
                 .id(previewPanel.id)

@@ -2,11 +2,11 @@
 
 ## Requirements
 
-Argus targets macOS 14 and Swift 6. The Xcode project is generated from `project.yml` for Xcode 16.
+Argus targets macOS 26 and Swift 6. The Xcode project is generated from `project.yml` for Xcode 26.
 
 Required tools:
 
-- Xcode 16 or later;
+- Xcode 26 or later;
 - Xcode command-line tools;
 - XcodeGen;
 - SwiftLint;
@@ -17,8 +17,6 @@ Swift 6 toolchains include `swift-format`. Install the other command-line tools 
 ```sh
 brew install xcodegen swiftlint
 ```
-
-Node.js and npm are optional. They are used only to rebuild the committed Pierre diff renderer bundle.
 
 The GitHub CLI is also optional. It is used only when creating a Worktree
 Workspace from a Pull Request in a Named Project's New Workspace sheet. Argus
@@ -78,7 +76,6 @@ Other supported commands:
 ```sh
 ./scripts/build.sh cli
 ./scripts/build.sh clean
-./scripts/build.sh web
 ```
 
 Pass `--no-cli` to omit the CLI scaffold or `--no-open` to build or install without launching Argus.
@@ -119,19 +116,13 @@ Tests are grouped by product domain:
 
 Prefer behavioral tests through `@testable import Argus`. Source-contract tests are reserved for SwiftUI and AppKit wiring that cannot be observed through a stable boundary without a full UI test.
 
-## Diff renderer bundle
+## Native diff rendering
 
-Argus renders structured diffs through a small WebKit bridge around `@pierre/diffs`. The generated `Argus/Resources/pierre-diffs-bundle.js` is committed so normal Xcode builds do not need Node.js or network access.
-
-When `ArgusWeb` dependencies or bridge source change, rebuild the bundle with:
-
-```sh
-./scripts/build.sh web
-```
-
-Commit the updated bundle with its source or dependency change. See
-`docs/adrs/0001-render-structured-diffs-with-an-argus-owned-webkit-bridge.md`
-for ownership and runtime boundaries.
+Argus renders structured diffs with the native `SwiftDiffs` package. Git Preview
+Tabs keep Split and Unified layout controls; long lines scroll horizontally.
+Blame previews remain ANSI text. See
+`docs/adrs/0002-render-structured-diffs-with-native-swift-diffs.md` for ownership
+and runtime boundaries.
 
 ## GhosttyKit
 

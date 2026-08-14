@@ -243,7 +243,7 @@ extension GitPreviewServiceTests {
         else {
             fail("expected recoverable binary text preview, got \(result)")
         }
-        assertEqual(output, "Binary file differs", "binary files bypass Pierre rendering")
+        assertEqual(output, "Binary file differs", "binary files bypass structured diff rendering")
     }
 
     @Test
@@ -263,7 +263,7 @@ extension GitPreviewServiceTests {
         else {
             fail("expected recoverable large-file text preview, got \(result)")
         }
-        assertEqual(output, "File is too large to preview", "large files bypass Pierre rendering")
+        assertEqual(output, "File is too large to preview", "large files bypass structured diff rendering")
     }
 
     @Test

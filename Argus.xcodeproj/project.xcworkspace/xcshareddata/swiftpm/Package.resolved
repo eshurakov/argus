@@ -1,0 +1,15 @@
+{
+  "originHash" : "aaa921bc5e71fde534895e6b07a9b5704161be2fee817c85b06f4f95b64fb176",
+  "pins" : [
+    {
+      "identity" : "swift-diffs",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/jeanduplessis/swift-diffs.git",
+      "state" : {
+        "revision" : "27fd02fb08a92ee3358b3f10c3acb0fe6c8dd457",
+        "version" : "1.0.0"
+      }
+    }
+  ],
+  "version" : 3
+}

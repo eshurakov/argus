@@ -381,10 +381,10 @@ follow the active light or dark appearance. Loading and rendering failures MUST
 stay inside the originating content tab rather than opening another window.
 
 Diff-specific view controls belong in the content header. Split and unified
-layout, and scroll and wrap overflow, SHOULD use compact native controls. Their
-state is local to the content tab unless the product explicitly defines a
-workspace-wide preference. Unsupported, binary, oversized, or failed previews
-MUST show a recoverable in-tab message rather than blank content.
+layout SHOULD use compact native controls. Their state is local to the content
+tab unless the product explicitly defines a workspace-wide preference. Long
+diff lines scroll horizontally. Unsupported, binary, oversized, or failed
+previews MUST show a recoverable in-tab message rather than blank content.
 
 ## Accessibility and help
 

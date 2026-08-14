@@ -2,20 +2,25 @@ name: Argus
 options:
   bundleIdPrefix: com.argus
   deploymentTarget:
-    macOS: "14.0"
-  xcodeVersion: "16.0"
+    macOS: "26.0"
+  xcodeVersion: "26.0"
   createIntermediateGroups: true
   generateEmptyDirectories: true
 
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
     ENABLE_USER_SCRIPT_SANDBOXING: "NO"
     # GhosttyKit.xcframework is arm64-only (see scripts/build-ghosttykit.sh) —
     # Argus must match or the x86_64 slice fails to link.
     ARCHS: "arm64"
     ONLY_ACTIVE_ARCH: YES
+
+packages:
+  SwiftDiffs:
+    url: https://github.com/jeanduplessis/swift-diffs.git
+    from: 1.0.0
 
 targets:
   Argus:
@@ -28,14 +33,11 @@ targets:
           - "Resources/ArgusTerminalTheme.ghostty"
           - "Resources/ArgusKiloTurnCompletionPlugin.js"
           - "Resources/ArgusPiAgentStatusPlugin.js"
-          - "Resources/pierre-diffs-bundle.js"
       - path: Argus/Resources/ArgusTerminalTheme.ghostty
         buildPhase: resources
       - path: Argus/Resources/ArgusKiloTurnCompletionPlugin.js
         buildPhase: resources
       - path: Argus/Resources/ArgusPiAgentStatusPlugin.js
-        buildPhase: resources
-      - path: Argus/Resources/pierre-diffs-bundle.js
         buildPhase: resources
       - path: CHANGELOG.md
         buildPhase: resources
@@ -73,7 +75,9 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Manual
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited)"
-    dependencies: []
+    dependencies:
+      - package: SwiftDiffs
+        product: SwiftDiffs
 
   ArgusTests:
     type: bundle.unit-test
@@ -84,6 +88,8 @@ targets:
           - "**/.DS_Store"
     dependencies:
       - target: Argus
+      - package: SwiftDiffs
+        product: SwiftDiffs
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.argus.tests

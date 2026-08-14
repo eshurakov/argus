@@ -1,139 +1,88 @@
 import AppKit
 import Foundation
+import SwiftDiffs
 import Testing
-import WebKit
 
 @testable import Argus
 
 @Suite
 struct ArgusDiffRenderingTests {
     @Test
-    func inputEncodesExpectedJSONShape() throws {
+    func mapsOldAndNewFilesToNativePackageInput() {
         let input = sampleInput()
-        let object = try #require(
-            JSONSerialization.jsonObject(with: JSONEncoder().encode(input)) as? [String: Any])
-        let oldFile = try #require(object["oldFile"] as? [String: Any])
-        let options = try #require(object["options"] as? [String: Any])
 
-        #expect(oldFile["name"] as? String == "file.swift")
-        #expect(oldFile["contents"] as? String == "old\n")
-        #expect(oldFile["language"] as? String == "swift")
-        #expect(options["theme"] as? String == "dark")
-        #expect(options["style"] as? String == "split")
-        #expect(options["overflow"] as? String == "scroll")
-        #expect(options["fontSize"] as? Double == 12)
+        guard case .files(let oldFile, let newFile) = input.packageInput else {
+            Issue.record("expected old/new file input")
+            return
+        }
+
+        #expect(oldFile?.path == "file.swift")
+        #expect(oldFile?.contents == "old\n")
+        #expect(oldFile?.language == .swift)
+        #expect(newFile?.path == "file.swift")
+        #expect(newFile?.contents == "new\n")
+        #expect(newFile?.language == .swift)
     }
 
     @Test
-    func htmlLoadsLocalBundleAndNamesBridge() {
-        #expect(ArgusDiffHTMLTemplate.html.contains("pierre-diffs-bundle.js"))
-        #expect(ArgusDiffHTMLTemplate.html.contains("argusDiffBridge"))
-        #expect(ArgusDiffHTMLTemplate.html.contains("prefers-color-scheme"))
+    func mapsSplitDarkPreviewToNativeConfiguration() {
+        let configuration = sampleInput().packageConfiguration
+
+        #expect(configuration.layout == .sideBySide)
+        #expect(configuration.appearance == .dark)
+        #expect(configuration.context == .collapsible())
     }
 
-    @MainActor
     @Test
-    func coordinatorQueuesRenderUntilBridgeIsReady() {
-        var scripts: [String] = []
-        let coordinator = ArgusDiffWebViewCoordinator(evaluateJavaScript: { scripts.append($0) })
-
-        coordinator.update(input: sampleInput())
-        #expect(scripts.isEmpty)
-
-        coordinator.bridgeDidBecomeReady()
-        #expect(scripts.count == 2)
-        #expect(scripts.contains(where: { $0.contains("window.argusDiff.render") }))
-        #expect(scripts.contains(where: { $0.contains("--argus-font-size") }))
-    }
-
-    @MainActor
-    @Test
-    func coordinatorUpdatesOptionsWithoutRecreatingRender() {
-        var scripts: [String] = []
-        let coordinator = ArgusDiffWebViewCoordinator(evaluateJavaScript: { scripts.append($0) })
-        coordinator.update(input: sampleInput())
-        coordinator.bridgeDidBecomeReady()
-        scripts.removeAll()
-
-        let updated = ArgusDiffInput(
+    func mapsUnifiedLightPreviewToNativeConfiguration() {
+        let input = ArgusDiffInput(
             oldFile: sampleInput().oldFile,
             newFile: sampleInput().newFile,
-            options: ArgusDiffOptions(theme: .light, style: .unified, overflow: .wrap, fontSize: 14))
-        coordinator.update(input: updated)
+            options: ArgusDiffOptions(theme: .light, style: .unified)
+        )
 
-        #expect(scripts.count == 4)
-        #expect(scripts.contains(where: { $0.contains("setTheme") }))
-        #expect(scripts.contains(where: { $0.contains("setStyle") }))
-        #expect(scripts.contains(where: { $0.contains("setOverflow") }))
-        #expect(scripts.contains(where: { $0.contains("--argus-font-size") }))
-        #expect(!scripts.contains(where: { $0.contains("argusDiff.render") }))
-    }
-
-    @MainActor
-    @Test
-    func dismantleStopsLoadingAndResetsCoordinator() {
-        let coordinator = ArgusDiffWebViewCoordinator(evaluateJavaScript: { _ in })
-        let contentController = WKUserContentController()
-        contentController.add(coordinator, name: ArgusDiffHTMLTemplate.bridgeHandlerName)
-        let configuration = WKWebViewConfiguration()
-        configuration.userContentController = contentController
-        let webView = WKWebView(frame: .zero, configuration: configuration)
-        defer { coordinator.dismantle(webView: webView) }
-        coordinator.bridgeDidBecomeReady()
-
-        coordinator.dismantle(webView: webView)
-
-        #expect(!coordinator.isReady)
+        #expect(input.packageConfiguration.layout == .unified)
+        #expect(input.packageConfiguration.appearance == .light)
+        #expect(input.packageConfiguration.context == .collapsible())
     }
 
     @Test
-    func generatedBundleIsCopiedIntoHostApp() throws {
-        let url = try #require(
-            Bundle.main.url(
-                forResource: ArgusDiffHTMLTemplate.bundleResourceName,
-                withExtension: "js"))
-        #expect(FileManager.default.fileExists(atPath: url.path))
+    func ignoresUnknownLanguageHintsWithoutRejectingTheDiff() {
+        let file = ArgusDiffFile(
+            name: "notes.txt",
+            contents: "plain\n",
+            language: "unknown-language"
+        )
+
+        #expect(file.packageFile.language == nil)
     }
 
-    @MainActor
     @Test
-    func bundledBridgeRendersDiffInWebView() async throws {
-        var rendererError: String?
-        let coordinator = ArgusDiffWebViewCoordinator()
-        coordinator.onError = { rendererError = $0 }
-        let contentController = WKUserContentController()
-        contentController.add(coordinator, name: ArgusDiffHTMLTemplate.bridgeHandlerName)
-        let configuration = WKWebViewConfiguration()
-        configuration.userContentController = contentController
-        configuration.websiteDataStore = .nonPersistent()
-        let webView = WKWebView(frame: .zero, configuration: configuration)
-        defer { coordinator.dismantle(webView: webView) }
-        coordinator.attach(to: webView)
-        coordinator.update(input: sampleInput())
-        webView.loadHTMLString(ArgusDiffHTMLTemplate.html, baseURL: Bundle.main.resourceURL)
-
-        for _ in 0..<100 where !coordinator.isReady {
-            try await Task.sleep(for: .milliseconds(20))
-        }
-        #expect(coordinator.isReady)
-
-        var childCount = 0
-        for _ in 0..<100 where childCount == 0 && rendererError == nil {
-            try await Task.sleep(for: .milliseconds(20))
-            childCount = try #require(
-                try await webView.evaluateJavaScript(
-                    "document.getElementById('diff').childElementCount") as? Int)
-        }
-
-        #expect(rendererError == nil)
-        #expect(childCount > 0)
+    func previewHeaderExposesSplitAndUnifiedWithoutOverflowControls() throws {
+        try SourceContract("Argus/Views/GitSidebar/GitPreviewPanel.swift").containsAll(
+            [
+                "Picker(\"Layout\", selection: $diffStyle)",
+                "Text(\"Split\").tag(ArgusDiffStyle.split)",
+                "Text(\"Unified\").tag(ArgusDiffStyle.unified)",
+                "ArgusDiffView("
+            ],
+            "native Git Preview layout controls"
+        )
+        try SourceContract("Argus/Views/GitSidebar/GitPreviewPanel.swift").excludes(
+            "Overflow",
+            "native diffs do not expose wrap or scroll overflow"
+        )
+        try SourceContract("Argus/Settings/SettingsView.swift").excludes(
+            "Default diff overflow",
+            "native diffs do not persist an overflow default"
+        )
     }
 
     private func sampleInput() -> ArgusDiffInput {
         ArgusDiffInput(
             oldFile: ArgusDiffFile(name: "file.swift", contents: "old\n", language: "swift"),
             newFile: ArgusDiffFile(name: "file.swift", contents: "new\n", language: "swift"),
-            options: ArgusDiffOptions(theme: .dark, style: .split, overflow: .scroll))
+            options: ArgusDiffOptions(theme: .dark, style: .split))
     }
 }
 

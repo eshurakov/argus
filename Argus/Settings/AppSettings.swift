@@ -44,7 +44,6 @@ final class AppSettings: ObservableObject {
         static let openMarkdownInPreview = "Argus.settings.filesAndChanges.openMarkdownInPreview"
         static let openSVGInPreview = "Argus.settings.filesAndChanges.openSVGInPreview"
         static let defaultDiffStyle = "Argus.settings.filesAndChanges.defaultDiffStyle"
-        static let defaultDiffOverflow = "Argus.settings.filesAndChanges.defaultDiffOverflow"
         static let combineWorkingChangeSections = "Argus.settings.filesAndChanges.combineWorkingChangeSections"
         static let showBaseBranchChanges = "Argus.settings.filesAndChanges.showBaseBranchChanges"
         static let homepage = "Argus.settings.browser.homepage"
@@ -123,9 +122,6 @@ final class AppSettings: ObservableObject {
     @Published var defaultDiffStyle: DiffStyle {
         didSet { persist(defaultDiffStyle.rawValue, for: Keys.defaultDiffStyle) }
     }
-    @Published var defaultDiffOverflow: DiffOverflow {
-        didSet { persist(defaultDiffOverflow.rawValue, for: Keys.defaultDiffOverflow) }
-    }
     @Published var combineWorkingChangeSections: Bool {
         didSet { persist(combineWorkingChangeSections, for: Keys.combineWorkingChangeSections) }
     }
@@ -185,7 +181,6 @@ final class AppSettings: ObservableObject {
         openMarkdownInPreview = Self.bool(defaults, key: Keys.openMarkdownInPreview, fallback: false)
         openSVGInPreview = Self.bool(defaults, key: Keys.openSVGInPreview, fallback: false)
         defaultDiffStyle = Self.enumValue(defaults, key: Keys.defaultDiffStyle, fallback: .split)
-        defaultDiffOverflow = Self.enumValue(defaults, key: Keys.defaultDiffOverflow, fallback: .scroll)
         combineWorkingChangeSections = Self.bool(defaults, key: Keys.combineWorkingChangeSections, fallback: false)
         showBaseBranchChanges = Self.bool(defaults, key: Keys.showBaseBranchChanges, fallback: false)
         homepage = Self.normalizedHomepage(defaults.string(forKey: Keys.homepage) ?? "")
@@ -227,7 +222,6 @@ final class AppSettings: ObservableObject {
         persist(openMarkdownInPreview, for: Keys.openMarkdownInPreview)
         persist(openSVGInPreview, for: Keys.openSVGInPreview)
         persist(defaultDiffStyle.rawValue, for: Keys.defaultDiffStyle)
-        persist(defaultDiffOverflow.rawValue, for: Keys.defaultDiffOverflow)
         persist(combineWorkingChangeSections, for: Keys.combineWorkingChangeSections)
         persist(showBaseBranchChanges, for: Keys.showBaseBranchChanges)
         persist(homepage, for: Keys.homepage)
@@ -279,15 +273,6 @@ extension AppSettings {
         var title: String { rawValue.capitalized }
     }
 
-    enum DiffOverflow: String, CaseIterable, Identifiable {
-        case scroll
-        case wrap
-
-        var id: String { rawValue }
-
-        var title: String { rawValue.capitalized }
-    }
-
     struct PresentationMetrics {
         let interfaceTextSize: Double
         let interfaceDensity: InterfaceDensity
@@ -323,15 +308,6 @@ extension AppSettings.DiffStyle {
         switch self {
         case .split: .split
         case .unified: .unified
-        }
-    }
-}
-
-extension AppSettings.DiffOverflow {
-    var argusDiffOverflow: ArgusDiffOverflow {
-        switch self {
-        case .scroll: .scroll
-        case .wrap: .wrap
         }
     }
 }

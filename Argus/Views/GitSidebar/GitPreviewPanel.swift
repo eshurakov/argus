@@ -20,19 +20,15 @@ struct GitPreviewPanelContentView: View {
     @ObservedObject private var ghosttyApp = GhosttyApp.shared
 
     @State private var diffStyle: ArgusDiffStyle
-    @State private var overflow: ArgusDiffOverflow
-    @State private var rendererError: String?
     let documentTextSize: Double
 
     init(
         panel: GitPreviewPanel,
         initialDiffStyle: ArgusDiffStyle = .split,
-        initialOverflow: ArgusDiffOverflow = .scroll,
         documentTextSize: Double = 12
     ) {
         self.panel = panel
         _diffStyle = State(initialValue: initialDiffStyle)
-        _overflow = State(initialValue: initialOverflow)
         self.documentTextSize = documentTextSize
     }
 
@@ -52,14 +48,6 @@ struct GitPreviewPanelContentView: View {
                     .labelsHidden()
                     .pickerStyle(.segmented)
                     .frame(width: 130)
-
-                    Picker("Overflow", selection: $overflow) {
-                        Text("Scroll").tag(ArgusDiffOverflow.scroll)
-                        Text("Wrap").tag(ArgusDiffOverflow.wrap)
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .frame(width: 130)
                 }
             }
             .padding(10)
@@ -70,43 +58,29 @@ struct GitPreviewPanelContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(ChromeColors.contentBackground)
-        .onChange(of: panel.preview) { _, _ in
-            rendererError = nil
-        }
     }
 
     @ViewBuilder
     private var previewContent: some View {
-        if let rendererError {
+        switch panel.preview.content {
+        case .diff(let preview):
+            ArgusDiffView(
+                input: ArgusDiffInput(
+                    oldFile: ArgusDiffFile(name: preview.fileName, contents: preview.oldContent),
+                    newFile: ArgusDiffFile(name: preview.fileName, contents: preview.newContent),
+                    options: ArgusDiffOptions(
+                        theme: ghosttyApp.chromePalette.isDark ? .dark : .light,
+                        style: diffStyle
+                    )
+                )
+            )
+            .id(ghosttyApp.chromePalette.revision)
+        case .ansiText(let output):
             GitPreviewANSITextView(
-                output: rendererError,
+                output: output,
                 foregroundColor: ghosttyApp.chromePalette.foreground,
                 fontSize: ansiTextSize
             )
-        } else {
-            switch panel.preview.content {
-            case .diff(let preview):
-                ArgusDiffView(
-                    input: ArgusDiffInput(
-                        oldFile: ArgusDiffFile(name: preview.fileName, contents: preview.oldContent),
-                        newFile: ArgusDiffFile(name: preview.fileName, contents: preview.newContent),
-                        options: ArgusDiffOptions(
-                            theme: ghosttyApp.chromePalette.isDark ? .dark : .light,
-                            style: diffStyle,
-                            overflow: overflow,
-                            fontSize: documentTextSize
-                        )
-                    ),
-                    onError: { rendererError = $0 }
-                )
-                .id(ghosttyApp.chromePalette.revision)
-            case .ansiText(let output):
-                GitPreviewANSITextView(
-                    output: output,
-                    foregroundColor: ghosttyApp.chromePalette.foreground,
-                    fontSize: ansiTextSize
-                )
-            }
         }
     }
 

@@ -68,7 +68,7 @@ struct GitPreviewPanelTests {
                 fileName: "file.txt", oldContent: "old", newContent: "new"))
         assertEqual(
             GitPreviewPanelContentKind(content: diff), .diff,
-            "structured diff content selects Pierre renderer")
+            "structured diff content selects native renderer")
         assertEqual(
             GitPreviewPanelContentKind(content: .ansiText("blame")), .ansiText,
             "blame and failure text select ANSI renderer")
@@ -98,13 +98,6 @@ struct GitPreviewPanelTests {
                 ".id(ghosttyApp.chromePalette.revision)",
                 "foregroundColor: NSColor = ChromeColors.foregroundNSColor"
             ], "Git Preview palette and renderer refresh")
-        try SourceContract("Argus/DiffRendering/ArgusDiffHTMLTemplate.swift").containsAll(
-            [
-                "--argus-background: \\(ChromeColors.backgroundCSS)",
-                "--argus-foreground: \\(ChromeColors.foregroundCSS)",
-                "color: var(--argus-foreground)",
-                "background: var(--argus-background)"
-            ], "diff renderer inherits Ghostty-derived chrome colors")
         try SourceContract("Argus/Ghostty/GhosttyApp.swift").containsAll(
             [
                 "extractChromePalette(from: cfg)",

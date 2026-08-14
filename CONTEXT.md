@@ -220,5 +220,5 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 - `docs/SPEC.md` is authoritative for product behavior and non-negotiable architecture constraints.
 - `docs/UI_DESIGN_PRINCIPLES.md` governs UI placement, interaction affordances, focus preservation, and accessibility.
 - `docs/adrs/README.md` defines where accepted architecture decisions are recorded and how they are superseded.
-- `docs/adrs/0001-render-structured-diffs-with-an-argus-owned-webkit-bridge.md` defines ownership and runtime boundaries for structured diff rendering.
+- `docs/adrs/0002-render-structured-diffs-with-native-swift-diffs.md` defines ownership and runtime boundaries for structured diff rendering.
 - `docs/proposals/` contains future behavior and is not authoritative for the current application until a proposal is implemented and promoted into the spec.
