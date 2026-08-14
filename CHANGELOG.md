@@ -2,6 +2,13 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-08-14
+
+- The workspace titlebar and the macOS window title no longer show the branch name, dirty marker, or ahead/behind counts. The titlebar now names just the workspace and its project or folder; the Changes panel remains the place to see branch details. ([ee88ca2](https://github.com/jeanduplessis/argus/commit/ee88ca2))
+- The left sidebar no longer keeps a permanent number column next to workspaces. Hold Command to see each workspace's keyboard shortcut digit over its icon: 1-8 for the first eight workspaces, and 9 for the last one when there are more than eight. ([73ed79d](https://github.com/jeanduplessis/argus/commit/73ed79d))
+- A new test checks that refreshing the Changes panel on a folder outside a Git repository keeps showing its "not a repository" message instead of going blank. ([13068dd](https://github.com/jeanduplessis/argus/commit/13068dd))
+- The repository now ignores the local `.pi/` agent directory. ([160c232](https://github.com/jeanduplessis/argus/commit/160c232))
+
 ## 2026-08-13
 
 - The Files and Changes panels now remember which folders and sections you expanded. Switching between the two panels, changing workspace, or hiding and showing the right sidebar no longer collapses everything back to the top level. Nested folders reopen as they were, and a workspace's remembered state is discarded when you close it. ([95c2a96](https://github.com/jeanduplessis/argus/commit/95c2a96))
