@@ -221,6 +221,45 @@ struct GitStatusViewModelTests {
             "status refreshes carry the complete request presentation"
         )
     }
+
+    @Test
+    @MainActor
+    func automaticRefreshKeepsNotRepositoryContentVisible() async {
+        let notRepository = GitStatusLoadState.notRepository(rootPath: "/Users/test")
+        let observation = GitStatusRefreshObservation()
+        let service = ObservingStatusService(result: notRepository) {
+            observation.requestCount += 1
+            guard observation.requestCount == 2 else { return }
+            observation.stateDuringRefresh = observation.viewModel?.state
+            observation.wasRefreshing = observation.viewModel?.isRefreshing ?? false
+        }
+        let viewModel = GitStatusViewModel(service: service)
+        observation.viewModel = viewModel
+        let context = GitStatusRootContext(
+            kind: .standalone,
+            currentDirectory: "/Users/test",
+            worktreePath: nil,
+            projectRepositoryPath: nil
+        )
+
+        await viewModel.refresh(context: context)
+        await viewModel.refresh(context: context)
+
+        assertViewModelEqual(
+            observation.stateDuringRefresh,
+            notRepository,
+            "automatic refresh keeps current not-repository content visible")
+        assertViewModelEqual(observation.wasRefreshing, true, "automatic refresh still exposes progress")
+        assertViewModelEqual(viewModel.state, notRepository, "refresh republishes not-repository status")
+    }
+}
+
+@MainActor
+private final class GitStatusRefreshObservation {
+    weak var viewModel: GitStatusViewModel?
+    var requestCount = 0
+    var stateDuringRefresh: GitStatusLoadState?
+    var wasRefreshing = false
 }
 
 private func assertViewModelEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
