@@ -27,65 +27,53 @@ struct GitBranchBarUIContractTests {
     }
 
     @Test
-    func branchBarUsesIdentityAndMetadataLines() throws {
+    func branchBarUsesOneCompactAdaptiveRow() throws {
         let view = try SourceContract("Argus/Views/GitSidebar/GitSidebarView.swift")
         let branchBar = try view.section(
             after: "private func branchBar(",
             before: "private func upstreamSyncText")
 
-        let identityLine = try #require(
-            branchBar.range(of: "branchIdentityLine(summary)")
-        )
-        let metadataLine = try #require(
-            branchBar.range(of: "branchMetadataLine(summary, totals: totals)")
-        )
+        let identityLine = try #require(branchBar.range(of: "branchIdentityLine(summary)"))
+        let statsLine = try #require(branchBar.range(of: "branchStatsText(summary, totals: totals)"))
+        let upstreamLine = try #require(
+            branchBar.range(of: "upstreamSummary(summary, upstreamName: upstreamName)"))
         let identityDeclaration = try #require(
-            branchBar.range(of: "private func branchIdentityLine(")
-        )
-        let metadataDeclaration = try #require(
-            branchBar.range(of: "private func branchMetadataLine(")
-        )
+            branchBar.range(of: "private func branchIdentityLine("))
+        let statsDeclaration = try #require(
+            branchBar.range(of: "private func branchStatsText("))
         let identitySection = String(
-            branchBar[identityDeclaration.upperBound..<metadataDeclaration.lowerBound]
-        )
+            branchBar[identityDeclaration.upperBound..<statsDeclaration.lowerBound])
 
-        #expect(identityLine.lowerBound < metadataLine.lowerBound)
+        #expect(identityLine.lowerBound < statsLine.lowerBound)
+        #expect(statsLine.lowerBound < upstreamLine.lowerBound)
+        #expect(branchBar.contains(".frame(maxWidth: .infinity, minHeight: 30"))
         #expect(branchBar.contains(".accessibilityElement(children: .combine)"))
+        #expect(branchBar.contains("branchIdentityLine(summary)\n                    .layoutPriority(2)"))
+        #expect(branchBar.contains("branchStatsText(summary, totals: totals)"))
+        #expect(branchBar.contains(".layoutPriority(1)"))
         #expect(identitySection.contains(".truncationMode(.middle)"))
         #expect(identitySection.contains(".help(summary.branchName ?? \"Detached HEAD\")"))
     }
 
     @Test
-    func branchMetadataKeepsStatsReadableAndSyncCountsVisible() throws {
+    func branchBarKeepsStatsReadableAndSyncCountsVisible() throws {
         let view = try SourceContract("Argus/Views/GitSidebar/GitSidebarView.swift")
         let branchBar = try view.section(
             after: "private func branchBar(",
             before: "private func upstreamSyncText")
-        let metadataDeclaration = try #require(
-            branchBar.range(of: "private func branchMetadataLine(")
-        )
         let statsDeclaration = try #require(
-            branchBar.range(of: "private func branchStatsText(")
-        )
+            branchBar.range(of: "private func branchStatsText("))
         let upstreamDeclaration = try #require(
-            branchBar.range(of: "private func upstreamSummary(")
-        )
+            branchBar.range(of: "private func upstreamSummary("))
         let helpDeclaration = try #require(
-            branchBar.range(of: "private func upstreamHelpText(")
-        )
-        let metadataSection = String(
-            branchBar[metadataDeclaration.upperBound..<statsDeclaration.lowerBound]
-        )
+            branchBar.range(of: "private func upstreamHelpText("))
         let statsSection = String(
-            branchBar[statsDeclaration.upperBound..<upstreamDeclaration.lowerBound]
-        )
+            branchBar[statsDeclaration.upperBound..<upstreamDeclaration.lowerBound])
         let upstreamSection = String(
-            branchBar[upstreamDeclaration.upperBound..<helpDeclaration.lowerBound]
-        )
+            branchBar[upstreamDeclaration.upperBound..<helpDeclaration.lowerBound])
 
-        #expect(metadataSection.contains("summary.totalFileCount > 0 || summary.upstreamName != nil"))
-        #expect(metadataSection.contains("upstreamSummary(summary, upstreamName: upstreamName)"))
-        #expect(metadataSection.contains(".layoutPriority(1)"))
+        #expect(branchBar.contains("if summary.totalFileCount > 0"))
+        #expect(branchBar.contains("if let upstreamName = summary.upstreamName"))
         #expect(statsSection.contains(".lineLimit(1)"))
         #expect(statsSection.contains("totals.additions) additions"))
         #expect(!statsSection.contains(".fixedSize()"))

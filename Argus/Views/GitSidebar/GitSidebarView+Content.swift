@@ -136,13 +136,24 @@ extension GitSidebarView {
         let actionName = allCollapsed ? "Expand all file sections" : "Collapse all file sections"
 
         return HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
                 branchIdentityLine(summary)
-                branchMetadataLine(summary, totals: totals)
+                    .layoutPriority(2)
+
+                if summary.totalFileCount > 0 {
+                    branchStatsText(summary, totals: totals)
+                        .font(upstreamFont)
+                        .layoutPriority(1)
+                }
+
+                Spacer(minLength: 0)
+
+                if let upstreamName = summary.upstreamName {
+                    upstreamSummary(summary, upstreamName: upstreamName)
+                        .font(upstreamFont)
+                }
             }
             .accessibilityElement(children: .combine)
-
-            Spacer(minLength: 0)
 
             branchSectionActionButton(
                 allCollapsed: allCollapsed,
@@ -151,8 +162,8 @@ extension GitSidebarView {
             )
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 5)
+        .frame(maxWidth: .infinity, minHeight: 30, alignment: .leading)
         .overlay(alignment: .bottom) {
             ChromeColors.separator.frame(height: 1)
         }
@@ -170,28 +181,6 @@ extension GitSidebarView {
                 .help(summary.branchName ?? "Detached HEAD")
         }
         .font(branchBarFont)
-    }
-
-    @ViewBuilder
-    private func branchMetadataLine(
-        _ summary: GitStatusSummary,
-        totals: (additions: Int, deletions: Int)
-    ) -> some View {
-        if summary.totalFileCount > 0 || summary.upstreamName != nil {
-            HStack(spacing: 6) {
-                if summary.totalFileCount > 0 {
-                    branchStatsText(summary, totals: totals)
-                        .layoutPriority(1)
-                }
-
-                Spacer(minLength: 0)
-
-                if let upstreamName = summary.upstreamName {
-                    upstreamSummary(summary, upstreamName: upstreamName)
-                }
-            }
-            .font(upstreamFont)
-        }
     }
 
     private func branchStatsText(

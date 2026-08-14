@@ -248,13 +248,12 @@ expansion, directory IDs, row IDs, counts, and accessibility values MUST be
 driven by typed section and Git File Change data rather than localized titles.
 
 The branch summary bar SHOULD show branch identity plus aggregate file,
-addition, deletion, and upstream information without consuming another content
-row. It uses two lines so long branch names keep a full line of their own:
-the branch name leads the first line, while aggregate counts lead and upstream
-with ahead/behind counts trail the smaller second line at stable anchors.
-Branch names truncate in the middle; upstream references truncate at the end
-and MUST keep the full reference and sync state in help text. Aggregate counts
-appear only when at least one active comparison context has an entry. Its
+addition, deletion, and upstream information in one compact row. The branch
+name leads, aggregate counts follow when present, and upstream with ahead/behind
+counts trails at a stable anchor. Branch and upstream references truncate
+independently as space narrows; the full values and sync state remain available
+in help text. Aggregate counts appear only when at least one active comparison
+context has an entry. Its
 total and the Changes badge MUST use active section entries, including entries
 that occur in both Working Changes and Against Base as separate comparison
 contexts.
@@ -356,9 +355,8 @@ Established geometry is the default:
 
 - 44-point primary sidebar and titlebar headers.
 - 30-point tab bars, root bars, and content subheaders.
-- Two-line branch summary bars: branch identity on the first line, aggregate
-  and upstream metadata on a smaller second line, sized by content at roughly
-  44 points.
+- Single-row branch summary bars: branch identity leads, aggregate and upstream
+  metadata share the row at a smaller size, with a minimum height of 30 points.
 - Compact 10 to 14 point system type in chrome and trees.
 - Monospaced type for paths, branches, counts, code, and terminal-oriented data.
 
