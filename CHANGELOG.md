@@ -4,6 +4,7 @@ This file records changes pushed for local Argus releases. New entries use a `YY
 
 ## 2026-08-14
 
+- Released Argus 1.12.1 with the Changes branch summary condensed into one row, keeping the branch, file totals, upstream status, and section control visible without the previous empty second line. ([b846d62](https://github.com/jeanduplessis/argus/commit/b846d62))
 - Released Argus 1.12.0 with native Git diff rendering and a macOS 26 minimum requirement. ([557afef](https://github.com/jeanduplessis/argus/commit/557afef))
 - Git diffs now use native macOS text rendering instead of an embedded web view, improving selection, copying, scrolling, and accessibility. Split and Unified layouts remain available; long lines scroll horizontally. Argus now requires macOS 26 and Xcode 26. ([a7350de](https://github.com/jeanduplessis/argus/commit/a7350de))
 - The Changes panel now gives the branch name its own line, with file totals and upstream status on a smaller second line. Long branch and upstream names no longer crowd out ahead/behind counts. ([6c2bc8d](https://github.com/jeanduplessis/argus/commit/6c2bc8d))
