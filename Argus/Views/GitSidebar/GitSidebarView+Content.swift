@@ -135,33 +135,12 @@ extension GitSidebarView {
         let allCollapsed = allSectionsCollapsed(summary)
         let actionName = allCollapsed ? "Expand all file sections" : "Collapse all file sections"
 
-        return HStack(spacing: 6) {
-            Image(systemName: "arrow.triangle.branch")
-                .font(.system(size: 12, weight: .regular))
-                .foregroundStyle(.primary)
-                .accessibilityHidden(true)
-            Text(summary.branchName ?? "Detached HEAD")
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .layoutPriority(1)
-
-            Text("\(summary.totalFileCount) \(summary.totalFileCount == 1 ? "file" : "files")")
-                .foregroundColor(.secondary)
-                .fixedSize()
-            Text("+\(totals.additions)")
-                .foregroundColor(.green)
-                .fixedSize()
-            Text("-\(totals.deletions)")
-                .foregroundColor(.red)
-                .fixedSize()
-
-            if let upstreamName = summary.upstreamName {
-                Text(upstreamText(summary, upstreamName: upstreamName))
-                    .font(upstreamFont)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+        return HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                branchIdentityLine(summary)
+                branchMetadataLine(summary, totals: totals)
             }
+            .accessibilityElement(children: .combine)
 
             Spacer(minLength: 0)
 
@@ -171,11 +150,99 @@ extension GitSidebarView {
                 actionName: actionName
             )
         }
-        .font(branchBarFont)
         .padding(.horizontal, 12)
-        .frame(maxWidth: .infinity, minHeight: 30, maxHeight: 30, alignment: .leading)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(alignment: .bottom) {
             ChromeColors.separator.frame(height: 1)
+        }
+    }
+
+    private func branchIdentityLine(_ summary: GitStatusSummary) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "arrow.triangle.branch")
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(.primary)
+                .accessibilityHidden(true)
+            Text(summary.branchName ?? "Detached HEAD")
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .help(summary.branchName ?? "Detached HEAD")
+        }
+        .font(branchBarFont)
+    }
+
+    @ViewBuilder
+    private func branchMetadataLine(
+        _ summary: GitStatusSummary,
+        totals: (additions: Int, deletions: Int)
+    ) -> some View {
+        if summary.totalFileCount > 0 || summary.upstreamName != nil {
+            HStack(spacing: 6) {
+                if summary.totalFileCount > 0 {
+                    branchStatsText(summary, totals: totals)
+                        .layoutPriority(1)
+                }
+
+                Spacer(minLength: 0)
+
+                if let upstreamName = summary.upstreamName {
+                    upstreamSummary(summary, upstreamName: upstreamName)
+                }
+            }
+            .font(upstreamFont)
+        }
+    }
+
+    private func branchStatsText(
+        _ summary: GitStatusSummary,
+        totals: (additions: Int, deletions: Int)
+    ) -> some View {
+        HStack(spacing: 6) {
+            Text("\(summary.totalFileCount) \(summary.totalFileCount == 1 ? "file" : "files")")
+                .foregroundColor(.secondary)
+            Text("+\(totals.additions)")
+                .foregroundColor(.green)
+            Text("-\(totals.deletions)")
+                .foregroundColor(.red)
+        }
+        .lineLimit(1)
+        .help(
+            "\(summary.totalFileCount) \(summary.totalFileCount == 1 ? "file" : "files"), "
+                + "\(totals.additions) additions, \(totals.deletions) deletions"
+        )
+    }
+
+    private func upstreamSummary(
+        _ summary: GitStatusSummary,
+        upstreamName: String
+    ) -> some View {
+        HStack(spacing: 6) {
+            Text(upstreamName)
+                .lineLimit(1)
+                .truncationMode(.tail)
+
+            if let syncText = upstreamSyncText(summary) {
+                Text(syncText)
+                    .fixedSize()
+            }
+        }
+        .foregroundColor(.secondary)
+        .help(upstreamHelpText(summary, upstreamName: upstreamName))
+    }
+
+    private func upstreamHelpText(_ summary: GitStatusSummary, upstreamName: String) -> String {
+        let ahead = summary.aheadCount
+        let behind = summary.behindCount
+        switch (ahead, behind) {
+        case (0, 0):
+            return "In sync with \(upstreamName)"
+        case (let aheadCount, 0):
+            return "\(aheadCount) \(aheadCount == 1 ? "commit" : "commits") ahead of \(upstreamName)"
+        case (0, let behindCount):
+            return "\(behindCount) \(behindCount == 1 ? "commit" : "commits") behind \(upstreamName)"
+        case (let aheadCount, let behindCount):
+            return "\(aheadCount) ahead, \(behindCount) behind \(upstreamName)"
         }
     }
 
@@ -250,10 +317,10 @@ extension GitSidebarView {
         )
     }
 
-    private func upstreamText(_ summary: GitStatusSummary, upstreamName: String) -> String {
-        var parts = [upstreamName]
+    private func upstreamSyncText(_ summary: GitStatusSummary) -> String? {
+        var parts: [String] = []
         if summary.aheadCount > 0 { parts.append("↑\(summary.aheadCount)") }
         if summary.behindCount > 0 { parts.append("↓\(summary.behindCount)") }
-        return parts.joined(separator: " ")
+        return parts.isEmpty ? nil : parts.joined(separator: " ")
     }
 }

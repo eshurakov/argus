@@ -197,27 +197,6 @@ struct GitStatusActionsUIContractTests {
     }
 
     @Test
-    func branchBarShowsChangeTotalsAndTogglesAllSections() throws {
-        let view = try SourceContract("Argus/Views/GitSidebar/GitSidebarView.swift")
-        let branchBar = try view.section(
-            after: "private func branchBar(",
-            before: "private func upstreamText")
-
-        for expected in [
-            "summary.totalFileCount", "totalDiffStats(summary)",
-            "totals.additions", "totals.deletions",
-            "setAllSectionsExpanded(allCollapsed, summary: summary)",
-            "Collapse all file sections", "Expand all file sections",
-            "HoverStateView { isHovered in",
-            "isHovered ? ChromeColors.hoveredTabFill : Color.clear",
-            ".cursor(.pointingHand)",
-            ".help(actionName)", ".accessibilityLabel(actionName)"
-        ] {
-            #expect(branchBar.contains(expected))
-        }
-    }
-
-    @Test
     func fileRowHoverKeepsLayoutAndHitAreaStable() throws {
         let view = try SourceContract("Argus/Views/GitSidebar/GitSidebarView+RowsAndOperations.swift")
         let fileRow = try view.section(
