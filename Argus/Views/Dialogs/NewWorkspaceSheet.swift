@@ -40,7 +40,7 @@ struct NewWorkspaceSheet: View {
             // Header
             VStack(spacing: 4) {
                 Text("New Workspace")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.headline)
                 if let project = workspaceManager.projects.first(where: { $0.id == projectId }) {
                     Text(project.displayName)
                         .font(.system(size: 12))
@@ -244,7 +244,7 @@ extension NewWorkspaceSheet {
                         .padding(.vertical, 4)
                         .background(
                             RoundedRectangle(cornerRadius: 5)
-                                .fill(selectedExistingBranch == branch ? Color.accentColor.opacity(0.2) : Color.clear)
+                                .fill(selectedExistingBranch == branch ? Color.accentColor.opacity(0.16) : Color.clear)
                         )
                     }
                 }

@@ -246,13 +246,15 @@ private struct ProjectHeaderRow: View {
                 },
                 label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 10, weight: .regular))
+                        .font(.system(size: 12, weight: .regular))
                         .foregroundStyle(.secondary)
                         .accessibilityHidden(true)
                         .frame(width: 20, height: 20)
                         .background {
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .fill(isAddHovered || focusedControl == .add ? Color.primary.opacity(0.1) : Color.clear)
+                                .fill(
+                                    isAddHovered || focusedControl == .add
+                                        ? ChromeColors.hoveredTabFill : Color.clear)
                         }
                         .contentShape(Rectangle())
                 }
@@ -272,7 +274,7 @@ private struct ProjectHeaderRow: View {
         .padding(.vertical, appSettings.presentationMetrics.projectHeaderVerticalPadding)
         .background(
             RoundedRectangle(cornerRadius: 4)
-                .fill(isHovered || focusedControl != nil ? Color.secondary.opacity(0.1) : Color.clear)
+                .fill(isHovered || focusedControl != nil ? ChromeColors.hoveredTabFill : Color.clear)
         )
         .contentShape(Rectangle())
         .onHover { hovering in

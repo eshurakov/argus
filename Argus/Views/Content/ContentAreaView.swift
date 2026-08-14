@@ -25,7 +25,7 @@ extension ContentAreaView {
                 .foregroundStyle(.secondary.opacity(0.5))
                 .accessibilityHidden(true)
             Text("No panels open")
-                .font(.system(size: 13))
+                .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.secondary)
             Spacer()
         }
@@ -93,7 +93,7 @@ struct EmptyWorkspaceContentView: View {
                 .foregroundStyle(.secondary.opacity(0.5))
                 .accessibilityHidden(true)
             Text("No tabs open")
-                .font(.system(size: 13))
+                .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.secondary)
             Button("New Terminal Tab") {
                 workspaceManager.addTab()

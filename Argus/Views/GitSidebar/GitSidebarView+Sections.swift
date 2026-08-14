@@ -101,7 +101,13 @@ extension GitSidebarView {
             Spacer()
             sectionActionControls(section, actions: actions, owner: owner)
             Text("\(section.count)")
-                .font(.system(size: 11, weight: .medium))
+                .font(
+                    .system(
+                        size: appSettings.presentationMetrics.textSize(forBaseSize: 11),
+                        weight: .medium,
+                        design: .monospaced
+                    )
+                )
                 .foregroundColor(.secondary)
         }
         .padding(.horizontal, 12)

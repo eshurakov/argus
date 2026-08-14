@@ -183,75 +183,34 @@ extension GitSidebarView {
     }
 
     func notRepositoryContent(rootPath: String, message: String? = nil) -> some View {
-        VStack(spacing: 10) {
-            Image(systemName: "folder.badge.questionmark")
-                .font(.system(size: 24, weight: .regular))
-                .foregroundStyle(.secondary.opacity(0.5))
-                .accessibilityHidden(true)
-            Text("Not a git repository")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.secondary)
-            Text(rootPath)
-                .font(.system(size: 10, design: .monospaced))
-                .foregroundColor(.secondary)
-                .lineLimit(2)
-                .truncationMode(.middle)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 12)
-            if let message {
-                Text(message)
-                    .font(.system(size: 11))
-                    .foregroundColor(.orange)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 12)
-            }
-            Button {
-                Task { await initializeRepository() }
-            } label: {
-                Text("Initialize Git Repository")
-            }
-            .controlSize(.small)
-            .disabled(viewModel.isRefreshing)
+        SurfaceMessageView(
+            systemImage: "folder.badge.questionmark",
+            title: "Not a git repository",
+            path: rootPath,
+            warning: message,
+            actionTitle: "Initialize Git Repository",
+            actionDisabled: viewModel.isRefreshing
+        ) {
+            Task { await initializeRepository() }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     func operationFailureContent(_ message: String) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 12, weight: .regular))
-                .foregroundStyle(.orange)
-                .accessibilityHidden(true)
-            Text("Git file operation failed")
-                .font(.system(size: 13, weight: .medium))
-            Text(message)
-                .font(.system(size: 11))
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 12)
-            Button {
-                guard let owner = selectedSnapshotOwner else { return }
-                Task { await refresh(owner: owner) }
-            } label: {
-                Text("Refresh Changes")
-            }
-            .controlSize(.small)
-            .disabled(viewModel.isRefreshing)
+        SurfaceMessageView(
+            systemImage: "exclamationmark.triangle",
+            title: "Git file operation failed",
+            tint: .orange,
+            detail: message,
+            actionTitle: "Refresh Changes",
+            actionDisabled: viewModel.isRefreshing
+        ) {
+            guard let owner = selectedSnapshotOwner else { return }
+            Task { await refresh(owner: owner) }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     func emptyMessage(_ text: String, systemImage: String) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: systemImage)
-                .font(.system(size: 24, weight: .regular))
-                .foregroundStyle(.secondary.opacity(0.5))
-                .accessibilityHidden(true)
-            Text(text)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        SurfaceMessageView(systemImage: systemImage, title: text)
     }
 
     func refresh(owner: GitStatusSnapshotOwner) async {

@@ -315,30 +315,16 @@ struct GitChangeSectionContent {
 }
 
 struct GitSidebarView: View {
-    let showsHeader: Bool
     @EnvironmentObject var workspaceManager: WorkspaceManager
     @EnvironmentObject var viewModel: GitStatusViewModel
     @EnvironmentObject var appSettings: AppSettings
     @EnvironmentObject var sessionState: RightSidebarSessionState
     @State var autoRefreshController = GitStatusAutoRefreshController()
 
-    init(showsHeader: Bool = true) {
-        self.showsHeader = showsHeader
-    }
-
     var body: some View {
         VStack(spacing: 0) {
-            if showsHeader {
-                header
-            }
-
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .background {
-            if showsHeader {
-                VisualEffectView(material: .sidebar, blendingMode: .behindWindow)
-            }
         }
         .onChange(of: selectedSnapshotOwner, initial: true) { _, owner in
             guard let owner else {

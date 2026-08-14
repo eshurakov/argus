@@ -292,7 +292,7 @@ struct WorkspaceFilesUIContractTests {
                 "workspaceId: workspaceManager.selectedWorkspace?.id",
                 "rootPath: workspaceManager.selectedWorkspace?.currentDirectory",
                 "WorkspaceFileTreeRequest(",
-                "GitSidebarView(showsHeader: false)",
+                "GitSidebarView()",
                 "private var changesCount: Int?",
                 "summary.totalFileCount",
                 "Refresh files", "Refresh changes"
@@ -305,7 +305,6 @@ struct WorkspaceFilesUIContractTests {
         )
 
         let changesView = try SourceContract("Argus/Views/GitSidebar/GitSidebarView.swift")
-        changesView.contains("Text(\"Changes\")", "git status header is renamed to changes")
         changesView.excludes("Text(\"Git Status\")", "git status header no longer uses old title")
 
         try SourceContract("Argus/Views/MainWindowView.swift").containsAll(
@@ -351,7 +350,7 @@ struct WorkspaceFilesUIContractTests {
             ".opacity(selectedPanel == .files ? 1 : 0)",
             ".allowsHitTesting(selectedPanel == .files)",
             ".accessibilityHidden(selectedPanel != .files)",
-            "GitSidebarView(showsHeader: false)",
+            "GitSidebarView()",
             ".opacity(selectedPanel == .changes ? 1 : 0)",
             ".allowsHitTesting(selectedPanel == .changes)",
             ".accessibilityHidden(selectedPanel != .changes)"

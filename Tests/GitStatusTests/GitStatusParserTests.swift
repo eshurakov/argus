@@ -298,28 +298,12 @@ struct GitStatusActionsUIContractTests {
 
     @Test
     func standaloneChangesRefreshUsesIconActionAffordances() throws {
-        let view = try SourceContract("Argus/Views/GitSidebar/GitSidebarView+Content.swift")
-        let header = try view.section(
-            after: "var header: some View",
-            before: "@ViewBuilder")
-
-        for expected in [
-            "let canRefresh = !viewModel.isRefreshing && selectedSnapshotOwner != nil",
-            "HoverStateView { isHovered in",
-            ".frame(width: 20, height: 20)",
-            "canRefresh && isHovered ? ChromeColors.hoveredTabFill : Color.clear",
-            ".contentShape(Rectangle())",
-            ".disabled(!canRefresh)",
-            ".cursor(canRefresh ? .pointingHand : .arrow)",
-            ".help(\"Refresh changes\")",
-            ".accessibilityLabel(\"Refresh changes\")"
-        ] {
-            #expect(header.contains(expected))
-        }
-
         let sidebar = try SourceContract("Argus/Views/GitSidebar/GitSidebarView.swift")
         sidebar.excludes("isHeaderRefreshHovered", "refresh hover state must remain control-local")
         sidebar.excludes("isBranchActionHovered", "branch action hover state must remain control-local")
+        sidebar.excludes(
+            "var header: some View",
+            "standalone Changes header is dead; refresh lives in Right Sidebar")
     }
 
     @Test

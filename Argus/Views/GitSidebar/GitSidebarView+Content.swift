@@ -1,56 +1,6 @@
 import SwiftUI
 
 extension GitSidebarView {
-    var header: some View {
-        let canRefresh = !viewModel.isRefreshing && selectedSnapshotOwner != nil
-
-        return HStack(spacing: 8) {
-            Image(systemName: "arrow.triangle.branch")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-                .frame(width: 18)
-            Text("Changes")
-                .font(.system(size: 14, weight: .semibold))
-            Spacer()
-            ZStack {
-                if viewModel.isRefreshing {
-                    ProgressView()
-                        .controlSize(.small)
-                }
-            }
-            .frame(width: 12, height: 12)
-            HoverStateView { isHovered in
-                Button {
-                    guard let owner = selectedSnapshotOwner else { return }
-                    Task { await refresh(owner: owner) }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundStyle(.primary)
-                        .accessibilityHidden(true)
-                        .frame(width: 20, height: 20)
-                        .background {
-                            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .fill(canRefresh && isHovered ? ChromeColors.hoveredTabFill : Color.clear)
-                        }
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .disabled(!canRefresh)
-                .cursor(canRefresh ? .pointingHand : .arrow)
-                .help("Refresh changes")
-                .accessibilityLabel("Refresh changes")
-            }
-        }
-        .padding(.leading, 18)
-        .padding(.trailing, 16)
-        .frame(height: 44)
-        .overlay(alignment: .bottom) {
-            ChromeColors.separator.frame(height: 1)
-        }
-    }
-
     @ViewBuilder
     var content: some View {
         if let owner = selectedSnapshotOwner, viewModel.ownsSnapshot(owner) {
@@ -164,6 +114,22 @@ extension GitSidebarView {
         }
     }
 
+    private var branchBarFont: Font {
+        .system(
+            size: appSettings.presentationMetrics.textSize(forBaseSize: 12),
+            weight: .semibold,
+            design: .monospaced
+        )
+    }
+
+    private var upstreamFont: Font {
+        .system(
+            size: appSettings.presentationMetrics.textSize(forBaseSize: 11),
+            weight: .medium,
+            design: .monospaced
+        )
+    }
+
     private func branchBar(_ summary: GitStatusSummary) -> some View {
         let totals = totalDiffStats(summary)
         let allCollapsed = allSectionsCollapsed(summary)
@@ -191,7 +157,7 @@ extension GitSidebarView {
 
             if let upstreamName = summary.upstreamName {
                 Text(upstreamText(summary, upstreamName: upstreamName))
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(upstreamFont)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -205,7 +171,7 @@ extension GitSidebarView {
                 actionName: actionName
             )
         }
-        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+        .font(branchBarFont)
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, minHeight: 30, maxHeight: 30, alignment: .leading)
         .overlay(alignment: .bottom) {

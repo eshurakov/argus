@@ -96,6 +96,7 @@ enum FileSourceText {
 
 struct FilePanelContentView: View {
     @ObservedObject var panel: FilePanel
+    @EnvironmentObject private var appSettings: AppSettings
     @State private var preparedContent = FilePanelPreparedContent.loading
     @State private var displayMode: FileDisplayMode
     @State private var lineWrapEnabled: Bool
@@ -141,7 +142,13 @@ extension FilePanelContentView {
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             Text(panel.relativePath)
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .font(
+                    .system(
+                        size: appSettings.presentationMetrics.textSize(forBaseSize: 12),
+                        weight: .medium,
+                        design: .monospaced
+                    )
+                )
                 .lineLimit(1)
                 .truncationMode(.middle)
             Spacer(minLength: 0)
@@ -393,17 +400,7 @@ extension FilePanelContentView {
     }
 
     private func fileMessage(_ message: String, systemImage: String) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: systemImage)
-                .font(.system(size: 24, weight: .regular))
-                .foregroundStyle(.secondary.opacity(0.5))
-                .accessibilityHidden(true)
-            Text(message)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        SurfaceMessageView(systemImage: systemImage, title: message)
     }
 
     private func loadFile() async {

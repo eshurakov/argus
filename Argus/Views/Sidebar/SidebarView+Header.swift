@@ -37,10 +37,17 @@ extension SidebarView {
 
 /// Top header with "Projects" label and a New Project action.
 private struct SidebarHeader: View {
+    @EnvironmentObject private var appSettings: AppSettings
+
     var body: some View {
         HStack {
             Text("Projects")
-                .font(.system(size: 11, weight: .semibold))
+                .font(
+                    .system(
+                        size: appSettings.presentationMetrics.textSize(forBaseSize: 11),
+                        weight: .semibold
+                    )
+                )
                 .foregroundColor(.secondary)
                 .textCase(.uppercase)
             Spacer()
@@ -62,11 +69,17 @@ private struct SidebarHeader: View {
 /// Top-level section header for the Catch-all Project, matching Projects.
 private struct WorkspacesSectionHeader: View {
     @EnvironmentObject var workspaceManager: WorkspaceManager
+    @EnvironmentObject private var appSettings: AppSettings
 
     var body: some View {
         HStack {
             Text("Workspaces")
-                .font(.system(size: 11, weight: .semibold))
+                .font(
+                    .system(
+                        size: appSettings.presentationMetrics.textSize(forBaseSize: 11),
+                        weight: .semibold
+                    )
+                )
                 .foregroundColor(.secondary)
                 .textCase(.uppercase)
             Spacer()

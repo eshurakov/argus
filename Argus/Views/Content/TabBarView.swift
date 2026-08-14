@@ -91,7 +91,7 @@ struct TabBarView: View {
                     }
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 11, weight: .regular))
+                        .font(.system(size: 12, weight: .regular))
                         .foregroundStyle(.secondary)
                         .accessibilityHidden(true)
                         .frame(width: 20, height: 20)
@@ -204,17 +204,17 @@ struct TabItemView: View {
                                 .accessibilityLabel("Loading \(title)")
                         } else if hasAttention {
                             Image(systemName: "bell.fill")
-                                .font(.system(size: 10, weight: .regular))
+                                .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(.orange)
                                 .accessibilityHidden(true)
                         } else if let agentStatus {
                             Image(systemName: agentStatus.state.symbolName)
-                                .font(.system(size: 10, weight: .regular))
+                                .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(agentStatus.state.color)
                                 .accessibilityHidden(true)
                         } else if let icon = panel.displayIcon {
                             Image(systemName: icon)
-                                .font(.system(size: 10, weight: .regular))
+                                .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(isActive ? Color.primary : Color.secondary)
                                 .accessibilityHidden(true)
                         }

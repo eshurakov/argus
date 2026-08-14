@@ -13,7 +13,7 @@ struct MacOS27UIContractTests {
                 "Image(systemName: \"bell.fill\")",
                 "Image(systemName: agentStatus.state.symbolName)",
                 "Image(systemName: workspace.workspaceType.icon)",
-                ".font(.system(size: 11, weight: .bold))",
+                ".font(.system(size: 11, weight: .semibold))",
                 ".frame(width: 14)"
             ], "native Workspace row status and type icons")
         row.excludes("workspaceTypeMarker", "Workspace rows use semantic type symbols")

@@ -63,12 +63,13 @@ struct ReleaseNotesPanelView: View {
             VStack(spacing: 8) {
                 Image(systemName: "exclamationmark.triangle")
                     .font(.system(size: 24, weight: .regular))
-                    .foregroundStyle(.secondary.opacity(0.5))
+                    .foregroundStyle(.orange)
                     .accessibilityHidden(true)
                 Text("Release notes unavailable")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
                 Text(message)
-                    .font(.system(size: 12))
+                    .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }

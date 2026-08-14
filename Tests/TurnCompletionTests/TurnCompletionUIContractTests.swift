@@ -50,7 +50,7 @@ struct TurnCompletionUIContractTests {
         let row = try SourceContract("Argus/Views/Sidebar/SidebarView+WorkspaceRow.swift")
         let iconSelection = try row.section(
             after: "if hasAttention",
-            before: "// Title and Workspace context"
+            before: "private var showsShortcutOverlay"
         )
 
         let statusBranch = try #require(iconSelection.range(of: "else if let agentStatus"))
@@ -101,7 +101,7 @@ struct TurnCompletionUIContractTests {
         #expect(!tabIconSelection.contains("selectPanel"))
         let rowIconSelection = try row.section(
             after: "if hasAttention",
-            before: "// Title and Workspace context"
+            before: "private var showsShortcutOverlay"
         )
         #expect(!rowIconSelection.contains("onSelect"))
 

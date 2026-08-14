@@ -229,12 +229,12 @@ struct GitStatusPreviewUIContractTests {
             [
                 "case .notRepository(let rootPath):",
                 "notRepositoryContent(rootPath: rootPath",
-                "Text(\"Initialize Git Repository\")",
+                "actionTitle: \"Initialize Git Repository\"",
                 "guard let owner = selectedSnapshotOwner, viewModel.ownsSnapshot(owner)",
                 "await viewModel.initializeRepository(owner: owner)",
                 "case .repositoryInitializationFailed(let rootPath, let message):",
                 "notRepositoryContent(rootPath: rootPath, message: message",
-                "Text(\"Refresh Changes\")"
+                "actionTitle: \"Refresh Changes\""
             ], "repository initialization UI")
     }
 

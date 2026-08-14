@@ -186,7 +186,7 @@ struct WorkspacePresentationUIContractTests {
                 "TimelineView(.periodic(from: .now, by: 1))",
                 "workspace.runningProcessCount",
                 "if runningProcessCount > 0",
-                "Text(\"\\(runningProcessCount)\")",
+                "CountBadge(count: runningProcessCount)",
                 "1 running process",
                 "\\(runningProcessCount) running processes"
             ],

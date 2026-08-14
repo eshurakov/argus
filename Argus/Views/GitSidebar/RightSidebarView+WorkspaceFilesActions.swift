@@ -70,38 +70,18 @@ extension WorkspaceFilesView {
     }
 
     func fileTreeError(title: String, path: String, message: String?) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: "folder.badge.questionmark")
-                .font(.system(size: 24, weight: .regular))
-                .foregroundStyle(.secondary.opacity(0.5))
-                .accessibilityHidden(true)
-            Text(title)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.secondary)
-            Text(path)
-                .font(.system(size: 10, design: .monospaced))
-                .foregroundColor(.secondary)
-                .lineLimit(2)
-                .truncationMode(.middle)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 12)
-            if let message {
-                Text(message)
-                    .font(.system(size: 11))
-                    .foregroundColor(.orange)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 12)
-            }
-            Button("Retry Files") {
-                Task { await refresh() }
-            }
-            .buttonStyle(.plain)
-            .disabled(viewModel.isRefreshing || request == nil)
-            .cursor(viewModel.isRefreshing || request == nil ? .arrow : .pointingHand)
-            .help("Retry loading files")
-            .accessibilityValue(viewModel.isRefreshing ? "Loading" : "")
+        SurfaceMessageView(
+            systemImage: "folder.badge.questionmark",
+            title: title,
+            path: path,
+            warning: message,
+            actionTitle: "Retry Files",
+            actionHelp: "Retry loading files",
+            actionAccessibilityValue: viewModel.isRefreshing ? "Loading" : "",
+            actionDisabled: viewModel.isRefreshing || request == nil
+        ) {
+            Task { await refresh() }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     func directoryLoadError(
@@ -151,16 +131,7 @@ extension WorkspaceFilesView {
     }
 
     func emptyMessage(_ text: String, systemImage: String) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: systemImage)
-                .font(.system(size: 24, weight: .regular))
-                .foregroundStyle(.secondary.opacity(0.5))
-                .accessibilityHidden(true)
-            Text(text)
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        SurfaceMessageView(systemImage: systemImage, title: text)
     }
 
     private func refresh() async {

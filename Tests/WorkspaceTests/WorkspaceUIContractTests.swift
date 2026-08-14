@@ -379,8 +379,8 @@ struct WorkspaceTabAndChromeUIContractTests {
             "new Workspace uses Terminal label")
         try SourceContract("Argus/Views/GitSidebar/GitSidebarView.swift").containsAll(
             [
-                "Text(\"Initialize Git Repository\")",
-                "Text(\"Refresh Changes\")"
+                "actionTitle: \"Initialize Git Repository\"",
+                "actionTitle: \"Refresh Changes\""
             ], "verb-object Changes labels")
     }
 

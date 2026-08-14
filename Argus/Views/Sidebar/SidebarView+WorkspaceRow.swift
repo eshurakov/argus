@@ -58,13 +58,7 @@ struct SidebarWorkspaceRow: View {
 
                 // Running-process count badge (shown when any Terminal Surface is busy)
                 if runningProcessCount > 0 {
-                    Text("\(runningProcessCount)")
-                        .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 10)))
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(Color.secondary.opacity(0.15))
-                        .cornerRadius(4)
+                    CountBadge(count: runningProcessCount)
                         .help(runningProcessCountAccessibilityText)
                 }
             }
@@ -106,7 +100,7 @@ struct SidebarWorkspaceRow: View {
         ZStack {
             if hasAttention {
                 Image(systemName: "bell.fill")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.orange)
                     .opacity(showsShortcutOverlay ? 0 : 1)
                     .accessibilityHidden(true)

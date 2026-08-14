@@ -36,7 +36,7 @@ struct RightSidebarView: View {
                 .allowsHitTesting(selectedPanel == .files)
                 .accessibilityHidden(selectedPanel != .files)
 
-                GitSidebarView(showsHeader: false)
+                GitSidebarView()
                     .opacity(selectedPanel == .changes ? 1 : 0)
                     .allowsHitTesting(selectedPanel == .changes)
                     .accessibilityHidden(selectedPanel != .changes)
@@ -119,22 +119,13 @@ struct RightSidebarView: View {
                     .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 14), weight: .semibold))
 
                 if panel == .changes, let count = changesCount, count > 0 {
-                    Text("\(count)")
-                        .font(
-                            .system(size: appSettings.presentationMetrics.textSize(forBaseSize: 12), weight: .semibold)
-                        )
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background {
-                            Capsule()
-                                .fill(Color.primary.opacity(isSelected ? 0.11 : 0.07))
-                        }
+                    CountBadge(count: count, prominent: isSelected)
                 }
             }
             .foregroundColor(isSelected ? .primary : .secondary)
             .padding(.horizontal, 12)
             .frame(height: 44)
-            .background(isSelected ? Color.primary.opacity(0.07) : Color.clear)
+            .background(isSelected ? ChromeColors.activeTabFill : Color.clear)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
