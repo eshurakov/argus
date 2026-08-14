@@ -4,10 +4,10 @@ This file records changes pushed for local Argus releases. New entries use a `YY
 
 ## 2026-08-14
 
+- The app now uses one consistent style for interface details. Text in sidebar headers, the branch bar, file counts, and file headers follows the Interface Text Size setting like the rest of the chrome; the running-process badge on workspaces and the count on the Changes tab share one badge style; tab and workspace icons share one size and weight; and hover backgrounds use one shared treatment. ([3576e05](https://github.com/jeanduplessis/argus/commit/3576e05))
+- Empty, error, and "not a repository" messages in the Files and Changes panels, file previews, and release notes now share one layout with consistent icon size, title, and action button styling. ([3576e05](https://github.com/jeanduplessis/argus/commit/3576e05))
 - The workspace titlebar and the macOS window title no longer show the branch name, dirty marker, or ahead/behind counts. The titlebar now names just the workspace and its project or folder; the Changes panel remains the place to see branch details. ([ee88ca2](https://github.com/jeanduplessis/argus/commit/ee88ca2))
 - The left sidebar no longer keeps a permanent number column next to workspaces. Hold Command to see each workspace's keyboard shortcut digit over its icon: 1-8 for the first eight workspaces, and 9 for the last one when there are more than eight. ([73ed79d](https://github.com/jeanduplessis/argus/commit/73ed79d))
-- A new test checks that refreshing the Changes panel on a folder outside a Git repository keeps showing its "not a repository" message instead of going blank. ([13068dd](https://github.com/jeanduplessis/argus/commit/13068dd))
-- The repository now ignores the local `.pi/` agent directory. ([160c232](https://github.com/jeanduplessis/argus/commit/160c232))
 
 ## 2026-08-13
 
