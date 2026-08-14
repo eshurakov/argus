@@ -26,6 +26,87 @@ private final class CloseConfirmationRecorder: @unchecked Sendable {
 @Suite
 struct WorkspaceTabNavigationTests {  // swiftlint:disable:this type_body_length
     @Test
+    func workspaceShortcutDigitsMatchReachableCommandShortcuts() {
+        #expect(WorkspaceShortcutNumber.digit(forPosition: 1, totalCount: 1) == 1)
+        #expect(WorkspaceShortcutNumber.digit(forPosition: 8, totalCount: 8) == 8)
+        #expect(WorkspaceShortcutNumber.digit(forPosition: 8, totalCount: 9) == 8)
+        #expect(WorkspaceShortcutNumber.digit(forPosition: 9, totalCount: 9) == 9)
+        #expect(WorkspaceShortcutNumber.digit(forPosition: 9, totalCount: 11) == nil)
+        #expect(WorkspaceShortcutNumber.digit(forPosition: 10, totalCount: 11) == nil)
+        #expect(WorkspaceShortcutNumber.digit(forPosition: 11, totalCount: 11) == 9)
+        #expect(WorkspaceShortcutNumber.digit(forPosition: 0, totalCount: 3) == nil)
+        #expect(WorkspaceShortcutNumber.digit(forPosition: 4, totalCount: 3) == nil)
+    }
+
+    @Test
+    @MainActor
+    func workspaceShortcutDigitsFollowGlobalSidebarOrder() throws {
+        let defaults = try #require(UserDefaults(suiteName: "ArgusTests.WorkspaceShortcutDigits"))
+        defaults.removePersistentDomain(forName: "ArgusTests.WorkspaceShortcutDigits")
+        defer { defaults.removePersistentDomain(forName: "ArgusTests.WorkspaceShortcutDigits") }
+        let manager = WorkspaceManager(
+            settings: AppSettings(defaults: defaults),
+            sessionSnapshotURL: temporarySnapshotURL(),
+            environment: ["ARGUS_DISABLE_SESSION_RESTORE": "1"]
+        )
+        let first = try #require(manager.workspaces.first)
+        #expect(manager.workspaceShortcutDigit(for: first.id) == 1)
+
+        var created: [Workspace] = [first]
+        for index in 2...11 {
+            created.append(
+                try #require(manager.addWorkspace(title: "Workspace \(index)"))
+            )
+        }
+
+        #expect(created.map { manager.workspaceShortcutDigit(for: $0.id) } == [
+            1, 2, 3, 4, 5, 6, 7, 8, nil, nil, 9
+        ])
+
+        manager.handleWorkspaceShortcut(number: 1)
+        #expect(manager.selectedWorkspaceId == created[0].id)
+        manager.handleWorkspaceShortcut(number: 8)
+        #expect(manager.selectedWorkspaceId == created[7].id)
+        manager.handleWorkspaceShortcut(number: 9)
+        #expect(manager.selectedWorkspaceId == created[10].id)
+    }
+
+    @Test
+    @MainActor
+    func commandKeyMonitorClearsHeldStateWhenFocusIsLost() {
+        let monitor = CommandKeyMonitor()
+        monitor.stop()
+        monitor.setCommandHeldForTesting(true)
+        #expect(monitor.isCommandHeld)
+
+        monitor.refresh(
+            from: [.command],
+            isApplicationActive: false,
+            isHostWindowKey: true
+        )
+        #expect(!monitor.isCommandHeld)
+
+        monitor.setCommandHeldForTesting(true)
+        monitor.refresh(
+            from: [.command],
+            isApplicationActive: true,
+            isHostWindowKey: false
+        )
+        #expect(!monitor.isCommandHeld)
+
+        monitor.refresh(
+            from: [.command],
+            isApplicationActive: true,
+            isHostWindowKey: true
+        )
+        #expect(monitor.isCommandHeld)
+
+        monitor.clearHeldState()
+        #expect(!monitor.isCommandHeld)
+        monitor.stop()
+    }
+
+    @Test
     func commandBracketsStayWiredToTabCycling() throws {
         let app = try SourceContract("Argus/App/ArgusApp.swift")
         app.containsAll(

@@ -70,7 +70,7 @@ selection, or existing Git Preview Tabs.
 4. New Workspaces MUST start with one Terminal Tab backed by one Terminal Panel.
 5. Workspaces MUST support rename, close, selection, and reordering within a Project.
 6. Closing the last Workspace MUST create and select a fresh Standalone Workspace containing one Terminal Tab.
-7. Cmd+1 through Cmd+8 MUST select Workspaces by global left-sidebar order. Cmd+9 MUST select the last Workspace.
+7. Cmd+1 through Cmd+8 MUST select Workspaces by global left-sidebar order. Cmd+9 MUST select the last Workspace. The left sidebar MUST NOT reserve a permanent Workspace Number column. While Command is held, the sidebar MUST overlay the reachable shortcut digit on the Workspace row icon: 1–8 for the first eight Workspaces, and 9 only on the last Workspace when more than eight exist.
 8. The left sidebar MUST show Project and Workspace hierarchy, selection, Workspace type, branch when available, Agent Status when present, and the number of Terminal Surfaces that still have a running process when that count is greater than zero. That count MUST use Ghostty's per-surface close-confirmation heuristic, MUST include split Panes, and MUST NOT show Top-level Tab count. The Selected Workspace row MUST be marked with a leading accent indicator and a restrained row fill, MUST keep normal sidebar foreground colors, and MUST NOT fill the complete row with the accent color.
 9. A Standalone Workspace MUST allow its Workspace Root to be changed from its left-sidebar context menu.
 10. The Workspace Root change workflow MUST support both directory browsing and direct path entry. An entered path MUST resolve to an existing directory.

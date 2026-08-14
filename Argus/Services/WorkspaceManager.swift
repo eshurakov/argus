@@ -15,8 +15,8 @@ enum WorkspaceDeletionStage: Int, CaseIterable, Sendable {
 /// the SwiftUI environment as an `@EnvironmentObject`.
 ///
 /// Phase 2 adds project management: workspaces are grouped under projects,
-/// each backed by a git repository with worktree support. The sidebar index
-/// used by Cmd+1–8 shortcuts reflects project-grouped ordering.
+/// each backed by a git repository with worktree support. Cmd+1–8 select by
+/// global sidebar order; Cmd+9 selects the last Workspace.
 @MainActor
 // swiftlint:disable:next type_body_length
 final class WorkspaceManager: ObservableObject {

@@ -326,8 +326,12 @@ extension WorkspaceManager {
         acknowledgeSelectedActiveTabIfViewed()
     }
 
-    func sidebarNumber(for workspaceId: UUID) -> Int? {
-        globalSidebarIndex(for: workspaceId)
+    func workspaceShortcutDigit(for workspaceId: UUID) -> Int? {
+        guard let position = globalSidebarIndex(for: workspaceId) else { return nil }
+        return WorkspaceShortcutNumber.digit(
+            forPosition: position,
+            totalCount: sidebarOrderedWorkspaces.count
+        )
     }
 
     var sidebarOrderedWorkspaces: [(project: Project, workspace: Workspace)] {

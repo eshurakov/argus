@@ -195,4 +195,54 @@ struct WorkspacePresentationUIContractTests {
         row.excludes("workspace.panelCount > 1", "Workspace row badge must not show Top-level Tab count")
         row.excludes("\\(workspace.panelCount) tabs", "Workspace accessibility must not announce tab count")
     }
+
+    @Test
+    func workspaceRowsHidePermanentShortcutNumbersUntilCommandIsHeld() throws {
+        let row = try SourceContract("Argus/Views/Sidebar/SidebarView+WorkspaceRow.swift")
+        row.containsAll(
+            [
+                "@Environment(\\.isCommandKeyHeld) private var isCommandKeyHeld",
+                "let shortcutDigit: Int?",
+                "workspaceIcon",
+                "private var workspaceIcon: some View",
+                "if let shortcutDigit, showsShortcutOverlay",
+                "Text(\"\\(shortcutDigit)\")",
+                "isCommandKeyHeld && shortcutDigit != nil"
+            ],
+            "Command-held Workspace shortcut overlay"
+        )
+        row.excludes(
+            "Text(\"\\(globalIndex)\")",
+            "Workspace rows must not keep a permanent Workspace Number column"
+        )
+        row.excludes(
+            ".frame(width: 16)",
+            "Workspace rows must reclaim the reserved shortcut-number column"
+        )
+
+        try SourceContract("Argus/Views/Sidebar/SidebarView+Projects.swift").contains(
+            "shortcutDigit: workspaceManager.workspaceShortcutDigit(for: workspace.id)",
+            "Workspace rows receive reachable shortcut digits from global sidebar order"
+        )
+        try SourceContract("Argus/Views/Sidebar/SidebarView+Header.swift").containsAll(
+            [
+                ".environment(\\.isCommandKeyHeld, commandKeyMonitor.isCommandHeld)",
+                "commandKeyMonitor.start()",
+                "commandKeyMonitor.stop()"
+            ],
+            "sidebar Command-key environment"
+        )
+        try SourceContract("Argus/Views/Sidebar/SidebarView.swift").containsAll(
+            [
+                "enum WorkspaceShortcutNumber",
+                "final class CommandKeyMonitor: ObservableObject",
+                "NSEvent.addLocalMonitorForEvents(matching: .flagsChanged)",
+                "NSApplication.didResignActiveNotification",
+                "NSWindow.didResignKeyNotification",
+                "clearHeldState()",
+                "@StateObject var commandKeyMonitor = CommandKeyMonitor()"
+            ],
+            "window-local Command-key monitor"
+        )
+    }
 }

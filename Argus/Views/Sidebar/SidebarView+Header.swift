@@ -27,6 +27,9 @@ extension SidebarView {
         }
         .frame(maxHeight: .infinity)
         .background(ChromeColors.shellBackground)
+        .environment(\.isCommandKeyHeld, commandKeyMonitor.isCommandHeld)
+        .onAppear { commandKeyMonitor.start() }
+        .onDisappear { commandKeyMonitor.stop() }
     }
 }
 

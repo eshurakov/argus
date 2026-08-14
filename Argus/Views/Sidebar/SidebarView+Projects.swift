@@ -32,6 +32,7 @@ struct ProjectSection: View {
                         SidebarWorkspaceRow(
                             workspace: workspace,
                             globalIndex: globalIndex,
+                            shortcutDigit: workspaceManager.workspaceShortcutDigit(for: workspace.id),
                             isSelected: workspace.id == workspaceManager.selectedWorkspaceId,
                             onSelect: { workspaceManager.selectWorkspace(workspace.id) }
                         )

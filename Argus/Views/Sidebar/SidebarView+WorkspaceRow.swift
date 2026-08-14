@@ -2,14 +2,17 @@ import SwiftUI
 
 // MARK: - SidebarWorkspaceRow
 
-/// Individual workspace row showing global index, type icon, display title,
-/// branch name, and running-process count badge.
+/// Individual workspace row showing type icon, display title, branch name,
+/// and running-process count badge. A Command-held overlay may replace the
+/// icon with the reachable Workspace shortcut digit without changing layout.
 struct SidebarWorkspaceRow: View {
     @ObservedObject var workspace: Workspace
     @EnvironmentObject var agentStatusStore: AgentStatusStore
     @EnvironmentObject var turnCompletionAttentionStore: TurnCompletionAttentionStore
     @EnvironmentObject private var appSettings: AppSettings
+    @Environment(\.isCommandKeyHeld) private var isCommandKeyHeld
     let globalIndex: Int
+    let shortcutDigit: Int?
     let isSelected: Bool
     let onSelect: () -> Void
     @State private var isHovered = false
@@ -26,37 +29,7 @@ struct SidebarWorkspaceRow: View {
     private var workspaceRowButton: some View {
         Button(action: onSelect) {
             HStack(spacing: 8) {
-                // 1-based global index (for Cmd+N shortcut reference)
-                Text("\(globalIndex)")
-                    .font(
-                        .system(
-                            size: appSettings.presentationMetrics.textSize(forBaseSize: 10),
-                            weight: .medium,
-                            design: .monospaced
-                        )
-                    )
-                    .foregroundColor(.secondary)
-                    .frame(width: 16)
-
-                if hasAttention {
-                    Image(systemName: "bell.fill")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(.orange)
-                        .frame(width: 14)
-                        .accessibilityHidden(true)
-                } else if let agentStatus {
-                    Image(systemName: agentStatus.state.symbolName)
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(agentStatus.state.color)
-                        .frame(width: 14)
-                        .accessibilityHidden(true)
-                } else {
-                    Image(systemName: workspace.workspaceType.icon)
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                        .frame(width: 14)
-                        .accessibilityHidden(true)
-                }
+                workspaceIcon
 
                 // Title and Workspace context
                 VStack(alignment: .leading, spacing: 1) {
@@ -126,6 +99,49 @@ struct SidebarWorkspaceRow: View {
         .accessibilityLabel(workspaceAccessibilityLabel)
         .accessibilityValue(workspaceAccessibilityValue)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    @ViewBuilder
+    private var workspaceIcon: some View {
+        ZStack {
+            if hasAttention {
+                Image(systemName: "bell.fill")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.orange)
+                    .opacity(showsShortcutOverlay ? 0 : 1)
+                    .accessibilityHidden(true)
+            } else if let agentStatus {
+                Image(systemName: agentStatus.state.symbolName)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(agentStatus.state.color)
+                    .opacity(showsShortcutOverlay ? 0 : 1)
+                    .accessibilityHidden(true)
+            } else {
+                Image(systemName: workspace.workspaceType.icon)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                    .opacity(showsShortcutOverlay ? 0 : 1)
+                    .accessibilityHidden(true)
+            }
+
+            if let shortcutDigit, showsShortcutOverlay {
+                Text("\(shortcutDigit)")
+                    .font(
+                        .system(
+                            size: appSettings.presentationMetrics.textSize(forBaseSize: 10),
+                            weight: .semibold,
+                            design: .monospaced
+                        )
+                    )
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                    .accessibilityHidden(true)
+            }
+        }
+        .frame(width: 14)
+    }
+
+    private var showsShortcutOverlay: Bool {
+        isCommandKeyHeld && shortcutDigit != nil
     }
 
     private var agentStatus: AgentStatusEntry? {
