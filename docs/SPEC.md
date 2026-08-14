@@ -2,7 +2,7 @@
 
 ## Status
 
-Stable v1 baseline, updated 2026-08-13.
+Stable v1 baseline, updated 2026-08-14.
 
 This document defines behavior implemented by the current Argus application. Future work belongs under `docs/proposals/` until it is implemented and incorporated here.
 
@@ -136,7 +136,7 @@ selection, or existing Git Preview Tabs.
 
 1. The Center Content Area Titlebar MUST identify the Selected Workspace and its Project or Standalone Workspace directory context.
 2. Duplicate Workspace and context names SHOULD be shown once rather than repeated.
-3. Available Git context MUST include the current branch, dirty state, and upstream ahead or behind counts.
+3. The Center Content Area Titlebar MUST NOT show the current branch, dirty state, or upstream ahead or behind counts.
 4. The macOS window title MUST track the visible Workspace context for system surfaces such as Mission Control.
 
 ### Files View
@@ -176,7 +176,7 @@ selection, or existing Git Preview Tabs.
 6. Uncommitted MUST contain one row per unique Working Changes path and represent its complete `HEAD`-to-working-tree difference. A row whose staged and unstaged changes cancel MUST remain visible with an explanatory empty-diff state. Unborn repositories MUST still represent staged additions and untracked files.
 7. Changed paths MAY be grouped into a compacted Change Tree. Git status MUST enumerate individual untracked paths rather than treating an untracked directory as one opaque item.
 8. A clean repository MUST replace file sections with a clean-state empty state. Otherwise, empty available sections MUST remain visible and collapsible. A non-repository directory MUST offer Git initialization.
-9. Working Changes alone determine whether the titlebar reports a dirty working tree; Against Base MUST NOT make clean Working Changes dirty.
+9. Working Changes alone determine whether a working tree is dirty; Against Base MUST NOT make clean Working Changes dirty.
 10. Displayed entries MUST be capped at 500 in visible section order. Section counts and Section Operations MUST retain their full uncapped scope.
 11. The Changes badge, branch summary total, and aggregate additions/deletions MUST count entries in every active comparison context.
 

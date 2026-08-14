@@ -288,7 +288,6 @@ struct WorkspaceTabAndChromeUIContractTests {
                 "workspaceManager.project(for: workspace.id)",
                 "project.displayName",
                 "workspace.displayTitle",
-                "gitContext.visibleText",
                 "Text(\"/\")"
             ], "custom titlebar breadcrumb")
         titlebar.excludes(

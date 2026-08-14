@@ -108,7 +108,6 @@
 		8A13FAE2D036AA563674A79E /* CloseWorkspaceConfirmationUIContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BF114B3FC0859D6A88F6BAD /* CloseWorkspaceConfirmationUIContractTests.swift */; };
 		8BE566ED8CA78019794102A0 /* AgentStatusStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A63FF7DA0FD201FB28190CA /* AgentStatusStoreTests.swift */; };
 		8CD385A27A680D924404954B /* AgentStatusRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57E96BBBDC4C5F3459D8D06F /* AgentStatusRuntimeTests.swift */; };
-		8F194E2E27E6DCE202387006 /* TitlebarGitContextFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A24DE4AA9295D21C06F5C39 /* TitlebarGitContextFormatterTests.swift */; };
 		9092C8AB076AD8FC641588B2 /* RightSidebarView+WorkspaceFileTree.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67E97A521D4EE12B47A3FEF7 /* RightSidebarView+WorkspaceFileTree.swift */; };
 		90E15D1FB91698F5F46C6513 /* CHANGELOG.md in Resources */ = {isa = PBXBuildFile; fileRef = 25C6AD3C8C294A2BC8A3BB19 /* CHANGELOG.md */; };
 		9124A35C7B7C12817343252E /* WorktreeService+Operations.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3E1F81F2D4F0342CDD02E30 /* WorktreeService+Operations.swift */; };
@@ -166,7 +165,6 @@
 		DC862B0710F0629EAB8BDF7A /* SidebarLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6D28191E019C7FB7E2AE020 /* SidebarLayout.swift */; };
 		DC8C7D2F1E716195BBA5EB9D /* RandomBranchNameGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 561DA71BC944546467544524 /* RandomBranchNameGenerator.swift */; };
 		DD2054E0DF52232F393F11FC /* GitStatusViewModelSectionAndPreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A13E31CBADD56D584A29886 /* GitStatusViewModelSectionAndPreviewTests.swift */; };
-		DDE4A691BA635A503F286FEF /* TitlebarGitStatusViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E5DA20601C0F85B1927FF74 /* TitlebarGitStatusViewModelTests.swift */; };
 		DE064802D532B067D46A9753 /* RightSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DE597954219DB5FD5F02E2E /* RightSidebarView.swift */; };
 		DE0DA25EC939706E5F217976 /* WorktreeService+PullRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 125D3A1015BB9B1284254961 /* WorktreeService+PullRequest.swift */; };
 		DF5782CB9AA7E014F6F68AC4 /* GitSidebarView+Sections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39B7F4539F94C01EAA98ADC9 /* GitSidebarView+Sections.swift */; };
@@ -313,10 +311,8 @@
 		95D7FCE69AC486FA39A5DFBA /* WorkspaceTabNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceTabNavigationTests.swift; sourceTree = "<group>"; };
 		9660A8921CC9FCD3D899BEE6 /* PiIntegrationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiIntegrationService.swift; sourceTree = "<group>"; };
 		993038FF837D5E46395CF754 /* Argus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Argus.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		9A24DE4AA9295D21C06F5C39 /* TitlebarGitContextFormatterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitlebarGitContextFormatterTests.swift; sourceTree = "<group>"; };
 		9AC77E6BD2DA84BD16B57890 /* ReleaseNotesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseNotesTests.swift; sourceTree = "<group>"; };
 		9C0107B8A19AEA8B1CDB683C /* ExistingBranchWorktreeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExistingBranchWorktreeTests.swift; sourceTree = "<group>"; };
-		9E5DA20601C0F85B1927FF74 /* TitlebarGitStatusViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitlebarGitStatusViewModelTests.swift; sourceTree = "<group>"; };
 		A04D862809818007329A335B /* BrowserPanelUIContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserPanelUIContractTests.swift; sourceTree = "<group>"; };
 		A0DE49DF785BEEBDEBA739E8 /* TerminalSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalSurface.swift; sourceTree = "<group>"; };
 		A3E1F81F2D4F0342CDD02E30 /* WorktreeService+Operations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WorktreeService+Operations.swift"; sourceTree = "<group>"; };
@@ -603,8 +599,6 @@
 				6A13E31CBADD56D584A29886 /* GitStatusViewModelSectionAndPreviewTests.swift */,
 				51F91E726725C5D06375AA8E /* GitStatusViewModelTests.swift */,
 				58D2FD06208386788CD6EAE7 /* RightSidebarSessionStateTests.swift */,
-				9A24DE4AA9295D21C06F5C39 /* TitlebarGitContextFormatterTests.swift */,
-				9E5DA20601C0F85B1927FF74 /* TitlebarGitStatusViewModelTests.swift */,
 				E52E13DF9804EA3070FE3B7F /* WorkspaceFilesViewModelTests.swift */,
 			);
 			path = GitStatusTests;
@@ -1079,8 +1073,6 @@
 				04DCE84FEB30B0CE57BD6213 /* SourceContract.swift in Sources */,
 				4D1C3908D831F340E8ACEED0 /* TerminalDirectorySnapshotTests.swift in Sources */,
 				020374B2B9276CBEB5F5EC62 /* TerminalSurfaceGeometryTests.swift in Sources */,
-				8F194E2E27E6DCE202387006 /* TitlebarGitContextFormatterTests.swift in Sources */,
-				DDE4A691BA635A503F286FEF /* TitlebarGitStatusViewModelTests.swift in Sources */,
 				56965721E49B425A57D89D0C /* TurnCompletionAttentionTests.swift in Sources */,
 				60D35C0C98C048D83AB865C7 /* TurnCompletionUIContractTests.swift in Sources */,
 				F5AA9A3F590E254CC6F1F5CB /* WorkspaceFilesViewModelTests.swift in Sources */,

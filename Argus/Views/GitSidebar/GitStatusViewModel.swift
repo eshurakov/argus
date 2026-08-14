@@ -84,11 +84,6 @@ final class GitStatusViewModel: ObservableObject {
         updateProgressState()
     }
 
-    func titlebarGitContext(for workspaceId: UUID) -> TitlebarGitContext? {
-        guard stateWorkspaceId == workspaceId, snapshotOwner?.workspaceId == workspaceId else { return nil }
-        return TitlebarGitContextFormatter.context(from: state)
-    }
-
     func refresh(owner: GitStatusSnapshotOwner, exposesWorkspaceId: Bool) async {
         activate(owner, exposesWorkspaceId: exposesWorkspaceId)
         if activeRefreshRequests[owner] == requestGeneration { return }

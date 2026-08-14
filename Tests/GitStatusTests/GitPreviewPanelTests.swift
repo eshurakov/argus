@@ -259,15 +259,12 @@ struct GitStatusPreviewUIContractTests {
         try SourceContract("Argus/Views/Titlebar/TitlebarView.swift").containsAll(
             [
                 "@EnvironmentObject private var gitStatusViewModel: GitStatusViewModel",
-                "gitStatusViewModel.titlebarGitContext(for: workspace.id)",
-                "gitContext.visibleText",
                 ".task(id: statusRefreshOwner)",
                 "private var statusRefreshOwner: GitStatusSnapshotOwner?",
                 "await gitStatusViewModel.refresh(owner: owner)",
                 "workspaceId: workspace.id",
                 "presentation: GitStatusPresentation(",
-                "WorkspaceTitleFormatter.title(",
-                "gitContext: gitContext?.windowTitleText",
+                "workspaceManager.activeWorkspaceTitle",
                 "NSApp.mainWindow?.title"
             ], "workspace-scoped titlebar status")
     }

@@ -30,7 +30,6 @@ struct TitlebarView: View {
             Group {
                 if let workspace = workspaceManager.selectedWorkspace {
                     let project = workspaceManager.project(for: workspace.id)
-                    let gitContext = gitStatusViewModel.titlebarGitContext(for: workspace.id)
 
                     Text(titleContext(for: workspace, project: project))
                         .font(
@@ -53,20 +52,6 @@ struct TitlebarView: View {
                         .foregroundColor(.primary)
                         .lineLimit(1)
                         .truncationMode(.middle)
-
-                    if let gitContext {
-                        Text(gitContext.visibleText)
-                            .font(
-                                .system(
-                                    size: appSettings.presentationMetrics.textSize(forBaseSize: 13),
-                                    weight: .medium,
-                                    design: .monospaced
-                                )
-                            )
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    }
                 } else {
                     Text(WorkspaceTitleFormatter.fallbackTitle)
                         .font(
@@ -103,8 +88,6 @@ struct TitlebarView: View {
             await refreshSharedStatusForActiveWorkspace()
         }
         .onChange(of: workspaceManager.selectedWorkspaceId) { _, _ in syncWindowTitle() }
-        .onChange(of: gitStatusViewModel.state) { _, _ in syncWindowTitle() }
-        .onChange(of: gitStatusViewModel.stateWorkspaceId) { _, _ in syncWindowTitle() }
     }
 
     private func sidebarToggle(
@@ -165,18 +148,7 @@ struct TitlebarView: View {
     }
 
     private var currentWindowTitle: String {
-        guard let workspace = workspaceManager.selectedWorkspace else {
-            return WorkspaceTitleFormatter.fallbackTitle
-        }
-
-        let gitContext = gitStatusViewModel.titlebarGitContext(for: workspace.id)
-        guard gitContext != nil else { return workspaceManager.activeWorkspaceTitle }
-
-        return WorkspaceTitleFormatter.title(
-            workspaceTitle: workspace.displayTitle,
-            contextName: workspaceManager.activeWorkspaceContextName(for: workspace),
-            gitContext: gitContext?.windowTitleText
-        )
+        workspaceManager.activeWorkspaceTitle
     }
 
     private func titleContext(for workspace: Workspace, project: Project?) -> String {
