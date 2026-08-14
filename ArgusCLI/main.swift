@@ -6,7 +6,7 @@ struct ArgusCommand: ParsableCommand {
         commandName: "argus",
         abstract: "Control the running Argus application.",
         discussion: "Phase 1 scaffold only. Socket-backed commands arrive in a later phase.",
-        version: "argus 1.11.0"
+        version: "argus 1.12.0"
     )
 
     func run() throws {
