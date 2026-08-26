@@ -2,6 +2,11 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-08-26
+
+- The Changes panel now compares a stacked branch with the branch it is stacked on, instead of always with the repository's main branch. When a stacking tool has recorded a branch's parent — `branch.<name>.base` in Git configuration, or Graphite's branch metadata — Against Base uses that parent, so the section shows only the branch's own commits and its title names the parent. Branches without recorded metadata keep using the project's main branch. Nothing contacts a remote. ([9c75672](https://github.com/jeanduplessis/argus/commit/9c75672))
+- The Changes panel no longer hides committed branch changes behind "Working tree clean". A branch with a clean working tree and changes against its base now shows those changes, and an unavailable base shows its explanation instead of being covered by the clean-state message. ([9c75672](https://github.com/jeanduplessis/argus/commit/9c75672))
+
 ## 2026-08-14
 
 - Released Argus 1.12.1 with the Changes branch summary condensed into one row, keeping the branch, file totals, upstream status, and section control visible without the previous empty second line. ([b846d62](https://github.com/jeanduplessis/argus/commit/b846d62))
