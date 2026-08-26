@@ -2,6 +2,10 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-08-26
+
+- Dropping a file into a terminal now inserts its path in the tab you are looking at, and in the pane you dropped it on. Drops previously always went to the last tab of the workspace and switched to it. When the open tab shows a browser, file, or diff instead of a terminal, the drop is now refused rather than typed into a hidden tab. ([2ff92c4](https://github.com/jeanduplessis/argus/commit/2ff92c4))
+
 ## 2026-08-14
 
 - Released Argus 1.12.1 with the Changes branch summary condensed into one row, keeping the branch, file totals, upstream status, and section control visible without the previous empty second line. ([b846d62](https://github.com/jeanduplessis/argus/commit/b846d62))
