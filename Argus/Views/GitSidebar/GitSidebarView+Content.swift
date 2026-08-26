@@ -61,7 +61,7 @@ extension GitSidebarView {
         VStack(alignment: .leading, spacing: 0) {
             branchBar(summary)
 
-            if summary.isClean {
+            if summary.hasNoSectionContent {
                 cleanWorkingTreeContent()
             } else {
                 if summary.isFileDisplayCapped {

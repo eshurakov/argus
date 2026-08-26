@@ -176,7 +176,7 @@ selection, or existing Git Preview Tabs.
 5. Git File Changes MUST show their Git File Status, path, and available addition/deletion statistics. Working Changes MUST retain their staged, unstaged, and untracked state even when combined. A path MAY appear in both Working Changes and Against Base because they are separate comparison contexts.
 6. Uncommitted MUST contain one row per unique Working Changes path and represent its complete `HEAD`-to-working-tree difference. A row whose staged and unstaged changes cancel MUST remain visible with an explanatory empty-diff state. Unborn repositories MUST still represent staged additions and untracked files.
 7. Changed paths MAY be grouped into a compacted Change Tree. Git status MUST enumerate individual untracked paths rather than treating an untracked directory as one opaque item.
-8. A clean repository MUST replace file sections with a clean-state empty state. Otherwise, empty available sections MUST remain visible and collapsible. A non-repository directory MUST offer Git initialization.
+8. The clean-state empty state MUST replace the file sections only when no present section has entries in any active comparison context and no present section is unavailable. A branch with committed Against Base changes and a clean working tree therefore MUST keep its sections. Otherwise, empty available sections MUST remain visible and collapsible. A non-repository directory MUST offer Git initialization.
 9. Working Changes alone determine whether a working tree is dirty; Against Base MUST NOT make clean Working Changes dirty.
 10. Displayed entries MUST be capped at 500 in visible section order. Section counts and Section Operations MUST retain their full uncapped scope.
 11. The Changes badge, branch summary total, and aggregate additions/deletions MUST count entries in every active comparison context.
@@ -184,10 +184,11 @@ selection, or existing Git Preview Tabs.
 #### Base Branch and Against Base
 
 1. Base Branch work MUST run only when its setting is enabled and MUST never contact a remote or mutate repository state.
-2. A Named Project MUST use its configured main branch, preferring the corresponding `origin`-tracking reference over the local branch.
-3. A Standalone Workspace MUST detect its Base Branch from `origin/HEAD`, then an available local `main` or `master`; after selecting the name, it MUST prefer the matching `origin`-tracking reference over the local branch. It MUST NOT use the current branch as its own Base Branch, scan arbitrary remotes, or infer a Base Branch from the current branch name.
-4. Against Base MUST show committed changes from the merge base of the resolved Base Branch and `HEAD` to `HEAD`, excluding Working Changes. Its title MUST use the Base Branch name even when an `origin`-tracking reference supplies the content.
-5. If the Base Branch or comparison is unavailable, only Against Base MUST become unavailable. Working Changes MUST remain loaded and actionable, while Against Base remains visible with a concise explanation and no rows or Section Operations. Refreshing MUST retry the comparison.
+2. A Recorded Base Branch MUST take precedence over every rule below, so a branch stacked on another branch is compared with its own parent. Argus MUST read it from local Git data only, in this order: `branch.<current-branch>.base` in Git configuration, then a `parentBranchName` entry in the `refs/branch-metadata/<current-branch>` object. A recorded name MUST be ignored, and resolution MUST continue with the rules below, when it is empty, names the current branch itself, or resolves to no local or `origin`-tracking reference. Unlike the rules below, a Recorded Base Branch MUST prefer the local branch over its `origin`-tracking reference, because a stack parent is rewritten by every restack and its stale remote reference would move the merge base backwards.
+3. A Named Project MUST use its configured main branch, preferring the corresponding `origin`-tracking reference over the local branch.
+4. A Standalone Workspace MUST detect its Base Branch from `origin/HEAD`, then an available local `main` or `master`; after selecting the name, it MUST prefer the matching `origin`-tracking reference over the local branch. It MUST NOT use the current branch as its own Base Branch, scan arbitrary remotes, or infer a Base Branch from the current branch name.
+5. Against Base MUST show committed changes from the merge base of the resolved Base Branch and `HEAD` to `HEAD`, excluding Working Changes. Its title MUST use the Base Branch name even when an `origin`-tracking reference supplies the content.
+6. If the Base Branch or comparison is unavailable, only Against Base MUST become unavailable. Working Changes MUST remain loaded and actionable, while Against Base remains visible with a concise explanation and no rows or Section Operations. Refreshing MUST retry the comparison.
 
 #### Change actions
 
