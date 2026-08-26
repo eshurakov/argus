@@ -116,6 +116,16 @@ struct GitStatusSummary: Equatable, Sendable {
         stagedCount == 0 && unstagedCount == 0 && untrackedCount == 0
     }
 
+    /// True when no present section has anything to show. Working Changes alone
+    /// decide dirty state, so a branch stacked on its Base Branch can have a
+    /// clean working tree and a full Against Base section; the clean-state
+    /// empty state must not replace the sections in that case. An unavailable
+    /// section also has content, because it carries the explanation of why its
+    /// comparison could not be made.
+    var hasNoSectionContent: Bool {
+        sections.allSatisfy { $0.state.isAvailable && $0.totalCount == 0 }
+    }
+
     func applying(
         stagedStats: [String: GitDiffStat],
         unstagedStats: [String: GitDiffStat],
