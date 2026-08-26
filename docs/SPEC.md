@@ -125,6 +125,7 @@ selection, or existing Git Preview Tabs.
 12. That Ctrl+V MUST be delivered as a key event so it is encoded with the keyboard protocol the running program negotiated. It MUST NOT be delivered as pasted text, because the paste path replaces control bytes with a space.
 13. Argus MUST use Ghostty's per-surface close-confirmation heuristic, including the user's Ghostty `confirm-close-surface` configuration, to decide whether a Terminal Surface still has a running process. Argus MUST NOT invent a separate process-group scan.
 14. Closing the application or the main window MUST require confirmation when any Terminal Surface still has a running process. Cancel MUST leave the application, window, Workspaces, and processes unchanged. That confirmation MUST name each affected Workspace and its Named Project or Standalone Workspace directory context so the user can find the running process without guessing.
+15. Dropping files on a Terminal Pane MUST insert their shell-quoted paths without executing them, and MUST target the Pane the user sees. Because inactive Terminal Tabs stay mounted in the same frame, the drop MUST resolve to the visible Pane under the pointer, and MUST be refused when the Active Tab shows no Terminal Pane there.
 
 ## Right Sidebar
 

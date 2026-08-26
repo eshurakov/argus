@@ -22,6 +22,11 @@ class TerminalNSView: NSView {
     /// often created after the first layout pass, when bounds may still be zero.
     var lastResolvedSize: CGSize?
 
+    /// Whether this view's Top-level Tab is the Active Tab. Inactive Terminal
+    /// Tabs stay mounted in the same frame, so AppKit can route a drag to a
+    /// view the user cannot see.
+    var isInActiveTab: Bool = true
+
     // MARK: - NSView Configuration
 
     override var acceptsFirstResponder: Bool { true }
