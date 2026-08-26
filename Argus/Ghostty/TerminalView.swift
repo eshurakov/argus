@@ -20,6 +20,9 @@ struct TerminalView: NSViewRepresentable {
         if surface.surface == nil {
             surface.createSurface()
         }
+        // File drops must land in the Active Tab, not in the frontmost mounted
+        // view, so keep this current for every Tab on every update.
+        nsView.isInActiveTab = isVisible
         if context.coordinator.isVisible != isVisible, surface.surface != nil {
             surface.setOcclusion(!isVisible)
             context.coordinator.isVisible = isVisible

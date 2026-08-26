@@ -4,6 +4,7 @@ This file records changes pushed for local Argus releases. New entries use a `YY
 
 ## 2026-08-26
 
+- Dropping a file into a terminal now inserts its path in the tab you are looking at, and in the pane you dropped it on. Drops previously always went to the last tab of the workspace and switched to it. When the open tab shows a browser, file, or diff instead of a terminal, the drop is now refused rather than typed into a hidden tab. ([2ff92c4](https://github.com/jeanduplessis/argus/commit/2ff92c4))
 - The Changes panel now compares a stacked branch with the branch it is stacked on, instead of always with the repository's main branch. When a stacking tool has recorded a branch's parent — `branch.<name>.base` in Git configuration, or Graphite's branch metadata — Against Base uses that parent, so the section shows only the branch's own commits and its title names the parent. Branches without recorded metadata keep using the project's main branch. Nothing contacts a remote. ([9c75672](https://github.com/jeanduplessis/argus/commit/9c75672))
 - The Changes panel no longer hides committed branch changes behind "Working tree clean". A branch with a clean working tree and changes against its base now shows those changes, and an unavailable base shows its explanation instead of being covered by the clean-state message. ([9c75672](https://github.com/jeanduplessis/argus/commit/9c75672))
 

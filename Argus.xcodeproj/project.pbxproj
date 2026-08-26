@@ -12,6 +12,7 @@
 		01330EDDF1BD8FFBBA86E045 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A268687E6FB693A77166E11 /* SidebarView.swift */; };
 		018D5801C86804D38B1E07A6 /* AgentSocketServerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C69B34D7D3E65E340C473C43 /* AgentSocketServerTests.swift */; };
 		020374B2B9276CBEB5F5EC62 /* TerminalSurfaceGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 131D9C2E0E23FC1E68151005 /* TerminalSurfaceGeometryTests.swift */; };
+		030AB7C01C25E197E6611D16 /* TerminalFileDropTargetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FDD710DA80C6A08EDC5A86D /* TerminalFileDropTargetTests.swift */; };
 		0372E54756482C36712CCD55 /* GitStatusAutoRefreshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D08217127D0DB6ED44164BD /* GitStatusAutoRefreshTests.swift */; };
 		04753789B7EC262D73C96B51 /* AgentStatusSocketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 063FB1ED7149ED958918434B /* AgentStatusSocketTests.swift */; };
 		04DCE84FEB30B0CE57BD6213 /* SourceContract.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFEDE6A5A2B6B85C812CEFAC /* SourceContract.swift */; };
@@ -270,6 +271,7 @@
 		5B15831275B325CA2E8A4D69 /* SidebarDivider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarDivider.swift; sourceTree = "<group>"; };
 		5B4D60E83B20F24AA92F8F19 /* TitlebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitlebarView.swift; sourceTree = "<group>"; };
 		5F828578257356A65F90D274 /* BranchAvailabilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BranchAvailabilityTests.swift; sourceTree = "<group>"; };
+		5FDD710DA80C6A08EDC5A86D /* TerminalFileDropTargetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalFileDropTargetTests.swift; sourceTree = "<group>"; };
 		60943ED18C50AF13F94B9691 /* RightSidebarView+WorkspaceFilesRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RightSidebarView+WorkspaceFilesRows.swift"; sourceTree = "<group>"; };
 		621BDE2A45BFFDC6F008EE55 /* RightSidebarView+WorkspaceFileLabels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RightSidebarView+WorkspaceFileLabels.swift"; sourceTree = "<group>"; };
 		66ABF976438B37B162B557DA /* GitStatusPresentationLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitStatusPresentationLayoutTests.swift; sourceTree = "<group>"; };
@@ -497,6 +499,7 @@
 				D4DBB008CA1822F486F734DB /* RunningProcessConfirmationUIContractTests.swift */,
 				D753CE6E1FFD67B19A85930F /* SidebarLayoutTests.swift */,
 				B85B710CD787E14321AB971B /* SidebarStatePersistenceTests.swift */,
+				5FDD710DA80C6A08EDC5A86D /* TerminalFileDropTargetTests.swift */,
 				131D9C2E0E23FC1E68151005 /* TerminalSurfaceGeometryTests.swift */,
 				0F8DC3D70F2D5B9E7C22810E /* WorkspacePresentationUIContractTests.swift */,
 				C210ABA91B6569BA149CC920 /* WorkspaceRootMutationTests.swift */,
@@ -1095,6 +1098,7 @@
 				B87E14DF8A9A133F597BC3E9 /* SidebarStatePersistenceTests.swift in Sources */,
 				04DCE84FEB30B0CE57BD6213 /* SourceContract.swift in Sources */,
 				4D1C3908D831F340E8ACEED0 /* TerminalDirectorySnapshotTests.swift in Sources */,
+				030AB7C01C25E197E6611D16 /* TerminalFileDropTargetTests.swift in Sources */,
 				020374B2B9276CBEB5F5EC62 /* TerminalSurfaceGeometryTests.swift in Sources */,
 				56965721E49B425A57D89D0C /* TurnCompletionAttentionTests.swift in Sources */,
 				60D35C0C98C048D83AB865C7 /* TurnCompletionUIContractTests.swift in Sources */,
