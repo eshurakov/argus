@@ -360,17 +360,15 @@ struct WorkspaceFilesUIContractTests {
     }
 
     @Test
-    func sidebarsUseOpaqueBlackShellBackgrounds() throws {
+    func sidebarsUseOpaqueFocusAwareShellBackgrounds() throws {
         try SourceContract("Argus/Views/ChromeColors.swift").containsAll(
-            ["static var shellBackground: Color", "static var shellBackgroundNSColor: NSColor", ".black"],
-            "black shell color"
+            ["static var shellBackground: some View", "WindowFocusBackground(focusedColor: shellBackgroundNSColor)"],
+            "focus-aware shell background"
         )
-        for path in ["Argus/App/AppDelegate.swift", "Argus/Ghostty/GhosttyApp.swift"] {
-            try SourceContract(path).contains(
-                "window.backgroundColor = ChromeColors.shellBackgroundNSColor",
-                "native window backing must preserve the black shell"
-            )
-        }
+        try SourceContract("Argus/Views/WindowFocusAppearance.swift").contains(
+            "isKeyWindow ? ChromeColors.shellBackgroundNSColor : ChromeColors.unfocusedBackgroundNSColor",
+            "native window backing must follow the hosting window's key state"
+        )
 
         for path in [
             "Argus/Views/Sidebar/SidebarView+Header.swift",
@@ -379,7 +377,7 @@ struct WorkspaceFilesUIContractTests {
             let sidebar = try SourceContract(path)
             sidebar.contains(
                 ".background(ChromeColors.shellBackground)",
-                "sidebars must use the opaque black shell background"
+                "sidebars must use the shared opaque shell background"
             )
             sidebar.excludes("VisualEffectView(", "sidebars must not use translucent material")
             sidebar.excludes(".behindWindow", "sidebars must not sample content behind the window")

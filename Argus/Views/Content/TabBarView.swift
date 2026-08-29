@@ -109,6 +109,7 @@ struct TabBarView: View {
                 .accessibilityLabel("Add tab")
             }
             .padding(.trailing, 8)
+            .windowFocusChrome()
         }
         .frame(height: 30)
         .background(ChromeColors.shellBackground)
@@ -181,12 +182,15 @@ struct TabItemView: View {
     let onMoveRight: () -> Void
     let onClose: () -> Void
     @EnvironmentObject private var appSettings: AppSettings
+    @Environment(WindowFocusState.self) private var windowFocus
 
     @State private var isHovered = false
     @State private var isCloseHovered = false
 
     private var tabFill: Color {
-        if isActive { return ChromeColors.activeTabFill }
+        if isActive {
+            return ChromeColors.activeTabFill.opacity(windowFocus.isKeyWindow ? 1 : 0.8)
+        }
         if isHovered { return ChromeColors.hoveredTabFill }
         return Color.clear
     }
@@ -216,6 +220,7 @@ struct TabItemView: View {
                             Image(systemName: icon)
                                 .font(.system(size: 11, weight: .semibold))
                                 .foregroundStyle(isActive ? Color.primary : Color.secondary)
+                                .windowFocusChrome()
                                 .accessibilityHidden(true)
                         }
                     }
@@ -224,6 +229,7 @@ struct TabItemView: View {
                     Text(title)
                         .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 12)))
                         .foregroundColor(isActive ? .primary : .secondary)
+                        .windowFocusChrome()
                         .lineLimit(1)
                         .truncationMode(.middle)
                         .frame(maxWidth: 140)
@@ -264,6 +270,7 @@ struct TabItemView: View {
             .help("Close \(title)")
             .accessibilityLabel("Close \(title)")
             .onHover { isCloseHovered = $0 }
+            .windowFocusChrome()
         }
         .padding(.trailing, 4)
         .frame(height: 24)

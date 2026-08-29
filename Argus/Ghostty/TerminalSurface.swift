@@ -121,7 +121,8 @@ final class TerminalSurface: ObservableObject, Identifiable {
                 pwdObserver,
                 renderObserver,
                 observeMouseShapeChanges(),
-                observeGhosttyStartup()
+                observeGhosttyStartup(),
+                observeConfigurationChanges()
             ]
         )
     }
@@ -152,6 +153,16 @@ final class TerminalSurface: ObservableObject, Identifiable {
             // The view may have reached a window before deferred libghostty
             // startup completed, so retry the otherwise idempotent creation.
             self?.createSurface()
+        }
+    }
+
+    private func observeConfigurationChanges() -> NSObjectProtocol {
+        NotificationCenter.default.addObserver(
+            forName: .argusGhosttyConfigurationDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.updateWindowBackground()
         }
     }
 
@@ -240,6 +251,7 @@ final class TerminalSurface: ObservableObject, Identifiable {
         // Apply the remembered Pane size so the grid is not left at Ghostty's
         // default columns until the next window resize.
         hostedView.synchronizeSurfaceGeometry()
+        updateWindowBackground()
     }
 
     /// Build the environment variables to inject into the shell.
@@ -268,6 +280,17 @@ final class TerminalSurface: ObservableObject, Identifiable {
     }
 
     // MARK: - Surface Control
+
+    /// Apply the hosting window's background without changing keyboard focus,
+    /// terminal contents, or the lifetime of the running process.
+    func updateWindowBackground() {
+        guard let surface,
+            let window = _hostedView?.window,
+            let config = GhosttyApp.shared.configuration(forKeyWindow: window.isKeyWindow)
+        else { return }
+        ghostty_surface_update_config(surface, config)
+        refresh()
+    }
 
     /// Set focus state on the surface.
     func setFocus(_ focused: Bool) {

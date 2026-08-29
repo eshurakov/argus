@@ -74,6 +74,7 @@ struct TitlebarView: View {
             .padding(.trailing, 8)
         }
         .frame(height: 44)
+        .windowFocusChrome()
         .background {
             ChromeColors.shellBackground
                 .allowsHitTesting(false)

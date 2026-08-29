@@ -80,8 +80,14 @@ extension TerminalNSView {
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
 
+        observeWindowFocus()
+
         if window != nil {
-            surface?.createSurface()
+            if surface?.surface == nil {
+                surface?.createSurface()
+            } else {
+                surface?.updateWindowBackground()
+            }
             updateContentScale()
             synchronizeSurfaceGeometry()
             updateTrackingArea()

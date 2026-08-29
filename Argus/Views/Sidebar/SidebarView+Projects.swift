@@ -23,6 +23,7 @@ struct ProjectSection: View {
         VStack(spacing: 0) {
             if showsHeader {
                 ProjectHeaderRow(project: project)
+                    .windowFocusChrome()
                     .padding(.top, 4)
             }
 

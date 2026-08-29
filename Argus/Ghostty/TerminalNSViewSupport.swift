@@ -1,12 +1,28 @@
 // TerminalNSViewSupport.swift
 // Argus
 //
-// Geometry, cursor, and text-input support for TerminalNSView.
+// Window appearance, geometry, cursor, and text-input support for TerminalNSView.
 
 import AppKit
 import QuartzCore
 
 extension TerminalNSView {
+    /// Observe the hosting window, not this Pane's first-responder status:
+    /// every Terminal Pane must share the window's background treatment.
+    func observeWindowFocus() {
+        for name in [NSWindow.didBecomeKeyNotification, NSWindow.didResignKeyNotification] {
+            NotificationCenter.default.removeObserver(self, name: name, object: nil)
+            if let window {
+                NotificationCenter.default.addObserver(
+                    self, selector: #selector(windowFocusDidChange), name: name, object: window)
+            }
+        }
+    }
+
+    @objc private func windowFocusDidChange(_ notification: Notification) {
+        surface?.updateWindowBackground()
+    }
+
     /// Reconciles Ghostty and Metal with SwiftUI's resolved Pane size.
     /// SwiftUI can reattach a retained NSView without a final frame callback.
     func synchronizeSurfaceGeometry(to targetSize: CGSize? = nil) {

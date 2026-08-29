@@ -5,6 +5,7 @@ extension SidebarView {
         VStack(spacing: 0) {
             // Header with title and global add buttons
             SidebarHeader()
+                .windowFocusChrome()
 
             // Project sections
             ScrollView {
@@ -17,6 +18,7 @@ extension SidebarView {
                     // Catch-all project last, as a top-level section like Projects.
                     if let catchAll = workspaceManager.catchAllProject {
                         WorkspacesSectionHeader()
+                            .windowFocusChrome()
                         ProjectSection(project: catchAll, showsHeader: false)
                     }
                 }

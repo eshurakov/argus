@@ -1,8 +1,8 @@
 // ChromeColors.swift
 // Argus
 //
-// Shared window-chrome colors. The shell uses a fixed black surface while
-// content colors and chrome contrast derive from the active Ghostty theme.
+// Shared window-chrome colors. The shell is black while focused and dark grey
+// while unfocused; foreground colors derive from the active Ghostty theme.
 
 import AppKit
 import SwiftUI
@@ -46,12 +46,16 @@ struct ChromePalette {
 }
 
 enum ChromeColors {
-    static var shellBackground: Color {
-        Color(nsColor: shellBackgroundNSColor)
+    static var shellBackground: some View {
+        WindowFocusBackground(focusedColor: shellBackgroundNSColor)
     }
 
-    static var contentBackground: Color {
-        Color(nsColor: contentBackgroundNSColor)
+    static var contentBackground: some View {
+        WindowFocusBackground(focusedColor: contentBackgroundNSColor)
+    }
+
+    static var unfocusedBackgroundNSColor: NSColor {
+        NSColor(srgbRed: 26 / 255, green: 26 / 255, blue: 26 / 255, alpha: 1)
     }
 
     static var foreground: Color {

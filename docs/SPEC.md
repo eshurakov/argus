@@ -17,12 +17,13 @@ Argus is a single-user, single-machine application. It has one main Workspace wi
 ## Application shell
 
 1. The main window MUST use a three-column layout: the left sidebar, center Workspace content, and the Right Sidebar.
-2. The main window MUST use a full-size transparent titlebar and an opaque black application shell.
+2. The main window MUST use a full-size transparent titlebar and an opaque application shell. Its shell and default Terminal backgrounds MUST be black while the window is key and dark grey (`#1A1A1A`) while it is not key. App-owned document backgrounds MUST follow the same focus treatment without recoloring foreground content, images, web pages, or semantic diff highlights.
 3. The left sidebar and Right Sidebar MUST be independently toggleable and resizable.
 4. Left-sidebar visibility and width MUST persist in `UserDefaults`. Its default width is 200 points, with an effective range from 80 points to one third of the window width.
 5. Right-sidebar visibility, width, and selected Right-sidebar View MUST persist in `UserDefaults`. Its width range is 180 to 600 points and its default width is 250 points.
 6. Dividers MUST provide a drag target wider than their visible separator.
 7. Inspectable content MUST remain in the main Workspace window. Settings, sheets, alerts, menus, and popovers MAY use their normal macOS surfaces.
+8. The main window MUST indicate keyboard/key-window focus through its background appearance, without a titlebar focus strip or perimeter outline. When it is not key, ordinary headers and toolbar controls SHOULD soften, and selection accents SHOULD become less prominent without hiding the Selected Workspace or Active Tab. Panel content, Agent Status, and Turn Completion Attention MUST remain undimmed. Focus appearance MUST NOT intercept input or affect layout. Increased Contrast MUST retain normal chrome opacity.
 
 ## Settings
 
@@ -113,7 +114,7 @@ selection, or existing Git Preview Tabs.
 
 1. Argus MUST use one process-wide Ghostty engine.
 2. Each Terminal Panel MUST own one independent Terminal Surface.
-3. Argus MUST load Ghostty default and recursive configuration before applying its bundled opaque-black terminal background override.
+3. Argus MUST load Ghostty default and recursive configuration before applying its bundled opaque-black terminal background override. Unfocused windows MUST use a cached configuration derived from that configuration with only the background changed to dark grey. Focus changes MUST NOT reload user files, recreate Terminal Surfaces, or restart processes.
 4. Terminal surfaces MUST retain user Ghostty configuration except for the Argus-owned background and background-opacity values.
 5. Spawned shells MUST receive `ARGUS_SOCKET_PATH`, `ARGUS_WORKSPACE_ID`, and `ARGUS_SURFACE_ID`.
 6. These variables identify the application socket, Workspace, and Terminal Surface for supported integrations. Their presence MUST NOT be treated as proof that a particular Agent Integration is enabled.

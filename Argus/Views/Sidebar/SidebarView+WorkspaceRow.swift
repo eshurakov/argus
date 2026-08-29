@@ -11,6 +11,7 @@ struct SidebarWorkspaceRow: View {
     @EnvironmentObject var turnCompletionAttentionStore: TurnCompletionAttentionStore
     @EnvironmentObject private var appSettings: AppSettings
     @Environment(\.isCommandKeyHeld) private var isCommandKeyHeld
+    @Environment(WindowFocusState.self) private var windowFocus
     let globalIndex: Int
     let shortcutDigit: Int?
     let isSelected: Bool
@@ -75,12 +76,12 @@ struct SidebarWorkspaceRow: View {
                     .fill(Color.accentColor)
                     .frame(width: 3)
                     .padding(.vertical, 2)
-                    .opacity(isSelected ? 1 : 0)
+                    .opacity(isSelected ? (windowFocus.isKeyWindow ? 1 : 0.5) : 0)
                     .accessibilityHidden(true)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 6)
-                    .stroke(focusColor, lineWidth: isFocused ? 1 : 0)
+                    .stroke(focusColor, lineWidth: isFocused && windowFocus.isKeyWindow ? 1 : 0)
             }
             .contentShape(Rectangle())
         }
@@ -114,6 +115,7 @@ struct SidebarWorkspaceRow: View {
                 Image(systemName: workspace.workspaceType.icon)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                    .windowFocusChrome()
                     .opacity(showsShortcutOverlay ? 0 : 1)
                     .accessibilityHidden(true)
             }
@@ -128,6 +130,7 @@ struct SidebarWorkspaceRow: View {
                         )
                     )
                     .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                    .windowFocusChrome()
                     .accessibilityHidden(true)
             }
         }
@@ -174,7 +177,7 @@ struct SidebarWorkspaceRow: View {
 
     private var backgroundColor: Color {
         if isSelected {
-            return Color.accentColor.opacity(0.16)
+            return Color.accentColor.opacity(windowFocus.isKeyWindow ? 0.16 : 0.10)
         } else if isHovered || isFocused {
             return ChromeColors.hoveredTabFill
         } else {

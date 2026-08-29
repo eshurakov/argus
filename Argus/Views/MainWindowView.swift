@@ -91,6 +91,7 @@ private struct WorkspaceDeletionProgressView: View {
 struct MainWindowView: View {  // swiftlint:disable:this type_body_length
     @EnvironmentObject var workspaceManager: WorkspaceManager
     @ObservedObject private var ghosttyApp = GhosttyApp.shared
+    @State private var windowFocus = WindowFocusState()
     @StateObject private var sidebarState = SidebarState()
     @StateObject private var gitSidebarState = GitSidebarState()
     @StateObject private var gitStatusViewModel = GitStatusViewModel()
@@ -197,6 +198,12 @@ struct MainWindowView: View {  // swiftlint:disable:this type_body_length
                 }
             }
         }
+        .background {
+            WindowFocusReader(focus: windowFocus)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
+        .environment(windowFocus)
         .environmentObject(sidebarState)
         .environmentObject(gitSidebarState)
         .environmentObject(gitStatusViewModel)

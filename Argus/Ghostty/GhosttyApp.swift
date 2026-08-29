@@ -18,6 +18,7 @@ final class GhosttyApp: ObservableObject {
 
     private(set) var app: ghostty_app_t?
     private(set) var config: ghostty_config_t?
+    private var unfocusedConfig: ghostty_config_t?
     private(set) var defaultBackgroundColor: NSColor = .windowBackgroundColor
     private(set) var defaultForegroundColor: NSColor = .textColor
     private(set) var defaultBackgroundOpacity: Double = 1.0
@@ -42,6 +43,7 @@ final class GhosttyApp: ObservableObject {
         }
         if let app { ghostty_app_free(app) }
         if let config { ghostty_config_free(config) }
+        if let unfocusedConfig { ghostty_config_free(unfocusedConfig) }
     }
 
     // MARK: - Environment Setup
@@ -109,6 +111,7 @@ final class GhosttyApp: ObservableObject {
         // 2. Create and load config
         guard let cfg = makeConfiguration() else { return }
         self.config = cfg
+        unfocusedConfig = makeUnfocusedConfiguration(from: cfg)
 
         // 3. Extract terminal colors for window and content chrome.
         extractChromePalette(from: cfg)
@@ -149,10 +152,27 @@ final class GhosttyApp: ObservableObject {
         return config
     }
 
-    private func loadTerminalTheme(into config: ghostty_config_t) {
+    /// Clone the loaded configuration once; focus changes never reload user
+    /// files or replace Terminal Surfaces and their running processes.
+    private func makeUnfocusedConfiguration(from focusedConfig: ghostty_config_t) -> ghostty_config_t? {
+        guard let config = ghostty_config_clone(focusedConfig) else { return nil }
+        loadTerminalTheme(into: config, resource: "ArgusUnfocusedTerminalTheme")
+        ghostty_config_finalize(config)
+        logDiagnostics(for: config)
+        return config
+    }
+
+    func configuration(forKeyWindow isKeyWindow: Bool) -> ghostty_config_t? {
+        isKeyWindow ? config : unfocusedConfig ?? config
+    }
+
+    private func loadTerminalTheme(
+        into config: ghostty_config_t,
+        resource: String = GhosttyApp.terminalThemeResource
+    ) {
         guard
             let themeURL = Bundle.main.url(
-                forResource: Self.terminalThemeResource,
+                forResource: resource,
                 withExtension: "ghostty"
             )
         else {
@@ -256,6 +276,7 @@ final class GhosttyApp: ObservableObject {
         NSLog("GhosttyApp: Reloading configuration (source: %@)", source)
 
         guard let newConfig = makeConfiguration() else { return }
+        let newUnfocusedConfig = makeUnfocusedConfiguration(from: newConfig)
 
         GhosttyConfig.invalidateCache()
         extractChromePalette(from: newConfig)
@@ -266,9 +287,13 @@ final class GhosttyApp: ObservableObject {
             ghostty_config_free(oldConfig)
         }
         self.config = newConfig
+        if let unfocusedConfig { ghostty_config_free(unfocusedConfig) }
+        unfocusedConfig = newUnfocusedConfig
+        NotificationCenter.default.post(name: .argusGhosttyConfigurationDidChange, object: nil)
 
         for window in NSApp.windows where window.identifier?.rawValue == "main" {
-            window.backgroundColor = ChromeColors.shellBackgroundNSColor
+            window.backgroundColor =
+                window.isKeyWindow ? ChromeColors.shellBackgroundNSColor : ChromeColors.unfocusedBackgroundNSColor
             window.contentView?.needsDisplay = true
         }
     }
@@ -293,4 +318,5 @@ final class GhosttyApp: ObservableObject {
 
 extension Notification.Name {
     static let argusGhosttyDidStart = Notification.Name("ArgusGhosttyDidStart")
+    static let argusGhosttyConfigurationDidChange = Notification.Name("ArgusGhosttyConfigurationDidChange")
 }

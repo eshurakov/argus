@@ -126,7 +126,7 @@ struct SettingsView: View {
                 }
             }
             Section("Application Shell") {
-                LabeledContent("Shell background") { Text("Black (fixed)") }
+                LabeledContent("Shell background") { Text("Black when focused, dark grey when inactive") }
                 LabeledContent("Terminal appearance") { Text("Ghostty configuration") }
             }
         }
@@ -154,7 +154,7 @@ struct SettingsView: View {
                         GhosttyApp.shared.reloadConfiguration(source: "settings")
                     }
                 }
-                Text("Font, theme, and background remain configured by Ghostty.")
+                Text("Font and theme remain configured by Ghostty. Argus controls the background.")
                     .foregroundStyle(.secondary)
             }
         }

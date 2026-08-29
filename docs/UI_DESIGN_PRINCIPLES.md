@@ -69,9 +69,10 @@ repository presentation under a labeled Changes section. Supporting text MUST
 stay visually attached to the setting it explains instead of occupying
 detached form rows.
 
-Appearance and density settings MUST preserve the fixed opaque black application
-shell. They MUST NOT reduce required hit targets, divider drag targets, or other
-accessibility geometry below this contract's minimums.
+Appearance and density settings MUST preserve the opaque application shell and
+its black focused / dark-grey unfocused background treatment. They MUST NOT
+reduce required hit targets, divider drag targets, or other accessibility
+geometry below this contract's minimums.
 
 ## Keep content in workspace tabs
 
@@ -288,6 +289,20 @@ Selecting a workspace tab MUST run the shared focus lifecycle. Terminal tabs
 MUST restore terminal focus. Background tabs and asynchronous work MUST NOT
 steal first responder status.
 
+The main window MUST distinguish keyboard/key-window focus from application
+activation through its background appearance, without a titlebar focus strip
+or perimeter outline. This cue MUST remain available with both sidebars hidden.
+Inactive headers and toolbar controls SHOULD soften, while the Selected
+Workspace and Active Tab MUST remain identifiable.
+The shell, default Terminal backgrounds, and app-owned document backgrounds MUST
+be dark grey while the window is unfocused and return to their focused colors
+when it becomes key. Change the actual backgrounds, not foreground content;
+images, web-page styling, and semantic diff highlights retain their own colors.
+Panel content, Agent Status, and Turn Completion Attention MUST NOT be dimmed.
+Focus appearance MUST NOT move content, intercept input, or change selection.
+Increased Contrast MUST preserve ordinary chrome opacity. Focus feedback MUST
+NOT rely on a hue change alone.
+
 Common actions MUST have standard menu commands and keyboard shortcuts. This
 includes creating a workspace or tab, closing the active pane or tab, splitting
 a terminal, toggling sidebars, and selecting numbered workspaces. Custom
@@ -343,13 +358,14 @@ navigation event.
 
 ## Visual language
 
-The application shell uses an opaque black background across the native window,
-sidebars, Center Content Area Titlebar, and Top-level Tab bar. Terminal content
-uses the opaque black Argus background override while retaining other active
-Ghostty configuration and theme colors. Document content retains active Ghostty
-theme colors. Use shared `ChromeColors` values rather than local fixed colors.
-Separators use subtle adaptive one-point lines, and sidebars MUST NOT use
-translucent materials.
+The application shell uses an opaque background across the native window,
+sidebars, Center Content Area Titlebar, and Top-level Tab bar: black while key,
+dark grey (`#1A1A1A`) otherwise. Terminal default backgrounds follow the same
+treatment while retaining other active Ghostty configuration and theme colors.
+App-owned document backgrounds also respond to window focus; document foreground
+colors remain unchanged. Use shared `ChromeColors` values rather than local fixed
+colors. Separators use subtle adaptive one-point lines, and sidebars MUST NOT
+use translucent materials.
 
 Established geometry is the default:
 

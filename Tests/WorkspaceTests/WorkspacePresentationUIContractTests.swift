@@ -148,8 +148,8 @@ struct WorkspacePresentationUIContractTests {
                 ".overlay(alignment: .leading) {",
                 ".fill(Color.accentColor)",
                 ".frame(width: 3)",
-                ".opacity(isSelected ? 1 : 0)",
-                "return Color.accentColor.opacity(0.16)",
+                ".opacity(isSelected ? (windowFocus.isKeyWindow ? 1 : 0.5) : 0)",
+                "return Color.accentColor.opacity(windowFocus.isKeyWindow ? 0.16 : 0.10)",
                 "return ChromeColors.hoveredTabFill"
             ], "selected Workspace row indicator and restrained selection fill")
         row.excludes(
