@@ -2,6 +2,10 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-08-29
+
+- Argus now changes its window and terminal backgrounds from black to dark grey when the window loses keyboard focus, making the active window easier to spot across monitors. Headers and controls soften without dimming Panel content, Agent Status, or Turn Completion Attention. ([ed816d6](https://github.com/jeanduplessis/argus/commit/ed816d6ad31f3f82bfb1014c7ba1b26eaff93b6e))
+
 ## 2026-08-26
 
 - Dropping a file into a terminal now inserts its path in the tab you are looking at, and in the pane you dropped it on. Drops previously always went to the last tab of the workspace and switched to it. When the open tab shows a browser, file, or diff instead of a terminal, the drop is now refused rather than typed into a hidden tab. ([2ff92c4](https://github.com/jeanduplessis/argus/commit/2ff92c4))
