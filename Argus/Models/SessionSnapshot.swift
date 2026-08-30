@@ -6,6 +6,7 @@ import Foundation
 /// number of terminal panels needed to reopen a basic tab set. It does not
 /// include Phase 4 scrollback or browser restoration state.
 struct WorkspaceSnapshot: Codable, Sendable {
+    static let maximumTerminalPanels = 128
     let id: UUID
     let projectId: UUID?
     let branchName: String?
@@ -66,18 +67,19 @@ struct WorkspaceSnapshot: Codable, Sendable {
         self.customTitle = customTitle
         self.currentDirectory = currentDirectory
         let normalizedPanelCount = max(panelCount, 0)
+        let safeExpansionCount = min(normalizedPanelCount, Self.maximumTerminalPanels)
         self.panelCount = normalizedPanelCount
         self.terminalDirectories =
             terminalDirectories
             ?? Array(
                 repeating: currentDirectory,
-                count: normalizedPanelCount
+                count: safeExpansionCount
             )
         self.terminalCustomTitles =
             terminalCustomTitles
             ?? Array(
                 repeating: nil,
-                count: normalizedPanelCount
+                count: safeExpansionCount
             )
     }
 
@@ -106,11 +108,27 @@ struct WorkspaceSnapshot: Codable, Sendable {
         let customTitle = try container.decodeIfPresent(String.self, forKey: .customTitle)
         let currentDirectory = try container.decode(String.self, forKey: .currentDirectory)
         let panelCount = try container.decode(Int.self, forKey: .panelCount)
+        guard (0...Self.maximumTerminalPanels).contains(panelCount) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .panelCount,
+                in: container,
+                debugDescription: "Terminal Panel count is outside the supported range"
+            )
+        }
         let terminalDirectories = try container.decodeIfPresent([String].self, forKey: .terminalDirectories)
         let terminalCustomTitles = try container.decodeIfPresent(
             [String?].self,
             forKey: .terminalCustomTitles
         )
+        guard (terminalDirectories?.count ?? 0) <= Self.maximumTerminalPanels,
+            (terminalCustomTitles?.count ?? 0) <= Self.maximumTerminalPanels
+        else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .terminalDirectories,
+                in: container,
+                debugDescription: "Terminal Panel metadata exceeds the supported range"
+            )
+        }
 
         self.init(
             id: id,
@@ -139,6 +157,24 @@ struct ArgusSessionSnapshot: Codable, Sendable {
 
     var isCompatible: Bool {
         schemaVersion == Self.currentSchemaVersion
+    }
+
+    func isValidForRestore(maxWorkspaces: Int) -> Bool {
+        guard isCompatible,
+            !workspaces.isEmpty,
+            workspaces.count <= maxWorkspaces,
+            projects.count <= maxWorkspaces + 1,
+            Set(workspaces.map(\.id)).count == workspaces.count,
+            Set(projects.map(\.id)).count == projects.count,
+            workspaces.allSatisfy({
+                (0...WorkspaceSnapshot.maximumTerminalPanels).contains($0.panelCount)
+                    && $0.terminalDirectories.count <= WorkspaceSnapshot.maximumTerminalPanels
+                    && $0.terminalCustomTitles.count <= WorkspaceSnapshot.maximumTerminalPanels
+            }),
+            workspaces.reduce(0, { $0 + $1.panelCount })
+                <= maxWorkspaces * WorkspaceSnapshot.maximumTerminalPanels
+        else { return false }
+        return true
     }
 
     /// Returns a restore-safe snapshot with project/workspace cross-references

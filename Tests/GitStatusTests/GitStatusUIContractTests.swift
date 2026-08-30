@@ -347,13 +347,13 @@ struct WorkspaceFilesUIContractTests {
         )
         for expected in [
             "WorkspaceFilesView(",
-            ".opacity(selectedPanel == .files ? 1 : 0)",
-            ".allowsHitTesting(selectedPanel == .files)",
-            ".accessibilityHidden(selectedPanel != .files)",
+            ".opacity(gitSidebarState.selectedView == .files ? 1 : 0)",
+            ".allowsHitTesting(gitSidebarState.selectedView == .files)",
+            ".accessibilityHidden(gitSidebarState.selectedView != .files)",
             "GitSidebarView()",
-            ".opacity(selectedPanel == .changes ? 1 : 0)",
-            ".allowsHitTesting(selectedPanel == .changes)",
-            ".accessibilityHidden(selectedPanel != .changes)"
+            ".opacity(gitSidebarState.selectedView == .changes ? 1 : 0)",
+            ".allowsHitTesting(gitSidebarState.selectedView == .changes)",
+            ".accessibilityHidden(gitSidebarState.selectedView != .changes)"
         ] {
             #expect(body.contains(expected))
         }
@@ -398,8 +398,8 @@ struct WorkspaceFilesUIContractTests {
             ".contentShape(Rectangle())",
             ".disabled(!canRefresh)",
             ".cursor(canRefresh ? .pointingHand : .arrow)",
-            ".help(selectedPanel == .files ? \"Refresh files\" : \"Refresh changes\")",
-            ".accessibilityLabel(selectedPanel == .files ? \"Refresh files\" : \"Refresh changes\")"
+            ".help(gitSidebarState.selectedView == .files ? \"Refresh files\" : \"Refresh changes\")",
+            ".accessibilityLabel(gitSidebarState.selectedView == .files ? \"Refresh files\" : \"Refresh changes\")"
         ] {
             #expect(header.contains(expected))
         }
@@ -540,11 +540,11 @@ struct WorkspaceFileRowUIContractTests {
             [
                 "case .file:",
                 "FilePanelContentView(",
-                "Data(contentsOf: url)",
+                "handle.read(upToCount: maximumFileSize + 1)",
                 "data.contains(0)",
                 "FileSyntaxHighlighter.highlightedText",
                 "GeometryReader { proxy in",
-                "_lineWrapEnabled = State(initialValue: initialPresentation.lineWrapEnabled)",
+                "panel.lineWrapEnabled = initialPresentation.lineWrapEnabled",
                 "FilePanelPreparedContent",
                 "sourceContent(preparedContent.sourceLines)",
                 "MarkdownRenderedView(blocks: preparedContent.markdownBlocks, documentTextSize: documentTextSize)",

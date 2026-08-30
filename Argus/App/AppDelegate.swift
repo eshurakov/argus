@@ -116,7 +116,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this 
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.updateWindowTitle()
+            MainActor.assumeIsolated { self?.updateWindowTitle() }
         }
         windowKeyObservers = [
             NotificationCenter.default.addObserver(
@@ -124,9 +124,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this 
                 object: nil,
                 queue: .main
             ) { [weak self] notification in
-                guard let window = notification.object as? NSWindow,
-                    window.identifier?.rawValue == "main"
-                else { return }
+                guard let window = notification.object as? NSWindow else { return }
+                let isMainWindow = MainActor.assumeIsolated { window.identifier?.rawValue == "main" }
+                guard isMainWindow else { return }
                 Task { @MainActor [weak self] in
                     self?.workspaceManager?.acknowledgeSelectedActiveTabIfViewed()
                 }
@@ -332,7 +332,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this 
 /// Forwards SwiftUI's window delegate while intercepting close so a running
 /// terminal process can be confirmed before the last window disappears.
 @MainActor
-private final class MainWindowCloseGuard: NSObject, NSWindowDelegate {
+final class MainWindowCloseGuard: NSObject, NSWindowDelegate {
     weak var originalDelegate: NSWindowDelegate?
     var onShouldClose: () -> Bool = { true }
 
@@ -349,10 +349,17 @@ private final class MainWindowCloseGuard: NSObject, NSWindowDelegate {
 
     override func responds(to aSelector: Selector) -> Bool {
         if super.responds(to: aSelector) { return true }
-        return originalDelegate?.responds(to: aSelector) ?? false
+        return MainActor.assumeIsolated {
+            originalDelegate?.responds(to: aSelector) ?? false
+        }
     }
 
     override func forwardingTarget(for aSelector: Selector) -> Any? {
-        originalDelegate
+        // NSObject's synchronous override cannot express actor isolation or a
+        // non-Sendable result. Assert the window's main-actor contract before
+        // returning the delegate; this local never crosses an asynchronous hop.
+        nonisolated(unsafe) var target: Any?
+        MainActor.assumeIsolated { target = originalDelegate }
+        return target
     }
 }

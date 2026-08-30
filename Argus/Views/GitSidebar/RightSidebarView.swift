@@ -17,9 +17,8 @@ struct RightSidebarView: View {
     @EnvironmentObject private var workspaceManager: WorkspaceManager
     @EnvironmentObject private var gitStatusViewModel: GitStatusViewModel
     @EnvironmentObject private var appSettings: AppSettings
+    @EnvironmentObject private var gitSidebarState: GitSidebarState
     @StateObject private var filesViewModel = WorkspaceFilesViewModel()
-    @State private var selectedPanel: AppSettings.RightSidebarView = .changes
-    @State private var hasAppliedDefaultPanel = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -33,25 +32,20 @@ struct RightSidebarView: View {
                     rootPath: workspaceManager.selectedWorkspace?.currentDirectory,
                     showHiddenFiles: appSettings.showHiddenFiles
                 )
-                .opacity(selectedPanel == .files ? 1 : 0)
-                .allowsHitTesting(selectedPanel == .files)
-                .accessibilityHidden(selectedPanel != .files)
+                .opacity(gitSidebarState.selectedView == .files ? 1 : 0)
+                .allowsHitTesting(gitSidebarState.selectedView == .files)
+                .accessibilityHidden(gitSidebarState.selectedView != .files)
 
                 GitSidebarView()
-                    .opacity(selectedPanel == .changes ? 1 : 0)
-                    .allowsHitTesting(selectedPanel == .changes)
-                    .accessibilityHidden(selectedPanel != .changes)
+                    .opacity(gitSidebarState.selectedView == .changes ? 1 : 0)
+                    .allowsHitTesting(gitSidebarState.selectedView == .changes)
+                    .accessibilityHidden(gitSidebarState.selectedView != .changes)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(ChromeColors.shellBackground)
         .onChange(of: filesRequest, initial: true) { _, request in
             filesViewModel.activate(request: request)
-        }
-        .onAppear {
-            guard !hasAppliedDefaultPanel else { return }
-            selectedPanel = appSettings.defaultRightSidebarView
-            hasAppliedDefaultPanel = true
         }
     }
 
@@ -64,10 +58,10 @@ struct RightSidebarView: View {
             Spacer(minLength: 0)
 
             ZStack {
-                if selectedPanel == .files, filesViewModel.isRefreshing {
+                if gitSidebarState.selectedView == .files, filesViewModel.isRefreshing {
                     ProgressView()
                         .controlSize(.small)
-                } else if selectedPanel == .changes, gitStatusViewModel.isRefreshing {
+                } else if gitSidebarState.selectedView == .changes, gitStatusViewModel.isRefreshing {
                     ProgressView()
                         .controlSize(.small)
                 }
@@ -92,8 +86,8 @@ struct RightSidebarView: View {
                 .buttonStyle(.plain)
                 .disabled(!canRefresh)
                 .cursor(canRefresh ? .pointingHand : .arrow)
-                .help(selectedPanel == .files ? "Refresh files" : "Refresh changes")
-                .accessibilityLabel(selectedPanel == .files ? "Refresh files" : "Refresh changes")
+                .help(gitSidebarState.selectedView == .files ? "Refresh files" : "Refresh changes")
+                .accessibilityLabel(gitSidebarState.selectedView == .files ? "Refresh files" : "Refresh changes")
                 .accessibilityValue(isRefreshActive ? "Refreshing" : "")
             }
             .padding(.trailing, 12)
@@ -105,10 +99,10 @@ struct RightSidebarView: View {
     }
 
     private func tabButton(_ panel: AppSettings.RightSidebarView) -> some View {
-        let isSelected = selectedPanel == panel
+        let isSelected = gitSidebarState.selectedView == panel
 
         return Button {
-            selectedPanel = panel
+            gitSidebarState.selectedView = panel
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: panel.systemImage)
@@ -137,7 +131,7 @@ struct RightSidebarView: View {
     }
 
     private var isRefreshActive: Bool {
-        switch selectedPanel {
+        switch gitSidebarState.selectedView {
         case .files:
             return filesViewModel.isRefreshing
         case .changes:
@@ -147,7 +141,7 @@ struct RightSidebarView: View {
 
     private var canRefresh: Bool {
         guard !isRefreshActive else { return false }
-        switch selectedPanel {
+        switch gitSidebarState.selectedView {
         case .files:
             return filesRequest != nil
         case .changes:
@@ -171,7 +165,7 @@ struct RightSidebarView: View {
     }
 
     private func refreshSelectedPanel() async {
-        switch selectedPanel {
+        switch gitSidebarState.selectedView {
         case .files:
             await refreshFiles()
         case .changes:

@@ -104,6 +104,33 @@ struct TerminalDirectorySnapshotTests {
     }
 
     @Test
+    func surfaceNotificationsUpdateOnlyTheirTerminalSynchronously() throws {
+        let workspace = Workspace(workingDirectory: "/repo")
+        let terminal = try #require(workspace.activePanel as? TerminalPanel)
+        let other = workspace.addTerminalPanel(workingDirectory: "/other")
+
+        NotificationCenter.default.post(
+            name: .argusSetSurfaceTitle,
+            object: nil,
+            userInfo: ["surfaceId": terminal.id, "title": "Server"]
+        )
+        NotificationCenter.default.post(
+            name: .argusSetSurfacePwd,
+            object: nil,
+            userInfo: ["surfaceId": terminal.id, "pwd": "/repo/server"]
+        )
+        NotificationCenter.default.post(name: .argusSurfaceNeedsDisplay, object: terminal.id)
+
+        #expect(terminal.title == "Server")
+        #expect(terminal.directory == "/repo/server")
+        #expect(terminal.surface.needsDisplay)
+        #expect(other.title == "other")
+        #expect(other.directory == "/other")
+        #expect(!other.surface.needsDisplay)
+        #expect(workspace.snapshot().terminalDirectories == ["/repo/server", "/other"])
+    }
+
+    @Test
     func zeroTerminalCountPreservesAnEmptyWorkspace() throws {
         let projectId = UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")!
         let workspaceId = UUID(uuidString: "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB")!

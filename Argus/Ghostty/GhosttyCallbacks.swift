@@ -18,6 +18,7 @@ struct AudibleBellPolicy {
 
 extension Notification.Name {
     static let argusCloseSurface = Notification.Name("argusCloseSurface")
+    static let argusCloseTab = Notification.Name("argusCloseTab")
     static let argusSetSurfaceTitle = Notification.Name("argusSetSurfaceTitle")
     static let argusSetSurfacePwd = Notification.Name("argusSetSurfacePwd")
     static let argusSurfaceNeedsDisplay = Notification.Name("argusSurfaceNeedsDisplay")
@@ -70,8 +71,29 @@ func ghosttyConfirmReadClipboardCallback(
 ) {
     guard let userdata, let state else { return }
     let terminalSurface = Unmanaged<TerminalSurface>.fromOpaque(userdata).takeUnretainedValue()
-    guard let ghosttySurface = terminalSurface.surface else { return }
-    ghostty_surface_complete_clipboard_request(ghosttySurface, content, state, true)
+    let value = content.map(String.init(cString:)) ?? ""
+    let kind: TerminalClipboardConfirmationKind =
+        request == GHOSTTY_CLIPBOARD_REQUEST_OSC_52_READ ? .terminalRead : .unsafePaste
+    let requestState = TerminalClipboardRequestState(pointer: state)
+    let decision = TerminalClipboardDecision(surfaceId: terminalSurface.id) { approved in
+        guard let ghosttySurface = terminalSurface.surface else { return }
+        value.withCString { pointer in
+            ghostty_surface_complete_clipboard_request(
+                ghosttySurface,
+                pointer,
+                requestState.pointer,
+                approved
+            )
+        }
+    }
+    DispatchQueue.main.async {
+        TerminalClipboardConfirmationPresenter.shared.present(
+            kind: kind,
+            surfaceId: decision.surfaceId,
+            preview: kind == .unsafePaste ? value : nil,
+            completion: decision.complete
+        )
+    }
 }
 
 func ghosttyWriteClipboardCallback(
@@ -91,7 +113,23 @@ func ghosttyWriteClipboardCallback(
         clipboardContents.append((String(cString: mime), String(cString: data)))
     }
 
-    writeTerminalClipboard(clipboardContents, to: .general)
+    guard let surfaceId = callbackSurfaceId(from: userdata) else { return }
+    if !confirm {
+        writeTerminalClipboard(clipboardContents, to: .general)
+        return
+    }
+
+    let preview = clipboardContents.first(where: { $0.mimeType.hasPrefix("text/plain") })?.text
+    DispatchQueue.main.async {
+        TerminalClipboardConfirmationPresenter.shared.present(
+            kind: .terminalWrite,
+            surfaceId: surfaceId,
+            preview: preview
+        ) { approved in
+            guard approved else { return }
+            writeTerminalClipboard(clipboardContents, to: .general)
+        }
+    }
 }
 
 func ghosttyCloseSurfaceCallback(
@@ -100,6 +138,7 @@ func ghosttyCloseSurfaceCallback(
 ) {
     guard let surfaceId = callbackSurfaceId(from: userdata) else { return }
     DispatchQueue.main.async {
+        TerminalClipboardConfirmationPresenter.shared.cancel(surfaceId: surfaceId)
         NotificationCenter.default.post(
             name: .argusCloseSurface,
             object: surfaceId,
@@ -180,7 +219,7 @@ private func handlePwd(
 ) -> Bool {
     guard let surfaceId else { return false }
     let pwd = string(from: pwdAction.pwd)
-    let publishPwd = {
+    let publishPwd: @Sendable () -> Void = {
         NotificationCenter.default.post(
             name: .argusSetSurfacePwd,
             object: nil,
@@ -261,7 +300,8 @@ private func handleColorChange(
 private func handleCloseTab(surfaceId: UUID?) -> Bool {
     guard let surfaceId else { return false }
     DispatchQueue.main.async {
-        NotificationCenter.default.post(name: .argusCloseSurface, object: surfaceId)
+        TerminalClipboardConfirmationPresenter.shared.cancel(surfaceId: surfaceId)
+        NotificationCenter.default.post(name: .argusCloseTab, object: surfaceId)
     }
     return true
 }

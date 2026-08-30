@@ -33,6 +33,7 @@ final class GitPreviewService: GitPreviewProviding {
                         return .failed(
                             kind: kind,
                             path: file.path,
+                            comparison: file.diffSource,
                             message: "Preview is unavailable for this file"
                         )
                     }
@@ -40,9 +41,21 @@ final class GitPreviewService: GitPreviewProviding {
                     let output = result.stdout.isEmpty ? result.stderr : result.stdout
                     content = .ansiText(String(bytes: output, encoding: .utf8) ?? "")
                 }
-                return .loaded(GitPreview(kind: kind, path: file.path, content: content))
+                return .loaded(
+                    GitPreview(
+                        kind: kind,
+                        path: file.path,
+                        comparison: file.diffSource,
+                        content: content
+                    )
+                )
             } catch {
-                return .failed(kind: kind, path: file.path, message: error.localizedDescription)
+                return .failed(
+                    kind: kind,
+                    path: file.path,
+                    comparison: file.diffSource,
+                    message: error.localizedDescription
+                )
             }
         }.value
     }
@@ -200,7 +213,7 @@ struct GitDiffContentLoader: Sendable {
             old = Data()
         } else {
             let originalPath = file.originalPath ?? file.path
-            old = (try? gitObject(rootPath: rootPath, specifier: "HEAD:\(originalPath)")) ?? Data()
+            old = try gitObject(rootPath: rootPath, specifier: "HEAD:\(originalPath)")
         }
 
         let new: Data

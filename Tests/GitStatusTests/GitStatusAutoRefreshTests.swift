@@ -227,14 +227,21 @@ struct GitStatusAutoRefreshTests {
         let gitDirectory = base.appendingPathComponent("repository/.git/worktrees/feature", isDirectory: true)
         try FileManager.default.createDirectory(at: worktree, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: gitDirectory, withIntermediateDirectories: true)
+        let commonDirectory = base.appendingPathComponent("repository/.git", isDirectory: true)
+        try "../..\n".write(
+            to: gitDirectory.appendingPathComponent("commondir"), atomically: true, encoding: .utf8)
         try "gitdir: ../repository/.git/worktrees/feature\n".write(
             to: worktree.appendingPathComponent(".git"), atomically: true, encoding: .utf8)
         defer { try? FileManager.default.removeItem(at: base) }
 
         assertEqual(
             GitStatusAutoRefreshController.watchedPaths(for: worktree.path),
-            [worktree.standardizedFileURL.path, gitDirectory.standardizedFileURL.path],
-            "linked worktrees watch their external git directory for commit metadata")
+            [
+                worktree.standardizedFileURL.path,
+                gitDirectory.standardizedFileURL.path,
+                commonDirectory.standardizedFileURL.path
+            ].sorted(),
+            "linked worktrees watch private and common git metadata")
     }
 
     @Test

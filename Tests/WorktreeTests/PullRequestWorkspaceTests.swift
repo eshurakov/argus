@@ -257,7 +257,7 @@ struct PullRequestWorkspaceTests {
         )
         #expect(reused.reusedExistingWorktree)
         #expect(reused.worktreePath == resolution.worktreePath)
-        #expect(try String(contentsOf: dirtyFile) == "keep me")
+        #expect(try String(contentsOf: dirtyFile, encoding: .utf8) == "keep me")
     }
 
     @Test

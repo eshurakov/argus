@@ -4,6 +4,17 @@ import Testing
 @Suite
 struct BuildScriptTests {
     @Test
+    func buildFailsOnSigningErrorsAndVerifiesTheFinalBundle() throws {
+        let script = try String(
+            contentsOf: repositoryRoot.appendingPathComponent("scripts/build.sh"),
+            encoding: .utf8
+        )
+
+        #expect(script.contains("codesign --force --deep --sign - \"${app_path}\""))
+        #expect(script.contains("codesign --verify --deep --strict \"${app_path}\""))
+        #expect(!script.contains("codesign --force --deep --sign - \"${app_path}\" 2>/dev/null || true"))
+    }
+    @Test
     func quitRunningTargetsTheProcessesReturnedByNameLookup() throws {
         let fixture = try QuitRunningFixture(forceKill: false)
         defer { fixture.remove() }
@@ -30,6 +41,13 @@ struct BuildScriptTests {
         #expect(killCalls.filter { $0 == "-9 456" }.count == 1)
         #expect(killCalls.filter { $0.hasPrefix("-0 ") }.count >= 5)
     }
+}
+
+private var repositoryRoot: URL {
+    URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
 }
 
 private struct QuitRunningFixture {

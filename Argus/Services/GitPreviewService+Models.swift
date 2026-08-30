@@ -25,12 +25,25 @@ struct GitDiffPreview: Equatable, Sendable {
 struct GitPreview: Equatable, Sendable {
     let kind: GitPreviewKind
     let path: String
+    let comparison: GitDiffSource
     let content: GitPreviewContent
+
+    init(
+        kind: GitPreviewKind,
+        path: String,
+        comparison: GitDiffSource = .unstaged,
+        content: GitPreviewContent
+    ) {
+        self.kind = kind
+        self.path = path
+        self.comparison = comparison
+        self.content = content
+    }
 }
 
 enum GitPreviewLoadState: Equatable, Sendable {
     case loaded(GitPreview)
-    case failed(kind: GitPreviewKind, path: String, message: String)
+    case failed(kind: GitPreviewKind, path: String, comparison: GitDiffSource, message: String)
 }
 
 protocol GitPreviewProviding: Sendable {

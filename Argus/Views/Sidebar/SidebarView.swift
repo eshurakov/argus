@@ -83,7 +83,9 @@ final class CommandKeyMonitor: ObservableObject {
                 object: nil,
                 queue: .main
             ) { [weak self] notification in
-                guard (notification.object as? NSWindow)?.identifier?.rawValue == "main" else { return }
+                guard let window = notification.object as? NSWindow else { return }
+                let isMainWindow = MainActor.assumeIsolated { window.identifier?.rawValue == "main" }
+                guard isMainWindow else { return }
                 Task { @MainActor [weak self] in
                     self?.clearHeldState()
                 }

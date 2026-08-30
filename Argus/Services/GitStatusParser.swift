@@ -11,8 +11,24 @@ struct GitStatusPorcelainParser: Sendable {
     static func parseUncapped(_ output: String) -> GitStatusRawSnapshot {
         var status = GitStatusRawSnapshot()
 
-        for line in output.components(separatedBy: .newlines) {
-            parse(line, into: &status)
+        if output.contains("\u{0}") {
+            let records = output.split(separator: "\u{0}", omittingEmptySubsequences: true).map(String.init)
+            var index = 0
+            while index < records.count {
+                let record = records[index]
+                if record.hasPrefix("2 ") {
+                    let originalPath = index + 1 < records.count ? records[index + 1] : nil
+                    appendRenamedOrCopiedChange(record, originalPath: originalPath, status: &status)
+                    index += originalPath == nil ? 1 : 2
+                } else {
+                    parse(record, into: &status)
+                    index += 1
+                }
+            }
+        } else {
+            for line in output.components(separatedBy: .newlines) {
+                parse(line, into: &status)
+            }
         }
 
         return status
@@ -83,6 +99,21 @@ struct GitStatusPorcelainParser: Sendable {
             xy: String(fields[1]),
             path: paths.first ?? String(fields[9]),
             originalPath: paths.dropFirst().first,
+            status: &status
+        )
+    }
+
+    private static func appendRenamedOrCopiedChange(
+        _ record: String,
+        originalPath: String?,
+        status: inout GitStatusRawSnapshot
+    ) {
+        let fields = record.split(separator: " ", maxSplits: 9, omittingEmptySubsequences: true)
+        guard fields.count >= 10 else { return }
+        appendChanges(
+            xy: String(fields[1]),
+            path: String(fields[9]),
+            originalPath: originalPath,
             status: &status
         )
     }

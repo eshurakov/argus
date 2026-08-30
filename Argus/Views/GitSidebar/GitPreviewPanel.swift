@@ -19,7 +19,6 @@ struct GitPreviewPanelContentView: View {
     @ObservedObject var panel: GitPreviewPanel
     @ObservedObject private var ghosttyApp = GhosttyApp.shared
 
-    @State private var diffStyle: ArgusDiffStyle
     let documentTextSize: Double
 
     init(
@@ -28,7 +27,9 @@ struct GitPreviewPanelContentView: View {
         documentTextSize: Double = 12
     ) {
         self.panel = panel
-        _diffStyle = State(initialValue: initialDiffStyle)
+        if panel.diffStyle == nil {
+            panel.diffStyle = initialDiffStyle
+        }
         self.documentTextSize = documentTextSize
     }
 
@@ -41,7 +42,7 @@ struct GitPreviewPanelContentView: View {
                     .truncationMode(.middle)
                 Spacer()
                 if case .diff = panel.preview.content {
-                    Picker("Layout", selection: $diffStyle) {
+                    Picker("Layout", selection: diffStyleBinding) {
                         Text("Split").tag(ArgusDiffStyle.split)
                         Text("Unified").tag(ArgusDiffStyle.unified)
                     }
@@ -58,6 +59,17 @@ struct GitPreviewPanelContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(ChromeColors.contentBackground)
+    }
+
+    private var diffStyle: ArgusDiffStyle {
+        panel.diffStyle ?? .split
+    }
+
+    private var diffStyleBinding: Binding<ArgusDiffStyle> {
+        Binding(
+            get: { panel.diffStyle ?? .split },
+            set: { panel.diffStyle = $0 }
+        )
     }
 
     @ViewBuilder
@@ -90,6 +102,7 @@ struct GitPreviewPanelContentView: View {
 }
 
 struct GitPreviewANSITextRenderer {
+    @MainActor
     static func attributedString(
         for output: String,
         foregroundColor: NSColor = ChromeColors.foregroundNSColor,

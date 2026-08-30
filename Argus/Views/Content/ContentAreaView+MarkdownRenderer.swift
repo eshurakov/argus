@@ -3,7 +3,7 @@
 
 import SwiftUI
 
-enum MarkdownRenderedBlock {
+enum MarkdownRenderedBlock: Sendable {
     case heading(level: Int, content: AttributedString)
     case paragraph(AttributedString)
     case listItem(marker: String, depth: Int, content: AttributedString)
@@ -13,7 +13,7 @@ enum MarkdownRenderedBlock {
     case table([MarkdownRenderedTableRow])
 }
 
-struct MarkdownRenderedTableRow {
+struct MarkdownRenderedTableRow: Sendable {
     let isHeader: Bool
     var cells: [AttributedString]
 }

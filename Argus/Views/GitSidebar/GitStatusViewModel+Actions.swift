@@ -304,6 +304,7 @@ extension GitStatusViewModel {
             return .failed(
                 kind: kind,
                 path: file.path,
+                comparison: file.diffSource,
                 message: "Git status changed before preview opened."
             )
         }

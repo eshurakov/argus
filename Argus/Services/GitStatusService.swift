@@ -213,15 +213,30 @@ func optionalGitOutput(args: [String]) -> String? {
 }
 
 func diffStatsForUntrackedFiles(rootPath: String, files: [GitFileChange]) -> [String: GitDiffStat] {
+    let maximumStatFileSize = 2 * 1_024 * 1_024
     var stats: [String: GitDiffStat] = [:]
     let rootURL = URL(fileURLWithPath: rootPath).standardizedFileURL
     let rootPathWithSlash = rootURL.path.hasSuffix("/") ? rootURL.path : rootURL.path + "/"
 
-    for file in files {
+    for file in files.prefix(GitStatusSummary.displayFileLimit) {
         let fileURL = rootURL.appendingPathComponent(file.path).standardizedFileURL
         guard fileURL.path.hasPrefix(rootPathWithSlash),
-            let data = try? Data(contentsOf: fileURL)
+            let values = try? fileURL.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey]),
+            values.isRegularFile == true
         else { continue }
+
+        if let fileSize = values.fileSize, fileSize > maximumStatFileSize {
+            stats[file.path] = GitDiffStat(additions: nil, deletions: nil, isBinary: true)
+            continue
+        }
+        guard let handle = try? FileHandle(forReadingFrom: fileURL) else { continue }
+        let data = try? handle.read(upToCount: maximumStatFileSize + 1)
+        try? handle.close()
+        guard let data else { continue }
+        if data.count > maximumStatFileSize {
+            stats[file.path] = GitDiffStat(additions: nil, deletions: nil, isBinary: true)
+            continue
+        }
 
         if data.contains(0) {
             stats[file.path] = GitDiffStat(additions: nil, deletions: nil, isBinary: true)

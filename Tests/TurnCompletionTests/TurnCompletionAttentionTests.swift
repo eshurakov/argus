@@ -37,7 +37,7 @@ struct TurnCompletionAttentionTests {
                 isViewed: false
             ) == .acceptedUnviewed(TurnCompletionAttentionTarget(workspaceId: workspaceId, tabId: firstTab)))
 
-        store.record(
+        _ = store.record(
             agentKey: "other-agent",
             eventId: "one",
             target: TurnCompletionAttentionTarget(workspaceId: workspaceId, tabId: secondTab),
@@ -69,8 +69,8 @@ struct TurnCompletionAttentionTests {
         let secondWorkspace = UUID()
         let firstTarget = TurnCompletionAttentionTarget(workspaceId: firstWorkspace, tabId: UUID())
         let secondTarget = TurnCompletionAttentionTarget(workspaceId: secondWorkspace, tabId: UUID())
-        store.record(agentKey: "kilo", eventId: "one", target: firstTarget, isViewed: false)
-        store.record(agentKey: "kilo", eventId: "two", target: secondTarget, isViewed: false)
+        _ = store.record(agentKey: "kilo", eventId: "one", target: firstTarget, isViewed: false)
+        _ = store.record(agentKey: "kilo", eventId: "two", target: secondTarget, isViewed: false)
 
         store.clearAttention(forWorkspace: firstWorkspace)
 

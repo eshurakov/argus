@@ -38,7 +38,7 @@ func statusSynchronously(request: GitStatusRequest) -> GitStatusLoadState {
     let rootPath = request.rootPath
     do {
         let result = try runGit(args: [
-            "-C", rootPath, "status", "--porcelain=v2", "--branch", "--untracked-files=all"
+            "-C", rootPath, "status", "--porcelain=v2", "--branch", "--untracked-files=all", "-z"
         ])
         let rawStatus = GitStatusPorcelainParser.parseUncapped(result.stdout)
         let unstagedOutput = try? runGit(args: ["-C", rootPath, "diff", "--numstat"]).stdout

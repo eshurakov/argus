@@ -1,5 +1,6 @@
 /* Argus-owned Kilo TUI plugin. It uses only the public TUI API. */
 const requiredEnvironment = ["ARGUS_SOCKET_PATH", "ARGUS_WORKSPACE_ID", "ARGUS_SURFACE_ID"];
+const deliveryTimeoutMilliseconds = 1500;
 
 export function environmentIsValid(environment) {
   return requiredEnvironment.every((key) => typeof environment[key] === "string" && environment[key].length > 0);
@@ -34,9 +35,34 @@ async function send(socketPath, payload) {
   const { connect } = await import("node:net");
   await new Promise((resolve, reject) => {
     const socket = connect(socketPath);
-    socket.once("error", reject);
-    socket.end(`${JSON.stringify(payload)}\n`, resolve);
+    const timeout = setTimeout(() => {
+      socket.destroy();
+      reject(new Error("Argus delivery timed out"));
+    }, deliveryTimeoutMilliseconds);
+    const finish = (operation) => (value) => {
+      clearTimeout(timeout);
+      operation(value);
+    };
+    socket.once("error", finish(reject));
+    socket.end(`${JSON.stringify(payload)}\n`, finish(resolve));
   });
+}
+
+async function deliverWithDeadline(transport, socketPath, payload) {
+  let timeout;
+  try {
+    await Promise.race([
+      transport(socketPath, payload),
+      new Promise((_, reject) => {
+        timeout = setTimeout(
+          () => reject(new Error("Argus delivery timed out")),
+          deliveryTimeoutMilliseconds,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export function createPlugin({ environment: suppliedEnvironment, transport = send } = {}) {
@@ -82,7 +108,7 @@ export function createPlugin({ environment: suppliedEnvironment, transport = sen
       state.closed = true;
       const eventId = turnEventID(sessionID, state.candidateID, state.sequence);
       try {
-        await transport(environment.ARGUS_SOCKET_PATH, {
+        await deliverWithDeadline(transport, environment.ARGUS_SOCKET_PATH, {
           version: 1,
           id: eventId,
           method: "agent.turnCompleted",

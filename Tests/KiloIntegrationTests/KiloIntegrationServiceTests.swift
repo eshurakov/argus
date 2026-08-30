@@ -20,7 +20,7 @@ struct KiloIntegrationServiceTests {
                 }
                 """, named: "tui.jsonc")
             let paths = try fixture.service().enable()
-            let text = try String(contentsOf: paths.configFile)
+            let text = try String(contentsOf: paths.configFile, encoding: .utf8)
             #expect(text.contains("// Kilo config"))
             #expect(text.contains("\"user.js\""))
             #expect(text.contains("\"plugins/argus-turn-completed.js\""))
@@ -34,7 +34,7 @@ struct KiloIntegrationServiceTests {
             try fixture.write("{\n  \"theme\": \"dark\",\n}\n", named: "tui.jsonc")
 
             let paths = try fixture.service().enable()
-            let text = try String(contentsOf: paths.configFile)
+            let text = try String(contentsOf: paths.configFile, encoding: .utf8)
 
             #expect(text.contains("\"theme\": \"dark\","))
             #expect(text.contains("\"plugin\": [\"plugins/argus-turn-completed.js\"],"))
@@ -60,10 +60,10 @@ struct KiloIntegrationServiceTests {
             let service = fixture.service()
             let paths = try service.enable()
             _ = try service.enable()
-            let enabled = try String(contentsOf: paths.configFile)
+            let enabled = try String(contentsOf: paths.configFile, encoding: .utf8)
             #expect(enabled.components(separatedBy: declaration).count == 2)
             _ = try service.disable()
-            let disabled = try String(contentsOf: paths.configFile)
+            let disabled = try String(contentsOf: paths.configFile, encoding: .utf8)
             #expect(disabled.contains("user.js"))
             #expect(!disabled.contains(declaration))
             #expect(!FileManager.default.fileExists(atPath: paths.pluginFile.path))
@@ -77,7 +77,9 @@ struct KiloIntegrationServiceTests {
             try fixture.write("// preferred\n{}", named: "tui.jsonc")
             let paths = try fixture.service().enable()
             #expect(paths.configFile.lastPathComponent == "tui.jsonc")
-            #expect(!(try String(contentsOf: fixture.root.appendingPathComponent("tui.json"))).contains(declaration))
+            #expect(
+                !(try String(contentsOf: fixture.root.appendingPathComponent("tui.json"), encoding: .utf8))
+                    .contains(declaration))
         }
     }
 
@@ -86,12 +88,14 @@ struct KiloIntegrationServiceTests {
         try withFixture { fixture in
             try fixture.write("{ invalid", named: "tui.jsonc")
             #expect(throws: JSONCEditor.Error.self) { try fixture.service().enable() }
-            #expect(try String(contentsOf: fixture.root.appendingPathComponent("tui.jsonc")) == "{ invalid")
+            #expect(
+                try String(contentsOf: fixture.root.appendingPathComponent("tui.jsonc"), encoding: .utf8) == "{ invalid"
+            )
 
             try fixture.write("{}", named: "tui.jsonc")
             let service = fixture.service { point in if point == .stageConfig { throw FixtureError.injected } }
             #expect(throws: FixtureError.self) { try service.enable() }
-            #expect(try String(contentsOf: fixture.root.appendingPathComponent("tui.jsonc")) == "{}")
+            #expect(try String(contentsOf: fixture.root.appendingPathComponent("tui.jsonc"), encoding: .utf8) == "{}")
             #expect(
                 !FileManager.default.fileExists(
                     atPath: fixture.root.appendingPathComponent("plugins/argus-turn-completed.js").path))
@@ -109,14 +113,14 @@ extension KiloIntegrationServiceTests {
             try fixture.write(original, named: "tui.jsonc")
 
             #expect(throws: JSONCEditor.Error.self) { try service.enable() }
-            #expect(try String(contentsOf: paths.configFile) == original)
+            #expect(try String(contentsOf: paths.configFile, encoding: .utf8) == original)
             #expect(!FileManager.default.fileExists(atPath: paths.pluginFile.path))
 
             try FileManager.default.createDirectory(
                 at: paths.pluginFile.deletingLastPathComponent(), withIntermediateDirectories: true)
             try FileManager.default.copyItem(at: fixture.plugin, to: paths.pluginFile)
             #expect(throws: JSONCEditor.Error.self) { try service.disable() }
-            #expect(try String(contentsOf: paths.configFile) == original)
+            #expect(try String(contentsOf: paths.configFile, encoding: .utf8) == original)
             #expect(try Data(contentsOf: paths.pluginFile) == Data(contentsOf: fixture.plugin))
         }
     }
@@ -130,7 +134,7 @@ extension KiloIntegrationServiceTests {
             #expect(service.isInstalled(at: paths))
 
             _ = try service.disable()
-            let text = try String(contentsOf: paths.configFile)
+            let text = try String(contentsOf: paths.configFile, encoding: .utf8)
             #expect(text.contains("\"value\": \(number)"))
             #expect(!text.contains(declaration))
             #expect(!FileManager.default.fileExists(atPath: paths.pluginFile.path))
@@ -146,7 +150,7 @@ extension KiloIntegrationServiceTests {
             #expect(service.isInstalled(at: paths))
 
             _ = try service.disable()
-            let text = try String(contentsOf: paths.configFile)
+            let text = try String(contentsOf: paths.configFile, encoding: .utf8)
             #expect(text.contains(scalar))
             #expect(!text.contains(declaration))
             #expect(!FileManager.default.fileExists(atPath: paths.pluginFile.path))
@@ -162,14 +166,14 @@ extension KiloIntegrationServiceTests {
             try fixture.write(original, named: "tui.jsonc")
 
             #expect(throws: JSONCEditor.Error.self) { try service.enable() }
-            #expect(try String(contentsOf: paths.configFile) == original)
+            #expect(try String(contentsOf: paths.configFile, encoding: .utf8) == original)
             #expect(!FileManager.default.fileExists(atPath: paths.pluginFile.path))
 
             try FileManager.default.createDirectory(
                 at: paths.pluginFile.deletingLastPathComponent(), withIntermediateDirectories: true)
             try FileManager.default.copyItem(at: fixture.plugin, to: paths.pluginFile)
             #expect(throws: JSONCEditor.Error.self) { try service.disable() }
-            #expect(try String(contentsOf: paths.configFile) == original)
+            #expect(try String(contentsOf: paths.configFile, encoding: .utf8) == original)
             #expect(try Data(contentsOf: paths.pluginFile) == Data(contentsOf: fixture.plugin))
         }
     }
@@ -184,7 +188,7 @@ extension KiloIntegrationServiceTests {
             try "user artifact".write(to: plugin, atomically: true, encoding: .utf8)
             #expect(throws: KiloIntegrationError.self) { try fixture.service().enable() }
             #expect(throws: KiloIntegrationError.self) { try fixture.service().disable() }
-            #expect(try String(contentsOf: plugin) == "user artifact")
+            #expect(try String(contentsOf: plugin, encoding: .utf8) == "user artifact")
         }
     }
 
@@ -203,7 +207,7 @@ extension KiloIntegrationServiceTests {
                 """, named: "tui.jsonc")
             let service = fixture.service()
             let paths = try service.disable()
-            let text = try String(contentsOf: paths.configFile)
+            let text = try String(contentsOf: paths.configFile, encoding: .utf8)
             #expect(text.contains("user.js"))
             #expect(text.contains(comment))
             #expect(!text.contains(declaration))
@@ -224,7 +228,7 @@ extension KiloIntegrationServiceTests {
                 }
                 """, named: "tui.jsonc")
             let paths = try fixture.service().enable()
-            let text = try String(contentsOf: paths.configFile)
+            let text = try String(contentsOf: paths.configFile, encoding: .utf8)
             #expect(text.contains(comment))
             #expect(try JSONCEditor.containsDeclaration(declaration, in: text))
         }
@@ -244,7 +248,7 @@ extension KiloIntegrationServiceTests {
             let paths = try service.enable()
             #expect(service.isInstalled(at: paths))
             _ = try service.disable()
-            let text = try String(contentsOf: paths.configFile)
+            let text = try String(contentsOf: paths.configFile, encoding: .utf8)
             #expect(text.contains("\\uD83D\\uDE80"))
             #expect(text.contains("\\u03A9.js"))
             #expect(!(try JSONCEditor.containsDeclaration(declaration, in: text)))
@@ -271,7 +275,7 @@ extension KiloIntegrationServiceTests {
             #expect(!service.isInstalled(at: try service.resolvedPaths()))
             #expect(throws: KiloIntegrationError.self) { try service.enable() }
             #expect(throws: KiloIntegrationError.self) { try service.disable() }
-            #expect(try String(contentsOf: plugin) == unowned)
+            #expect(try String(contentsOf: plugin, encoding: .utf8) == unowned)
         }
     }
 

@@ -50,6 +50,36 @@ struct GitStatusParserTests {
     }
 
     @Test
+    func parsesNULTerminatedPathsWithoutGitQuoting() {
+        let output =
+            [
+                "# branch.head main",
+                "? café.txt",
+                "? tab\tname.txt",
+                "? line\nname.txt"
+            ].joined(separator: "\u{0}") + "\u{0}"
+
+        let status = GitStatusPorcelainParser.parse(output, rootPath: "/tmp/repo")
+
+        assertEqual(
+            status.untrackedFiles.map(\.path),
+            ["café.txt", "tab\tname.txt", "line\nname.txt"],
+            "NUL porcelain preserves exact filenames"
+        )
+    }
+
+    @Test
+    func parsesNULTerminatedRenameGrammar() {
+        let output =
+            "2 R. N... 100644 100644 100644 aaaaaa bbbbbb R100 new name.txt\u{0}old name.txt\u{0}"
+
+        let status = GitStatusPorcelainParser.parse(output, rootPath: "/tmp/repo")
+
+        assertEqual(status.stagedFiles.first?.path, "new name.txt", "rename destination parses")
+        assertEqual(status.stagedFiles.first?.originalPath, "old name.txt", "rename source parses")
+    }
+
+    @Test
     func parsesRenamedAndCopiedFilesWithOriginalPaths() {
         let output = """
             # branch.head main

@@ -198,6 +198,7 @@ do_build() {
     xcodebuild \
         -project "${PROJECT_DIR}/Argus.xcodeproj" \
         -scheme Argus \
+        -destination 'platform=macOS,arch=arm64' \
         -configuration "${CONFIGURATION}" \
         -derivedDataPath "${BUILD_DIR}" \
         build
@@ -215,7 +216,8 @@ do_build() {
     fi
 
     # Ad-hoc codesign after bundling the CLI.
-    codesign --force --deep --sign - "${app_path}" 2>/dev/null || true
+    codesign --force --deep --sign - "${app_path}"
+    codesign --verify --deep --strict "${app_path}"
 
     time_end
     ok "Build succeeded: ${app_path}"

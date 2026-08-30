@@ -84,6 +84,50 @@ struct AgentStatusRuntimeTests {
     }
 
     @Test
+    func aClearFromANeverSeenSessionCannotEraseTheCurrentSession() throws {
+        let manager = makeWorkspaceManager()
+        let store = AgentStatusStore()
+        let runtime = AgentStatusRuntime(workspaceManager: manager, store: store)
+        let workspace = try #require(manager.selectedWorkspace)
+        let surfaceId = try #require(workspace.panelOrder.first)
+
+        _ = runtime.receive(
+            AgentStatusEvent(
+                agentKey: "pi",
+                workspaceId: workspace.id,
+                surfaceId: surfaceId,
+                state: .running,
+                sessionId: "current-session",
+                sequence: 1
+            )
+        )
+        let unknownClear = runtime.receive(
+            AgentStatusEvent(
+                agentKey: "pi",
+                workspaceId: workspace.id,
+                surfaceId: surfaceId,
+                state: nil,
+                sessionId: "never-seen-session",
+                sequence: 99
+            )
+        )
+        let currentUpdate = runtime.receive(
+            AgentStatusEvent(
+                agentKey: "pi",
+                workspaceId: workspace.id,
+                surfaceId: surfaceId,
+                state: .idle,
+                sessionId: "current-session",
+                sequence: 2
+            )
+        )
+
+        #expect(unknownClear == .accepted(applied: false))
+        #expect(currentUpdate == .accepted(applied: true))
+        #expect(store.effectiveStatus(workspaceId: workspace.id, surfaceId: surfaceId)?.state == .idle)
+    }
+
+    @Test
     func statusIsRejectedForUnknownWorkspaceOrSurface() throws {
         let manager = makeWorkspaceManager()
         let store = AgentStatusStore()

@@ -197,7 +197,7 @@ extension GitPreviewServiceTests {
                 isNetDiffEmpty: true
             )
         )
-        guard case .failed(.diff, "file.txt", let message) = result else {
+        guard case .failed(.diff, "file.txt", .uncommitted, let message) = result else {
             fail("expected an explanatory canceled-diff failure, got \(result)")
         }
         assertEqual(message.contains("no net HEAD-to-working-tree"), true, "canceled diff explains its state")
@@ -216,7 +216,7 @@ extension GitPreviewServiceTests {
                 diffSource: .uncommitted
             )
         )
-        guard case .failed(.diff, "file.txt", let message) = result else {
+        guard case .failed(.diff, "file.txt", .uncommitted, let message) = result else {
             fail("expected an explanatory unmerged-diff failure, got \(result)")
         }
         assertEqual(
@@ -267,6 +267,34 @@ extension GitPreviewServiceTests {
     }
 
     @Test
+    func oversizedOldObjectDoesNotBecomeAnEmptyDiffSide() async throws {
+        let repo = try repository(prefix: "argus-preview-large-old")
+        defer { repo.remove() }
+        let fileURL = repo.url.appendingPathComponent("large-old.txt")
+        try Data(repeating: 65, count: GitDiffContentLoader.maximumFileSize + 1).write(to: fileURL)
+        try runGit(["add", "large-old.txt"], in: repo.url)
+        try runGit(["commit", "-m", "large old object"], in: repo.url)
+        try "small\n".write(to: fileURL, atomically: true, encoding: .utf8)
+
+        let result = await GitPreviewService().preview(
+            kind: .diff,
+            rootPath: repo.url.path,
+            file: GitFileChange(
+                path: "large-old.txt",
+                status: .modified,
+                sectionKind: .uncommitted,
+                hasUnstagedChanges: true,
+                diffSource: .uncommitted
+            )
+        )
+
+        guard case .loaded(let preview) = result, case .ansiText(let message) = preview.content else {
+            fail("expected oversized fallback, got \(result)")
+        }
+        assertEqual(message, "File is too large to preview", "oversized old object propagates")
+    }
+
+    @Test
     func runsBlamePreviewWithColorizedOutput() async throws {
         let repo = try repository(prefix: "argus-preview-blame", fileContent: "one\n")
         defer { repo.remove() }
@@ -291,7 +319,7 @@ extension GitPreviewServiceTests {
             rootPath: "/tmp/repo",
             file: GitFileChange(path: "scratch.txt", status: .untracked, sectionKey: "untracked"))
 
-        guard case .failed(let kind, let path, _) = result else {
+        guard case .failed(let kind, let path, _, _) = result else {
             fail("expected untracked blame failure, got \(result)")
         }
         assertEqual(kind, .blame, "failure keeps blame kind")
@@ -305,7 +333,7 @@ extension GitPreviewServiceTests {
             rootPath: "/tmp/not-a-real-argus-preview-repo",
             file: GitFileChange(path: "missing.txt", status: .modified, sectionKey: "unstaged"))
 
-        guard case .failed(let kind, let path, let message) = result else {
+        guard case .failed(let kind, let path, _, let message) = result else {
             fail("expected recoverable preview failure, got \(result)")
         }
         assertEqual(kind, .blame, "failure keeps preview kind")

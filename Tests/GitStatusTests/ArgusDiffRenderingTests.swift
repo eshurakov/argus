@@ -61,7 +61,7 @@ struct ArgusDiffRenderingTests {
     func previewHeaderExposesSplitAndUnifiedWithoutOverflowControls() throws {
         try SourceContract("Argus/Views/GitSidebar/GitPreviewPanel.swift").containsAll(
             [
-                "Picker(\"Layout\", selection: $diffStyle)",
+                "Picker(\"Layout\", selection: diffStyleBinding)",
                 "Text(\"Split\").tag(ArgusDiffStyle.split)",
                 "Text(\"Unified\").tag(ArgusDiffStyle.unified)",
                 "ArgusDiffView("
@@ -235,6 +235,22 @@ struct FileTabUIContractTests {
             let data = Data(source.utf8)
             let url = URL(fileURLWithPath: "/tmp/\(fileName)")
             #expect(FilePanelContentLoader.content(data: data, url: url) == .loaded(.text(source)))
+        }
+    }
+
+    @Test
+    func filePanelRejectsOversizedAndNonRegularFilesBeforeReading() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("argus-file-loader-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let largeFile = directory.appendingPathComponent("large.txt")
+        try Data(repeating: 65, count: FilePanelContentLoader.maximumFileSize + 1).write(to: largeFile)
+
+        #expect(FilePanelContentLoader.load(url: largeFile) == .oversized)
+        guard case .failed = FilePanelContentLoader.load(url: directory) else {
+            Issue.record("directories must not be loaded as file content")
+            return
         }
     }
 

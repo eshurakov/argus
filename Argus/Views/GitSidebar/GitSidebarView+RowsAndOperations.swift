@@ -285,10 +285,15 @@ extension GitSidebarView {
         switch result {
         case .loaded(let preview):
             sourceWorkspace.openGitPreviewPanel(rootPath: owner.rootPath, preview: preview)
-        case .failed(let kind, let path, let message):
+        case .failed(let kind, let path, let comparison, let message):
             sourceWorkspace.openGitPreviewPanel(
                 rootPath: owner.rootPath,
-                preview: GitPreview(kind: kind, path: path, content: .ansiText(message))
+                preview: GitPreview(
+                    kind: kind,
+                    path: path,
+                    comparison: comparison,
+                    content: .ansiText(message)
+                )
             )
         }
     }

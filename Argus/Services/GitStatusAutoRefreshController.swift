@@ -106,8 +106,14 @@ final class GitStatusAutoRefreshController {
 
     private func isGitReferenceEvent(_ path: String) -> Bool {
         path.hasSuffix("/HEAD")
+            || path.hasSuffix("/packed-refs")
+            || path.hasSuffix("/config")
+            || path.hasSuffix("/config.worktree")
             || path.contains("/refs/heads/")
+            || path.contains("/refs/remotes/")
+            || path.contains("/refs/branch-metadata/")
             || path.contains("/logs/refs/heads/")
+            || path.contains("/logs/refs/remotes/")
     }
 
     nonisolated static func watchedPaths(for rootPath: String) -> [String] {
@@ -132,7 +138,21 @@ final class GitStatusAutoRefreshController {
             .trimmingCharacters(in: .whitespaces)
         let gitDirectoryURL = URL(fileURLWithPath: gitDirectoryPath, relativeTo: rootURL)
             .standardizedFileURL
-        return [rootURL.path, gitDirectoryURL.path]
+        let commonDirectoryURL: URL
+        let commonDirectoryFile = gitDirectoryURL.appendingPathComponent("commondir")
+        if let commonDirectoryPath = try? String(contentsOf: commonDirectoryFile, encoding: .utf8)
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+            !commonDirectoryPath.isEmpty
+        {
+            commonDirectoryURL =
+                URL(
+                    fileURLWithPath: commonDirectoryPath,
+                    relativeTo: gitDirectoryURL
+                ).standardizedFileURL
+        } else {
+            commonDirectoryURL = gitDirectoryURL
+        }
+        return Array(Set([rootURL.path, gitDirectoryURL.path, commonDirectoryURL.path])).sorted()
     }
 }
 

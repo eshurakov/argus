@@ -104,6 +104,43 @@ struct ExistingBranchWorktreeTests {
         )
     }
 
+    @Test
+    func forcedRemovalRejectsUnregisteredPathsAndTheMainCheckout() async throws {
+        let temporaryDirectory = try TestTemporaryDirectory(prefix: "argus-removal-authority")
+        let temp = temporaryDirectory.url
+        let repo = temp.appendingPathComponent("repo", isDirectory: true)
+        let unrelated = temp.appendingPathComponent("unrelated", isDirectory: true)
+        try FileManager.default.createDirectory(at: repo, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: unrelated, withIntermediateDirectories: true)
+        defer { temporaryDirectory.remove() }
+        try run("git", ["init", "-b", "main", "."], cwd: repo.path)
+        try "keep".write(
+            to: unrelated.appendingPathComponent("keep.txt"), atomically: true, encoding: .utf8)
+
+        let service = WorktreeService(
+            worktreeBaseURL: temp.appendingPathComponent("managed-worktrees", isDirectory: true))
+
+        await #expect(throws: WorktreeError.self) {
+            try await service.removeWorktree(
+                repositoryPath: repo.path,
+                worktreePath: unrelated.path,
+                force: true
+            )
+        }
+        await #expect(throws: WorktreeError.self) {
+            try await service.removeWorktree(
+                repositoryPath: repo.path,
+                worktreePath: repo.path,
+                force: true
+            )
+        }
+        assertTrue(
+            FileManager.default.fileExists(atPath: unrelated.appendingPathComponent("keep.txt").path),
+            "unauthorized directories remain intact"
+        )
+        assertTrue(FileManager.default.fileExists(atPath: repo.path), "main checkout remains intact")
+    }
+
     /// A removal that was interrupted after Git deleted the worktree's `.git`
     /// link leaves a directory that `git worktree remove` permanently refuses.
     /// Deleting the Worktree Workspace must still succeed, and the branch must

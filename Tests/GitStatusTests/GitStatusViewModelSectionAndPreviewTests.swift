@@ -153,7 +153,12 @@ struct GitStatusViewModelSectionAndPreviewTests {
         )
         let service = FakeStatusService(result: current)
         let previewService = RecordingPreviewService(
-            result: .failed(kind: .blame, path: "missing.txt", message: "fatal: no such path"))
+            result: .failed(
+                kind: .blame,
+                path: "missing.txt",
+                comparison: .unstaged,
+                message: "fatal: no such path"
+            ))
         let viewModel = GitStatusViewModel(
             service: service, previewService: previewService)
         let context = GitStatusRootContext(
@@ -167,7 +172,13 @@ struct GitStatusViewModelSectionAndPreviewTests {
             context: context)
 
         assertViewModelSectionEqual(
-            result, .failed(kind: .blame, path: "missing.txt", message: "fatal: no such path"),
+            result,
+            .failed(
+                kind: .blame,
+                path: "missing.txt",
+                comparison: .unstaged,
+                message: "fatal: no such path"
+            ),
             "preview failure is returned for tab presentation")
         assertViewModelSectionEqual(viewModel.state, current, "preview failure does not replace loaded status state")
     }

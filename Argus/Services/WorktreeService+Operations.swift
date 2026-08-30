@@ -67,12 +67,27 @@ extension WorktreeService {
         worktreePath: String,
         force: Bool = false
     ) async throws {
+        let canonicalRepositoryPath = canonicalRemovalPath(repositoryPath)
+        let canonicalWorktreePath = canonicalRemovalPath(worktreePath)
+        let canonicalStorageRoot = canonicalRemovalPath(managedWorktreeBaseURL.path)
+        let registeredWorktree = try await listWorktrees(repositoryPath: repositoryPath).first {
+            canonicalRemovalPath($0.path) == canonicalWorktreePath
+        }
+        guard canonicalWorktreePath != canonicalRepositoryPath,
+            canonicalWorktreePath != canonicalStorageRoot,
+            registeredWorktree?.isHead == false
+        else {
+            throw WorktreeError.worktreeRemovalFailed(
+                "Refusing to remove a path that is not an authorized secondary worktree"
+            )
+        }
+
         var arguments = ["-C", repositoryPath, "worktree", "remove"]
         if force {
             // Git requires --force twice to remove a locked worktree.
             arguments += ["--force", "--force"]
         }
-        arguments.append(worktreePath)
+        arguments.append(canonicalWorktreePath)
 
         let gitRemovalError: Error?
         do {
@@ -90,8 +105,8 @@ extension WorktreeService {
         }
 
         do {
-            if FileManager.default.fileExists(atPath: worktreePath) {
-                try FileManager.default.removeItem(atPath: worktreePath)
+            if FileManager.default.fileExists(atPath: canonicalWorktreePath) {
+                try FileManager.default.removeItem(atPath: canonicalWorktreePath)
             }
         } catch {
             throw WorktreeError.worktreeRemovalFailed(
@@ -107,6 +122,13 @@ extension WorktreeService {
             args: ["-C", repositoryPath, "worktree", "prune"],
             workingDirectory: repositoryPath
         )
+    }
+
+    private func canonicalRemovalPath(_ path: String) -> String {
+        URL(fileURLWithPath: path)
+            .resolvingSymlinksInPath()
+            .standardizedFileURL
+            .path
     }
 
     func listBranches(repositoryPath: String) async throws -> [String] {

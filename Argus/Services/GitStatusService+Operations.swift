@@ -17,13 +17,14 @@ func performOperationSynchronously(
     rootPath: String,
     paths: [String]
 ) throws {
+    let literalPaths = paths.map(literalGitPathspec)
     switch operation {
     case .stage:
-        _ = try runGit(args: ["-C", rootPath, "add", "--"] + paths)
+        _ = try runGit(args: ["-C", rootPath, "add", "--"] + literalPaths)
     case .unstage:
-        _ = try runGit(args: ["-C", rootPath, "restore", "--staged", "--"] + paths)
+        try unstage(rootPath: rootPath, pathspecs: literalPaths)
     case .discard:
-        _ = try runGit(args: ["-C", rootPath, "restore", "--"] + paths)
+        _ = try runGit(args: ["-C", rootPath, "restore", "--"] + literalPaths)
     case .delete:
         for path in paths {
             try deletePath(rootPath: rootPath, path: path)
@@ -59,7 +60,7 @@ private func performStagedSectionOperation(
     rootPath: String
 ) throws {
     guard operation == .unstage else { throw unsupportedSectionOperation() }
-    _ = try runGit(args: ["-C", rootPath, "restore", "--staged", "--", "."])
+    try unstage(rootPath: rootPath, pathspecs: ["."])
 }
 
 private func performUnstagedSectionOperation(
@@ -101,7 +102,7 @@ private func performUncommittedSectionOperation(
     case .stage:
         _ = try runGit(args: ["-C", rootPath, "add", "--", "."])
     case .unstage:
-        _ = try runGit(args: ["-C", rootPath, "restore", "--staged", "--", "."])
+        try unstage(rootPath: rootPath, pathspecs: ["."])
     case .discard:
         _ = try runGit(args: ["-C", rootPath, "restore", "--", "."])
     case .delete:
@@ -115,9 +116,26 @@ private func unsupportedSectionOperation() -> GitStatusServiceError {
     .commandFailed("Unsupported section file operation")
 }
 
+private func literalGitPathspec(_ path: String) -> String {
+    ":(literal)\(path)"
+}
+
+private func unstage(rootPath: String, pathspecs: [String]) throws {
+    if verifyGitRef(rootPath: rootPath, ref: "HEAD") {
+        _ = try runGit(args: ["-C", rootPath, "restore", "--staged", "--"] + pathspecs)
+    } else {
+        // Before the first commit every index entry is an addition. Removing it
+        // from the index preserves the working-tree file and implements Unstage.
+        _ = try runGit(
+            args: ["-C", rootPath, "rm", "-r", "--cached", "--force", "--ignore-unmatch", "--"]
+                + pathspecs
+        )
+    }
+}
+
 private func allUntrackedPaths(rootPath: String) throws -> [String] {
     let result = try runGit(args: ["-C", rootPath, "ls-files", "--others", "--exclude-standard", "-z"])
     return result.stdout
         .split(separator: "\u{0}", omittingEmptySubsequences: true)
-        .map(String.init)
+        .map { literalGitPathspec(String($0)) }
 }

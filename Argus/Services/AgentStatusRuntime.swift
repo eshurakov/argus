@@ -73,6 +73,11 @@ final class AgentStatusRuntime {
             workspaceId: event.workspaceId,
             surfaceId: event.surfaceId
         )
+        if event.state == nil {
+            guard let latest = latestUpdates[key], latest.sessionId == event.sessionId else {
+                return .accepted(applied: false)
+            }
+        }
         guard acceptOrdering(for: key, sessionId: event.sessionId, sequence: event.sequence) else {
             return .accepted(applied: false)
         }

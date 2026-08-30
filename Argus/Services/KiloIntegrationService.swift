@@ -54,9 +54,11 @@ final class KiloIntegrationModel: ObservableObject {
 
     private func update(_ operation: KiloIntegrationOperation) {
         status = .busy
-        Task { @MainActor in
+        Task {
             do {
-                let paths = try operation == .enable ? service.enable() : service.disable()
+                let paths = try await Task.detached(priority: .userInitiated) {
+                    try operation == .enable ? self.service.enable() : self.service.disable()
+                }.value
                 managedConfigPath = paths.configFile.path
                 status = operation == .enable ? .installed : .unavailable
             } catch {
@@ -66,10 +68,10 @@ final class KiloIntegrationModel: ObservableObject {
     }
 }
 
-private enum KiloIntegrationOperation { case enable, disable }
+private enum KiloIntegrationOperation: Sendable { case enable, disable }
 
 /// Installs only Argus's local Kilo TUI plugin. UI wiring intentionally lives elsewhere.
-final class KiloIntegrationService {
+final class KiloIntegrationService: @unchecked Sendable {
     static let pluginFileName = "argus-turn-completed.js"
     static let pluginDeclaration = "plugins/\(pluginFileName)"
 
@@ -141,9 +143,7 @@ final class KiloIntegrationService {
         guard descriptor >= 0 else { throw KiloIntegrationError.lockFailed(String(cString: strerror(errno))) }
         defer { close(descriptor) }
         try injectFailure?(.lock)
-        guard flock(descriptor, LOCK_EX) == 0 else {
-            throw KiloIntegrationError.lockFailed(String(cString: strerror(errno)))
-        }
+        try acquireIntegrationLock(descriptor)
         defer { flock(descriptor, LOCK_UN) }
 
         let originalConfig = try existingData(at: paths.configFile)
@@ -185,8 +185,21 @@ final class KiloIntegrationService {
         return paths
     }
 
+    private func acquireIntegrationLock(_ descriptor: Int32) throws {
+        let deadline = Date().addingTimeInterval(2)
+        while flock(descriptor, LOCK_EX | LOCK_NB) != 0 {
+            guard errno == EWOULDBLOCK || errno == EAGAIN else {
+                throw KiloIntegrationError.lockFailed(String(cString: strerror(errno)))
+            }
+            guard !Task.isCancelled, Date() < deadline else {
+                throw KiloIntegrationError.lockFailed("Timed out waiting for the configuration lock")
+            }
+            usleep(50_000)
+        }
+    }
+
     func isInstalled(at paths: Paths) -> Bool {
-        guard let config = try? String(contentsOf: paths.configFile),
+        guard let config = try? String(contentsOf: paths.configFile, encoding: .utf8),
             let plugin = try? Data(contentsOf: paths.pluginFile)
         else { return false }
         return (try? JSONCEditor.containsDeclaration(Self.pluginDeclaration, in: config)) == true

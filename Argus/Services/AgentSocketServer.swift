@@ -9,6 +9,8 @@ import Foundation
 actor AgentSocketServer {
     static let protocolVersion = 1
     static let defaultMaximumFrameBytes = 64 * 1024
+    static let maximumConcurrentConnections = 16
+    static let clientIdleTimeout: TimeInterval = 5
 
     private let path: String
     private let maximumFrameBytes: Int
@@ -73,7 +75,7 @@ actor AgentSocketServer {
             let maximumFrameBytes = maximumFrameBytes
             let deliver = deliver
             let deliverStatus = deliverStatus
-            Task.detached {
+            Thread.detachNewThread {
                 Self.acceptConnections(
                     on: socket,
                     clients: clients,
@@ -176,7 +178,22 @@ actor AgentSocketServer {
                 Darwin.close(client)
                 continue
             }
-            clients.insert(client)
+            var receiveTimeout = timeval(tv_sec: Int(Self.clientIdleTimeout), tv_usec: 0)
+            var sendTimeout = timeval(tv_sec: 2, tv_usec: 0)
+            guard
+                setsockopt(
+                    client, SOL_SOCKET, SO_RCVTIMEO, &receiveTimeout,
+                    socklen_t(MemoryLayout<timeval>.size)
+                ) == 0,
+                setsockopt(
+                    client, SOL_SOCKET, SO_SNDTIMEO, &sendTimeout,
+                    socklen_t(MemoryLayout<timeval>.size)
+                ) == 0,
+                clients.insert(client, maximumCount: maximumConcurrentConnections)
+            else {
+                Darwin.close(client)
+                continue
+            }
             Task.detached {
                 await Self.serve(
                     client: client,
@@ -238,8 +255,12 @@ private final class AgentSocketClientRegistry: @unchecked Sendable {
     private let lock = NSLock()
     private var sockets: Set<Int32> = []
 
-    func insert(_ socket: Int32) {
-        _ = lock.withLock { sockets.insert(socket) }
+    func insert(_ socket: Int32, maximumCount: Int) -> Bool {
+        lock.withLock {
+            guard sockets.count < maximumCount else { return false }
+            sockets.insert(socket)
+            return true
+        }
     }
 
     func remove(_ socket: Int32) {

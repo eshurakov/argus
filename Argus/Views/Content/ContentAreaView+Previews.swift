@@ -3,7 +3,7 @@
 
 import SwiftUI
 
-struct FilePanelPreparedContent {
+struct FilePanelPreparedContent: Sendable {
     static let loading = FilePanelPreparedContent(
         state: .loading,
         sourceLines: [],
@@ -31,7 +31,7 @@ struct FilePanelPreparedContent {
         case .loaded(.svg(let source, _)):
             sourceLines = FileSourceText.lines(in: source, fileName: fileName)
             markdownBlocks = []
-        case .loading, .loaded(.image), .binary, .failed:
+        case .loading, .loaded(.image), .binary, .oversized, .failed:
             sourceLines = []
             markdownBlocks = []
         }

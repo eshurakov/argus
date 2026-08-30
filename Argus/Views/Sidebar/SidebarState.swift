@@ -137,6 +137,8 @@ final class GitSidebarState: ObservableObject {
     private enum Keys {
         static let isVisible = "Argus.gitSidebar.isVisible"
         static let width = "Argus.gitSidebar.width"
+        static let selectedView = "Argus.gitSidebar.selectedView"
+        static let defaultSelectedView = "Argus.settings.general.defaultRightSidebarView"
     }
 
     private let defaults: UserDefaults
@@ -156,6 +158,10 @@ final class GitSidebarState: ObservableObject {
         didSet { defaults.set(Double(width), forKey: Keys.width) }
     }
 
+    @Published var selectedView: AppSettings.RightSidebarView {
+        didSet { defaults.set(selectedView.rawValue, forKey: Keys.selectedView) }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         if defaults.object(forKey: Keys.isVisible) == nil {
@@ -169,6 +175,11 @@ final class GitSidebarState: ObservableObject {
         } else {
             self.width = Self.clamp(defaults.double(forKey: Keys.width))
         }
+
+        let selectedRaw =
+            defaults.string(forKey: Keys.selectedView)
+            ?? defaults.string(forKey: Keys.defaultSelectedView)
+        self.selectedView = AppSettings.RightSidebarView(rawValue: selectedRaw ?? "") ?? .changes
     }
 
     /// Toggle git sidebar visibility.

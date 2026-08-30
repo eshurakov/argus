@@ -240,7 +240,10 @@ final class AppSettings: ObservableObject {
         key: String,
         fallback: T
     ) -> T where T.RawValue == String {
-        defaults.string(forKey: key).flatMap(T.init(rawValue:)) ?? fallback
+        guard let rawValue = defaults.string(forKey: key),
+            let value = T(rawValue: rawValue)
+        else { return fallback }
+        return value
     }
 
     private static func clamp(_ value: Double, to range: ClosedRange<Double>, fallback: Double? = nil) -> Double {

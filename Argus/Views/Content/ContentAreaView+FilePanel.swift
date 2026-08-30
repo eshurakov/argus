@@ -16,6 +16,7 @@ enum FilePanelContentState: Equatable, Sendable {
     case loading
     case loaded(FilePanelLoadedContent)
     case binary
+    case oversized
     case failed(String)
 }
 
@@ -41,9 +42,22 @@ struct FilePanelInitialPresentation: Equatable {
 }
 
 enum FilePanelContentLoader {
+    static let maximumFileSize = 2 * 1_024 * 1_024
+
     static func load(url: URL) -> FilePanelContentState {
         do {
-            let data = try Data(contentsOf: url)
+            let values = try url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
+            guard values.isRegularFile == true else {
+                return .failed("File preview is unavailable for this item")
+            }
+            if let fileSize = values.fileSize, fileSize > maximumFileSize {
+                return .oversized
+            }
+            let handle = try FileHandle(forReadingFrom: url)
+            defer { try? handle.close() }
+            let data = try handle.read(upToCount: maximumFileSize + 1) ?? Data()
+            guard data.count <= maximumFileSize else { return .oversized }
+            guard !Task.isCancelled else { return .loading }
             return content(data: data, url: url)
         } catch {
             return .failed(error.localizedDescription)
@@ -98,8 +112,6 @@ struct FilePanelContentView: View {
     @ObservedObject var panel: FilePanel
     @EnvironmentObject private var appSettings: AppSettings
     @State private var preparedContent = FilePanelPreparedContent.loading
-    @State private var displayMode: FileDisplayMode
-    @State private var lineWrapEnabled: Bool
     let documentTextSize: Double
 
     init(
@@ -116,9 +128,23 @@ struct FilePanelContentView: View {
             openMarkdownInPreview: openMarkdownInPreview,
             openSVGInPreview: openSVGInPreview
         )
-        _displayMode = State(initialValue: initialPresentation.displayMode)
-        _lineWrapEnabled = State(initialValue: initialPresentation.lineWrapEnabled)
+        if panel.displayMode == nil {
+            panel.displayMode = initialPresentation.displayMode
+        }
+        if panel.lineWrapEnabled == nil {
+            panel.lineWrapEnabled = initialPresentation.lineWrapEnabled
+        }
         self.documentTextSize = documentTextSize
+    }
+
+    private var displayMode: FileDisplayMode {
+        get { panel.displayMode ?? .source }
+        nonmutating set { panel.displayMode = newValue }
+    }
+
+    private var lineWrapEnabled: Bool {
+        get { panel.lineWrapEnabled ?? true }
+        nonmutating set { panel.lineWrapEnabled = newValue }
     }
 
     var body: some View {
@@ -195,6 +221,8 @@ extension FilePanelContentView {
             }
         case .binary:
             fileMessage("Binary file", systemImage: "doc.fill")
+        case .oversized:
+            fileMessage("File is too large to preview", systemImage: "doc.badge.ellipsis")
         case .failed(let message):
             fileMessage(message, systemImage: "exclamationmark.triangle")
         }
@@ -407,8 +435,14 @@ extension FilePanelContentView {
         let url = panel.fileURL
         let fileName = panel.relativePath
         preparedContent = .loading
-        let loadedState = await Task.detached(priority: .userInitiated) {
-            FilePanelContentLoader.load(url: url)
+        let loadedContent = await Task.detached(priority: .userInitiated) {
+            let loadedState = FilePanelContentLoader.load(url: url)
+            guard !Task.isCancelled else { return FilePanelPreparedContent.loading }
+            return FilePanelPreparedContent(
+                state: loadedState,
+                fileURL: url,
+                fileName: fileName
+            )
         }.value
         guard !Task.isCancelled,
             panel.fileURL == url,
@@ -416,10 +450,6 @@ extension FilePanelContentView {
         else {
             return
         }
-        preparedContent = FilePanelPreparedContent(
-            state: loadedState,
-            fileURL: url,
-            fileName: fileName
-        )
+        preparedContent = loadedContent
     }
 }

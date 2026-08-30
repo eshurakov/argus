@@ -54,9 +54,11 @@ final class PiIntegrationModel: ObservableObject {
 
     private func update(_ operation: PiIntegrationOperation) {
         status = .busy
-        Task { @MainActor in
+        Task {
             do {
-                let paths = try operation == .enable ? service.enable() : service.disable()
+                let paths = try await Task.detached(priority: .userInitiated) {
+                    try operation == .enable ? self.service.enable() : self.service.disable()
+                }.value
                 managedExtensionPath = paths.extensionFile.path
                 status = operation == .enable ? .installed : .unavailable
             } catch {
@@ -66,10 +68,10 @@ final class PiIntegrationModel: ObservableObject {
     }
 }
 
-private enum PiIntegrationOperation { case enable, disable }
+private enum PiIntegrationOperation: Sendable { case enable, disable }
 
 /// Installs only Argus's Pi Agent Status and turn-completion extension.
-final class PiIntegrationService {
+final class PiIntegrationService: @unchecked Sendable {
     static let extensionFileName = "argus-agent-status.js"
 
     // Complete-file digests for Argus-managed extensions from previous versions.
@@ -168,9 +170,7 @@ final class PiIntegrationService {
             throw PiIntegrationError.lockFailed(String(cString: strerror(errno)))
         }
         defer { close(descriptor) }
-        guard flock(descriptor, LOCK_EX) == 0 else {
-            throw PiIntegrationError.lockFailed(String(cString: strerror(errno)))
-        }
+        try acquireIntegrationLock(descriptor)
         defer { flock(descriptor, LOCK_UN) }
 
         let existing = try existingData(at: paths.extensionFile)
@@ -187,6 +187,19 @@ final class PiIntegrationService {
             }
         }
         return paths
+    }
+
+    private func acquireIntegrationLock(_ descriptor: Int32) throws {
+        let deadline = Date().addingTimeInterval(2)
+        while flock(descriptor, LOCK_EX | LOCK_NB) != 0 {
+            guard errno == EWOULDBLOCK || errno == EAGAIN else {
+                throw PiIntegrationError.lockFailed(String(cString: strerror(errno)))
+            }
+            guard !Task.isCancelled, Date() < deadline else {
+                throw PiIntegrationError.lockFailed("Timed out waiting for the integration lock")
+            }
+            usleep(50_000)
+        }
     }
 
     private func existingData(at url: URL) throws -> Data? {

@@ -49,6 +49,8 @@ final class FilePanel: Panel, ObservableObject {
 
     @Published private(set) var rootPath: String
     @Published private(set) var relativePath: String
+    @Published var displayMode: FileDisplayMode?
+    @Published var lineWrapEnabled: Bool?
 
     init(
         id: UUID = UUID(),
@@ -108,6 +110,7 @@ final class GitPreviewPanel: Panel, ObservableObject {
     let rootPath: String
 
     @Published private(set) var preview: GitPreview
+    @Published var diffStyle: ArgusDiffStyle?
 
     init(
         id: UUID = UUID(),

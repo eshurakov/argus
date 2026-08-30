@@ -24,7 +24,7 @@ final class WorkspaceManager: ObservableObject {
     // MARK: - Published State
 
     /// Ordered list of workspaces (determines sidebar order).
-    @Published internal(set) var workspaces: [Workspace] = []
+    @Published var workspaces: [Workspace] = []
 
     /// ID of the currently selected workspace.
     @Published var selectedWorkspaceId: UUID? {
@@ -36,7 +36,7 @@ final class WorkspaceManager: ObservableObject {
     @Published private(set) var workspaceContextRevision: UInt64 = 0
 
     /// Ordered list of projects (named projects first, catch-all last).
-    @Published internal(set) var projects: [Project] = []
+    @Published var projects: [Project] = []
 
     /// The non-removable catch-all project for standalone workspaces.
     var catchAllProject: Project!
@@ -57,7 +57,7 @@ final class WorkspaceManager: ObservableObject {
     var lastPullRequestWorkspaceError: PullRequestWorkspaceError?
 
     /// Last worktree deletion error for user-visible close feedback.
-    internal(set) var lastWorkspaceDeletionError: WorktreeError?
+    var lastWorkspaceDeletionError: WorktreeError?
 
     /// Location of the minimal Phase 2 session snapshot.
     ///
@@ -125,6 +125,7 @@ final class WorkspaceManager: ObservableObject {
     // MARK: - Notification Observers
 
     nonisolated(unsafe) private var closeSurfaceObserver: NSObjectProtocol?
+    nonisolated(unsafe) private var closeTabObserver: NSObjectProtocol?
     nonisolated(unsafe) private var focusSurfaceObserver: NSObjectProtocol?
 
     // MARK: - Initialization
@@ -152,7 +153,10 @@ final class WorkspaceManager: ObservableObject {
             createFreshSession()
         }
 
-        // Observe surface-close notifications from GhosttyApp callbacks.
+        installNotificationObservers()
+    }
+
+    private func installNotificationObservers() {
         closeSurfaceObserver = NotificationCenter.default.addObserver(
             forName: .argusCloseSurface,
             object: nil,
@@ -162,11 +166,29 @@ final class WorkspaceManager: ObservableObject {
                 let surfaceId = notification.object as? UUID
             else { return }
             let processAlive = notification.userInfo?["processAlive"] as? Bool
-            self.handleSurfaceClosed(surfaceId, processAlive: processAlive)
+            MainActor.assumeIsolated {
+                self.handleSurfaceClosed(surfaceId, processAlive: processAlive)
+            }
         }
 
-        // Track the focused split pane so split commands target the pane the
-        // user last clicked or typed in.
+        closeTabObserver = NotificationCenter.default.addObserver(
+            forName: .argusCloseTab,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self,
+                let surfaceId = notification.object as? UUID
+            else { return }
+            MainActor.assumeIsolated {
+                guard let workspace = self.workspace(containingPanel: surfaceId),
+                    let tabId = workspace.panelOrder.first(where: {
+                        workspace.layout(for: $0).contains(surfaceId)
+                    })
+                else { return }
+                self.requestCloseTab(tabId, in: workspace.id)
+            }
+        }
+
         focusSurfaceObserver = NotificationCenter.default.addObserver(
             forName: .terminalSurfaceDidBecomeFirstResponder,
             object: nil,
@@ -175,7 +197,7 @@ final class WorkspaceManager: ObservableObject {
             guard let self,
                 let surfaceId = notification.object as? UUID
             else { return }
-            self.focusPanel(surfaceId)
+            MainActor.assumeIsolated { self.focusPanel(surfaceId) }
         }
     }
 
@@ -199,6 +221,9 @@ final class WorkspaceManager: ObservableObject {
 
     deinit {
         if let observer = closeSurfaceObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let observer = closeTabObserver {
             NotificationCenter.default.removeObserver(observer)
         }
         if let observer = focusSurfaceObserver {
@@ -305,10 +330,7 @@ final class WorkspaceManager: ObservableObject {
     /// discarded by returning `false` so callers can create a fresh session.
     @discardableResult
     func restoreSession(from snapshot: ArgusSessionSnapshot) -> Bool {
-        guard snapshot.isCompatible,
-            !snapshot.workspaces.isEmpty,
-            snapshot.workspaces.count <= Self.maxWorkspaces
-        else { return false }
+        guard snapshot.isValidForRestore(maxWorkspaces: Self.maxWorkspaces) else { return false }
 
         let reconciledSnapshot = snapshot.reconciledForRestore()
         let restoredProjects = reconciledSnapshot.projects.map(Project.init(snapshot:))

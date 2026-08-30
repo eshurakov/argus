@@ -116,7 +116,7 @@ extension WorktreeService {
 
         let existingWorktreePath =
             worktrees
-            .first { $0.branch == metadata.headBranchName }
+            .first { !$0.isHead && $0.branch == metadata.headBranchName }
             .map { canonicalPath($0.path) }
 
         var createdBranch = false
@@ -125,7 +125,7 @@ extension WorktreeService {
                 _ = try await runGit(
                     args: [
                         "-C", repositoryPath, "branch", metadata.headBranchName,
-                        "FETCH_HEAD"
+                        fetchedHead
                     ],
                     workingDirectory: repositoryPath
                 )

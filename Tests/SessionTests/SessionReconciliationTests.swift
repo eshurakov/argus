@@ -13,6 +13,64 @@ struct SessionReconciliationTests {
         assertReconciliation(reconciled, ids: ids)
     }
 
+    @Test
+    @MainActor
+    func restoreRejectsDuplicateIdentitiesWithoutReconcilingThem() throws {
+        let workspaceId = UUID()
+        let projectId = UUID()
+        let workspace = self.workspace(
+            id: workspaceId,
+            projectId: projectId,
+            branchName: "main",
+            type: .mainCheckout,
+            directory: "/repo"
+        )
+        let project = ProjectSnapshot(
+            id: projectId,
+            repositoryPath: "/repo",
+            isCatchAll: false,
+            displayName: "Repo",
+            mainBranch: "main",
+            workspaceIds: [workspaceId],
+            isExpanded: true,
+            color: nil
+        )
+        let malformed = ArgusSessionSnapshot(
+            selectedWorkspaceId: workspaceId,
+            projects: [project, project],
+            workspaces: [workspace, workspace]
+        )
+        let serialized = try JSONEncoder().encode(malformed)
+        let decoded = try JSONDecoder().decode(ArgusSessionSnapshot.self, from: serialized)
+        let defaults = try #require(UserDefaults(suiteName: "ArgusDuplicateRestore-\(UUID().uuidString)"))
+        let manager = WorkspaceManager(
+            settings: AppSettings(defaults: defaults),
+            environment: ["ARGUS_UNDER_TEST": "1"]
+        )
+
+        #expect(!decoded.isValidForRestore(maxWorkspaces: WorkspaceManager.maxWorkspaces))
+        #expect(!manager.restoreSession(from: decoded))
+    }
+
+    @Test
+    func decoderRejectsExcessivePanelCountsBeforeExpansion() {
+        let json = """
+            {
+              "id":"11111111-1111-1111-1111-111111111111",
+              "workspaceType":"external",
+              "title":"Malformed",
+              "currentDirectory":"/tmp",
+              "panelCount":129,
+              "terminalDirectories":[],
+              "terminalCustomTitles":[]
+            }
+            """
+
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(WorkspaceSnapshot.self, from: Data(json.utf8))
+        }
+    }
+
     private func makeSnapshot(ids: ReconciliationIDs) -> ArgusSessionSnapshot {
         ArgusSessionSnapshot(
             selectedWorkspaceId: ids.invalidProjectWorkspace,

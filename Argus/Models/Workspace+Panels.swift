@@ -80,6 +80,7 @@ extension Workspace {
             $0.rootPath == standardizedRootPath
                 && $0.preview.kind == preview.kind
                 && $0.preview.path == preview.path
+                && $0.preview.comparison == preview.comparison
         }) {
             existing.update(preview: preview)
             selectPanel(existing.id)

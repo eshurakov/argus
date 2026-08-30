@@ -149,11 +149,11 @@ final class Workspace: Identifiable, ObservableObject {
     @Published var currentDirectory: String
 
     /// Ordered panel IDs defining tab order left-to-right.
-    @Published internal(set) var panelOrder: [UUID] = []
+    @Published var panelOrder: [UUID] = []
 
     /// Panel instances keyed by their `id`. Uses `any Panel` existential
     /// because a workspace can contain mixed terminal and browser panels.
-    @Published internal(set) var panels: [UUID: any Panel] = [:]
+    @Published var panels: [UUID: any Panel] = [:]
 
     /// The `id` of the currently active (focused) panel, or `nil` if the
     /// workspace has no panels.
@@ -161,10 +161,10 @@ final class Workspace: Identifiable, ObservableObject {
 
     /// Split-pane layout for each top-level tab, keyed by that tab's root
     /// panel id. Tabs without an entry are single-pane tabs.
-    @Published internal(set) var tabLayouts: [UUID: PanelLayoutNode] = [:]
+    @Published var tabLayouts: [UUID: PanelLayoutNode] = [:]
 
     /// User-assigned terminal tab titles, keyed by top-level panel id.
-    @Published internal(set) var terminalCustomTitles: [UUID: String] = [:]
+    @Published var terminalCustomTitles: [UUID: String] = [:]
 
     var panelCancellables: [UUID: AnyCancellable] = [:]
 

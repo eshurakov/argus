@@ -24,10 +24,12 @@ struct SidebarStatePersistenceTests {
             let gitSidebar = GitSidebarState(defaults: defaults)
             gitSidebar.isVisible = true
             gitSidebar.width = 444
+            gitSidebar.selectedView = .files
 
             let restoredGitSidebar = GitSidebarState(defaults: defaults)
             assertEqual(restoredGitSidebar.isVisible, true, "right sidebar visibility restores")
             assertEqual(restoredGitSidebar.width, 444, "right sidebar width restores")
+            assertEqual(restoredGitSidebar.selectedView, .files, "right sidebar View restores")
         }
     }
 

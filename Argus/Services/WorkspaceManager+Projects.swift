@@ -6,7 +6,8 @@ extension WorkspaceManager {
         displayName: String? = nil,
         mainBranchOverride: String? = nil
     ) async -> Project? {
-        guard let repositoryRoot = try? await worktreeService.canonicalRepositoryRoot(for: repositoryPath),
+        guard workspaces.count < Self.maxWorkspaces,
+            let repositoryRoot = try? await worktreeService.canonicalRepositoryRoot(for: repositoryPath),
             !hasDuplicateProject(repositoryRoot: repositoryRoot)
         else { return nil }
 
@@ -21,6 +22,9 @@ extension WorkspaceManager {
         let checkoutBranch =
             (try? await worktreeService.currentBranchName(repositoryPath: repositoryRoot))
             ?? mainBranch
+        guard workspaces.count < Self.maxWorkspaces,
+            !hasDuplicateProject(repositoryRoot: repositoryRoot)
+        else { return nil }
         let project = Project(
             repositoryPath: repositoryRoot,
             displayName: displayName,
@@ -48,6 +52,7 @@ extension WorkspaceManager {
         for workspaceId in project.workspaceIds {
             guard let workspace = workspaces.first(where: { $0.id == workspaceId }) else { continue }
             agentStatusRuntime?.removeStatuses(forWorkspace: workspaceId)
+            turnCompletionRuntime?.removeAttention(forWorkspace: workspaceId)
             if let worktreePath = workspace.worktreePath {
                 try? await worktreeService.removeWorktree(
                     repositoryPath: project.repositoryPath,
@@ -135,30 +140,25 @@ extension WorkspaceManager {
                     repositoryPath: project.repositoryPath
                 )
             }
+            let existingWorktreePaths = Set(
+                ((try? await worktreeService.listWorktrees(repositoryPath: project.repositoryPath)) ?? [])
+                    .map { canonicalPath($0.path) }
+            )
             let worktreePath = try await worktreeService.createWorktree(
                 projectId: projectId,
                 repositoryPath: project.repositoryPath,
                 branchName: branchName,
                 createNewBranch: createNewBranch
             )
-            let workspace = Workspace(
-                title: branchName,
-                workingDirectory: worktreePath,
-                projectId: projectId,
-                branchName: branchName,
-                workspaceType: .worktree,
-                worktreePath: worktreePath
-            )
-            if let customTitle {
-                workspace.setCustomTitle(customTitle)
-            }
-            workspaces.append(workspace)
-            project.addWorkspace(workspace.id)
-            selectedWorkspaceId = workspace.id
-            // Persist an optional custom name and the new Workspace Root
-            // before a later application crash can discard them.
-            saveSession()
-            return workspace
+            return await attachPreparedWorktree(
+                PreparedWorktreeAttachment(
+                    path: worktreePath,
+                    branchName: branchName,
+                    customTitle: customTitle,
+                    projectId: projectId,
+                    repositoryPath: project.repositoryPath,
+                    existingWorktreePaths: existingWorktreePaths
+                ))
         } catch let error as WorktreeError {
             lastWorkspaceCreationError = error
             print("Failed to create worktree workspace: \(error.localizedDescription)")
@@ -167,6 +167,49 @@ extension WorkspaceManager {
             print("Failed to create worktree workspace: \(error.localizedDescription)")
             return nil
         }
+    }
+
+    private struct PreparedWorktreeAttachment {
+        let path: String
+        let branchName: String
+        let customTitle: String?
+        let projectId: UUID
+        let repositoryPath: String
+        let existingWorktreePaths: Set<String>
+    }
+
+    private func attachPreparedWorktree(_ attachment: PreparedWorktreeAttachment) async -> Workspace? {
+        guard let project = projects.first(where: { $0.id == attachment.projectId }),
+            !project.isCatchAll,
+            canonicalPath(project.repositoryPath) == canonicalPath(attachment.repositoryPath),
+            workspaces.count < Self.maxWorkspaces
+        else {
+            if !attachment.existingWorktreePaths.contains(canonicalPath(attachment.path)) {
+                try? await worktreeService.removeWorktree(
+                    repositoryPath: attachment.repositoryPath,
+                    worktreePath: attachment.path,
+                    force: true
+                )
+            }
+            return nil
+        }
+
+        let workspace = Workspace(
+            title: attachment.branchName,
+            workingDirectory: attachment.path,
+            projectId: attachment.projectId,
+            branchName: attachment.branchName,
+            workspaceType: .worktree,
+            worktreePath: attachment.path
+        )
+        if let customTitle = attachment.customTitle {
+            workspace.setCustomTitle(customTitle)
+        }
+        workspaces.append(workspace)
+        project.addWorkspace(workspace.id)
+        selectedWorkspaceId = workspace.id
+        saveSession()
+        return workspace
     }
 
     /// Resolves one Pull Request through the active GitHub CLI and attaches

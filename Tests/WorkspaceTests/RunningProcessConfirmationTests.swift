@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 
@@ -68,6 +69,62 @@ private final class WorkspaceConfirmationRecorder: @unchecked Sendable {
         if let observer {
             NotificationCenter.default.removeObserver(observer)
         }
+    }
+}
+
+@Suite @MainActor
+struct MainWindowCloseGuardTests {
+    @Test
+    func forwardsTheOriginalDelegateWhileGatingClose() {
+        let window = NSWindow(
+            contentRect: .zero, styleMask: [.titled], backing: .buffered, defer: true
+        )
+        let original: CloseGuardTestDelegate? = CloseGuardTestDelegate()
+        window.delegate = original
+        let closeGuard = MainWindowCloseGuard()
+        closeGuard.attach(to: window)
+        closeGuard.attach(to: window)
+
+        #expect(window.delegate === closeGuard)
+        #expect(closeGuard.originalDelegate === original)
+        closeGuard.onShouldClose = { false }
+        #expect(!closeGuard.windowShouldClose(window))
+        #expect(original?.closeAttempts == 0)
+
+        closeGuard.onShouldClose = { true }
+        #expect(!closeGuard.windowShouldClose(window))
+        original?.allowsClose = true
+        #expect(closeGuard.windowShouldClose(window))
+        #expect(original?.closeAttempts == 2)
+
+        let resize = #selector(NSWindowDelegate.windowDidResize(_:))
+        #expect(closeGuard.responds(to: resize))
+        #expect(closeGuard.forwardingTarget(for: resize) as? CloseGuardTestDelegate === original)
+        closeGuard.perform(resize, with: Notification(name: NSWindow.didResizeNotification, object: window))
+        #expect(original?.resizeCount == 1)
+
+        closeGuard.originalDelegate = nil
+        #expect(closeGuard.originalDelegate == nil)
+        #expect(!closeGuard.responds(to: resize))
+        #expect(closeGuard.forwardingTarget(for: resize) == nil)
+        #expect(closeGuard.windowShouldClose(window))
+        window.delegate = nil
+    }
+}
+
+@MainActor
+private final class CloseGuardTestDelegate: NSObject, NSWindowDelegate {
+    var allowsClose = false
+    var closeAttempts = 0
+    var resizeCount = 0
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        closeAttempts += 1
+        return allowsClose
+    }
+
+    func windowDidResize(_ notification: Notification) {
+        resizeCount += 1
     }
 }
 

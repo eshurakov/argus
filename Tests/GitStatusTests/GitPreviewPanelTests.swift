@@ -30,6 +30,36 @@ struct GitPreviewPanelTests {
 
     @Test
     @MainActor
+    func previewTabsRetainComparisonIdentityAndPanelPresentation() {
+        let workspace = Workspace(title: "Test", workingDirectory: "/tmp")
+        let staged = workspace.openGitPreviewPanel(
+            rootPath: "/tmp/repo",
+            preview: GitPreview(
+                kind: .diff,
+                path: "file.txt",
+                comparison: .staged,
+                content: .ansiText("staged")
+            )
+        )
+        staged.diffStyle = .unified
+        let unstaged = workspace.openGitPreviewPanel(
+            rootPath: "/tmp/repo",
+            preview: GitPreview(
+                kind: .diff,
+                path: "file.txt",
+                comparison: .unstaged,
+                content: .ansiText("unstaged")
+            )
+        )
+
+        #expect(staged.id != unstaged.id)
+        #expect(workspace.panelOrder.contains(staged.id))
+        #expect(workspace.panelOrder.contains(unstaged.id))
+        #expect(staged.diffStyle == .unified)
+    }
+
+    @Test
+    @MainActor
     func rendersANSIColorsWithoutEscapeCodes() {
         let rendered = GitPreviewANSITextRenderer.attributedString(
             for: "\u{001B}[31m-red\u{001B}[0m plain")
