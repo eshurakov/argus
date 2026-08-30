@@ -2,6 +2,10 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-08-30
+
+- Released Argus 1.13.1 with safer terminal clipboard prompts, exact Git filename handling, authorized Worktree deletion, bounded file and socket operations, stricter Session Snapshot recovery, reliable integration installation, and persistent Files, Changes, and Git Preview settings. ([e9f5051](https://github.com/jeanduplessis/argus/commit/e9f50513b3d092fa4f712f353ae840f61cf17039))
+
 ## 2026-08-29
 
 - Argus now changes its window and terminal backgrounds from black to dark grey when the window loses keyboard focus, making the active window easier to spot across monitors. Headers and controls soften without dimming Panel content, Agent Status, or Turn Completion Attention. ([ed816d6](https://github.com/jeanduplessis/argus/commit/ed816d6ad31f3f82bfb1014c7ba1b26eaff93b6e))
