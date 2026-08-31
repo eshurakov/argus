@@ -2,6 +2,10 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-08-31
+
+- Released Argus 1.13.2 with terminal clipboard prompts that cancel cleanly; safe upgrades and removal for previously installed Kilo and Pi integrations; exact Git statistics and previews for special-character filenames and repositories without commits; restorable Project, Workspace, and Terminal Panel limits; Project-scoped Orphaned Worktree cleanup; and bounded agent socket lifetimes. ([91d32f3](https://github.com/jeanduplessis/argus/commit/91d32f3de9f86d2f6b330a51f247fda870340951))
+
 ## 2026-08-30
 
 - Released Argus 1.13.1 with safer terminal clipboard prompts, exact Git filename handling, authorized Worktree deletion, bounded file and socket operations, stricter Session Snapshot recovery, reliable integration installation, and persistent Files, Changes, and Git Preview settings. ([e9f5051](https://github.com/jeanduplessis/argus/commit/e9f50513b3d092fa4f712f353ae840f61cf17039))
