@@ -4,6 +4,7 @@ This file records changes pushed for local Argus releases. New entries use a `YY
 
 ## 2026-08-31
 
+- Ghostty and AppKit state now stays on the Main Actor, and the Ghostty build rejects duplicate archive member names that can break dSYM generation. The build cache includes the local archive-naming patch, so patched and unpatched frameworks cannot be mixed. ([22bc945](https://github.com/jeanduplessis/argus/commit/22bc945ae070f41cd7a8f913f57a9c61fa342e1f))
 - Released Argus 1.13.2 with terminal clipboard prompts that cancel cleanly; safe upgrades and removal for previously installed Kilo and Pi integrations; exact Git statistics and previews for special-character filenames and repositories without commits; restorable Project, Workspace, and Terminal Panel limits; Project-scoped Orphaned Worktree cleanup; and bounded agent socket lifetimes. ([91d32f3](https://github.com/jeanduplessis/argus/commit/91d32f3de9f86d2f6b330a51f247fda870340951))
 
 ## 2026-08-30
