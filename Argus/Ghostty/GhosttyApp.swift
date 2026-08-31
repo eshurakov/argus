@@ -11,9 +11,10 @@ import Foundation
 
 // MARK: - GhosttyApp
 
+@MainActor
 final class GhosttyApp: ObservableObject {
 
-    nonisolated(unsafe) static let shared = GhosttyApp()
+    static let shared = GhosttyApp()
     private static let terminalThemeResource = "ArgusTerminalTheme"
 
     private(set) var app: ghostty_app_t?
@@ -30,14 +31,13 @@ final class GhosttyApp: ObservableObject {
         configureGhosttyEnvironment()
     }
 
-    @MainActor
     func start() {
         guard !hasStarted else { return }
         hasStarted = true
         initializeGhostty()
     }
 
-    deinit {
+    isolated deinit {
         for observer in appObservers {
             NotificationCenter.default.removeObserver(observer)
         }
@@ -205,8 +205,10 @@ final class GhosttyApp: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            guard let app = self?.app else { return }
-            ghostty_app_set_focus(app, true)
+            MainActor.assumeIsolated {
+                guard let app = self?.app else { return }
+                ghostty_app_set_focus(app, true)
+            }
         }
 
         let deactivateObserver = NotificationCenter.default.addObserver(
@@ -214,8 +216,10 @@ final class GhosttyApp: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            guard let app = self?.app else { return }
-            ghostty_app_set_focus(app, false)
+            MainActor.assumeIsolated {
+                guard let app = self?.app else { return }
+                ghostty_app_set_focus(app, false)
+            }
         }
 
         appObservers.append(contentsOf: [activateObserver, deactivateObserver])
@@ -269,7 +273,6 @@ final class GhosttyApp: ObservableObject {
     }
 
     /// Reload configuration from disk and apply it.
-    @MainActor
     func reloadConfiguration(source: String = "user") {
         guard let app else { return }
 

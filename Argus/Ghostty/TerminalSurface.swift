@@ -75,6 +75,8 @@ final class TerminalSurface: ObservableObject, Identifiable {
     // MARK: - Notification Observation
 
     private func observeNotifications() {
+        // These observers are delivered on the main queue. Assert actor
+        // isolation synchronously so metadata is current before a snapshot.
         let surfaceId = self.id
 
         let titleObserver = NotificationCenter.default.addObserver(
@@ -87,7 +89,7 @@ final class TerminalSurface: ObservableObject, Identifiable {
                 notifId == surfaceId,
                 let title = userInfo["title"] as? String
             else { return }
-            self?.title = title
+            MainActor.assumeIsolated { self?.title = title }
         }
 
         let pwdObserver = NotificationCenter.default.addObserver(
@@ -100,7 +102,7 @@ final class TerminalSurface: ObservableObject, Identifiable {
                 notifId == surfaceId,
                 let pwd = userInfo["pwd"] as? String
             else { return }
-            self?.pwd = pwd
+            MainActor.assumeIsolated { self?.pwd = pwd }
         }
 
         let renderObserver = NotificationCenter.default.addObserver(
@@ -111,8 +113,10 @@ final class TerminalSurface: ObservableObject, Identifiable {
             guard let notifId = notification.object as? UUID,
                 notifId == surfaceId
             else { return }
-            self?.needsDisplay = true
-            self?._hostedView?.needsDisplay = true
+            MainActor.assumeIsolated {
+                self?.needsDisplay = true
+                self?._hostedView?.needsDisplay = true
+            }
         }
 
         notificationObservers.append(
@@ -139,8 +143,7 @@ final class TerminalSurface: ObservableObject, Identifiable {
                 notifId == surfaceId,
                 let shapeRaw = userInfo["shape"] as? UInt32
             else { return }
-            let shape = ghostty_action_mouse_shape_e(rawValue: shapeRaw)
-            self?._hostedView?.updateCursor(shape: shape)
+            MainActor.assumeIsolated { self?._hostedView?.updateCursor(shape: .init(rawValue: shapeRaw)) }
         }
     }
 
@@ -152,7 +155,7 @@ final class TerminalSurface: ObservableObject, Identifiable {
         ) { [weak self] _ in
             // The view may have reached a window before deferred libghostty
             // startup completed, so retry the otherwise idempotent creation.
-            self?.createSurface()
+            MainActor.assumeIsolated { self?.createSurface() }
         }
     }
 
@@ -162,7 +165,7 @@ final class TerminalSurface: ObservableObject, Identifiable {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.updateWindowBackground()
+            MainActor.assumeIsolated { self?.updateWindowBackground() }
         }
     }
 
@@ -207,7 +210,7 @@ final class TerminalSurface: ObservableObject, Identifiable {
         config.working_directory = UnsafePointer(dirCString)
 
         // Build environment variables
-        var envVars = buildEnvironmentVars()
+        let envVars = buildEnvironmentVars()
 
         // Assign environment variables to config
         let envCount = envVars.count
@@ -334,6 +337,12 @@ final class TerminalSurface: ObservableObject, Identifiable {
         ghostty_surface_refresh(surface)
     }
 
+    /// Test override for Ghostty's process-sensitive close heuristic.
+    /// Production code must leave this `nil`.
+    var needsConfirmQuitOverride: Bool?
+}
+
+extension TerminalSurface {
     /// Tear down and free the Ghostty surface.
     func teardownSurface() {
         TerminalClipboardConfirmationPresenter.shared.cancel(surfaceId: id)
@@ -358,10 +367,6 @@ final class TerminalSurface: ObservableObject, Identifiable {
         guard let surface else { return true }
         return ghostty_surface_process_exited(surface)
     }
-
-    /// Test override for Ghostty's process-sensitive close heuristic.
-    /// Production code must leave this `nil`.
-    var needsConfirmQuitOverride: Bool?
 
     /// Whether the surface needs quit confirmation (running process).
     var needsConfirmQuit: Bool {

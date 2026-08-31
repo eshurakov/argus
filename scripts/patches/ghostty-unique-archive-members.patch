@@ -1,0 +1,15 @@
+diff --git a/pkg/macos/build.zig b/pkg/macos/build.zig
+--- a/pkg/macos/build.zig
++++ b/pkg/macos/build.zig
+@@ -26,7 +26,10 @@ pub fn build(b: *std.Build) !void {
+         .flags = &.{"-std=c99"},
+     });
+     lib.addCSourceFile(.{
+-        .file = b.path("text/ext.c"),
++        // The combined Ghostty archive also includes dcimgui's ext.o. Give
++        // this object a distinct basename so dsymutil can resolve both.
++        .file = b.addWriteFiles().addCopyFile(
++            b.path("text/ext.c"), "ghostty_macos_text_ext.c"),
+     });
+     lib.linkFramework("CoreFoundation");
+     lib.linkFramework("CoreGraphics");

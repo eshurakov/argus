@@ -11,10 +11,10 @@ repo, e.g.:
 Frameworks/GhosttyKit.xcframework -> ~/.cache/argus/ghosttykit/artifacts/<input-hash>/GhosttyKit.xcframework
 ```
 
-The cache records the resolved Ghostty commit, Zig version, architecture, and
-build mode. The script rebuilds when those inputs change, serializes builds
-shared by multiple worktrees, validates output before publication, and links
-each worktree directly to its immutable matching artifact.
+The cache records the resolved Ghostty commit, local patch hash, Zig version,
+architecture, and build mode. The script rebuilds when those inputs change,
+serializes builds shared by multiple worktrees, validates output before
+publication, and links each worktree directly to its immutable matching artifact.
 
 If that symlink is missing or broken (fresh clone, new machine, or the cache
 was cleared), `xcodebuild` fails immediately with:
@@ -94,6 +94,19 @@ git remote add origin https://github.com/ghostty-org/ghostty.git
 git fetch --depth 1 origin "$REF"
 git checkout FETCH_HEAD
 ```
+
+Apply Argus's archive-naming patch before building:
+
+```bash
+git apply /path/to/argus/scripts/patches/ghostty-unique-archive-members.patch
+```
+
+The macOS and dcimgui packages both produce an `ext.o`. Once combined into
+`libghostty.a`, those names make `dsymutil` look in the wrong object for ImGui
+symbols. The patch gives the macOS object a unique basename without changing
+its code. `scripts/build-ghosttykit.sh` applies the patch in its temporary
+checkout and rejects duplicate archive member names before publishing. The
+patch hash is part of the cache key, so existing artifacts remain untouched.
 
 **3. Work around Zig 0.15.2 vs. new macOS SDKs.**
 

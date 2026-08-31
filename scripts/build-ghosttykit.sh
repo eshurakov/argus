@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Maintainer-only: builds GhosttyKit.xcframework from vanilla ghostty-org/ghostty
+# Maintainer-only: builds GhosttyKit.xcframework from pinned ghostty-org/ghostty
 # and symlinks it into Frameworks/GhosttyKit.xcframework. This automates the
 # manual walkthrough in Frameworks/README.md — read that file for the "why"
 # behind each step (SDK/Zig workarounds, ReleaseFast, etc).
@@ -47,7 +47,7 @@ Frameworks/GhosttyKit.xcframework.
 The built framework is vendored OUTSIDE the repo (in CACHE_DIR), and the repo
 just gets a gitignored symlink pointing at it. That cache is shared across all
 git worktrees. A cached framework is reused only when its recorded Ghostty
-commit, Zig version, build mode, and architecture match this invocation.
+commit, local patch, Zig version, build mode, and architecture match this invocation.
 
 Options:
   -f, --force   Rebuild even if a complete framework is already cached
@@ -74,6 +74,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+GHOSTTY_PATCH="${PROJECT_DIR}/scripts/patches/ghostty-unique-archive-members.patch"
+GHOSTTY_PATCH_SHA256="$(shasum -a 256 "${GHOSTTY_PATCH}" | awk '{print $1}')"
 
 log()  { printf "\033[1;34m==>\033[0m %s\n" "$*"; }
 ok()   { printf "\033[1;32m==>\033[0m %s\n" "$*"; }
@@ -148,6 +150,7 @@ fi
 CACHE_KEY="$(printf '%s\n' \
     "cache_format_version=${CACHE_FORMAT_VERSION}" \
     "ghostty_commit=${GHOSTTY_COMMIT}" \
+    "ghostty_patch_sha256=${GHOSTTY_PATCH_SHA256}" \
     "zig_version=${ZIG_VERSION}" \
     "zig_sha256=${zig_sha256}" \
     "host_arch=${HOST_ARCH}" \
@@ -164,6 +167,7 @@ cache_provenance_ok() {
     grep -qxF "cache_key=${CACHE_KEY}" "${metadata}" \
         && grep -qxF "cache_format_version=${CACHE_FORMAT_VERSION}" "${metadata}" \
         && grep -qxF "ghostty_commit=${GHOSTTY_COMMIT}" "${metadata}" \
+        && grep -qxF "ghostty_patch_sha256=${GHOSTTY_PATCH_SHA256}" "${metadata}" \
         && grep -qxF "zig_version=${ZIG_VERSION}" "${metadata}" \
         && grep -qxF "zig_sha256=${zig_sha256}" "${metadata}" \
         && grep -qxF "host_arch=${HOST_ARCH}" "${metadata}" \
@@ -194,10 +198,15 @@ alias_lib() {
 # here-string — piping \`nm | grep -q\` under \`set -o pipefail\` is a false-
 # negative trap: \`grep -q\` exits on first match, \`nm\` gets SIGPIPE mid-write,
 # and pipefail then reports the whole pipeline as failed even though the symbol
-# WAS found. Returns non-zero if incomplete.
+# WAS found. Also reject duplicate member names that make dSYM lookup ambiguous.
 sanity_ok() {
-    local lib_real lib_syms sym
+    local lib_real lib_syms sym duplicate_members
     lib_real="$(cd "${macos_slice}" && readlink libghostty.a || echo libghostty.a)"
+    duplicate_members="$(ar -t "${macos_slice}/${lib_real}" | sort | uniq -d)" || return 1
+    if [[ -n "${duplicate_members}" ]]; then
+        err "Archive contains duplicate object names; dSYM lookup would be ambiguous: ${duplicate_members}"
+        return 1
+    fi
     lib_syms="$(nm "${macos_slice}/${lib_real}" 2>/dev/null || true)"
     for sym in _ghostty_app_new _spvc_context_create; do
         grep -qE " [TtSsDdBbC] ${sym}$" <<<"${lib_syms}" || return 1
@@ -258,6 +267,11 @@ if [[ "$(git -C "${WORK_DIR}/ghostty" rev-parse HEAD)" != "${GHOSTTY_COMMIT}" ]]
     err "Fetched Ghostty commit does not match resolved ref ${GHOSTTY_COMMIT}"
     exit 1
 fi
+# Patch only the disposable checkout, never an artifact another worktree uses.
+# Its content hash is part of the cache identity so packaging changes rebuild.
+log "Applying Ghostty archive naming fix"
+git -C "${WORK_DIR}/ghostty" apply --check "${GHOSTTY_PATCH}"
+git -C "${WORK_DIR}/ghostty" apply "${GHOSTTY_PATCH}"
 cd "${WORK_DIR}/ghostty"
 
 do_zig_build() {
@@ -326,11 +340,12 @@ cp -R "${framework_out}" "${staging_dir}/GhosttyKit.xcframework"
 
 macos_slice="${staging_dir}/GhosttyKit.xcframework/macos-arm64"
 alias_lib || { err "No linkable archive found in built framework to alias as libghostty.a"; exit 1; }
-sanity_ok || { err "Built archive is missing the C API / a bundled dep — incomplete build (are you on v1.3.1 instead of main?)."; exit 1; }
+sanity_ok || { err "Built archive failed symbol or unique-member validation; refusing to publish it."; exit 1; }
 cat >"${staging_dir}/GhosttyKit.xcframework/argus-build-info" <<EOF
 cache_key=${CACHE_KEY}
 cache_format_version=${CACHE_FORMAT_VERSION}
 ghostty_commit=${GHOSTTY_COMMIT}
+ghostty_patch_sha256=${GHOSTTY_PATCH_SHA256}
 zig_version=${ZIG_VERSION}
 zig_sha256=${zig_sha256}
 host_arch=${HOST_ARCH}

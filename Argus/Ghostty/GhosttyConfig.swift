@@ -70,6 +70,7 @@ enum ColorSchemePreference: String, Hashable {
     case dark
 
     /// Detect from the current app appearance.
+    @MainActor
     static func fromAppAppearance() -> ColorSchemePreference {
         let appearance = NSApp.effectiveAppearance
         if appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua {
@@ -100,15 +101,20 @@ struct GhosttyConfig {
     nonisolated(unsafe) private static var cache: [ColorSchemePreference: GhosttyConfig] = [:]
     private static let cacheQueue = DispatchQueue(label: "dev.argus.ghosttyconfig.cache")
 
-    /// Load config with caching by color scheme preference.
-    static func load(colorScheme: ColorSchemePreference? = nil) -> GhosttyConfig {
-        let scheme = colorScheme ?? ColorSchemePreference.fromAppAppearance()
-        return cacheQueue.sync {
-            if let cached = cache[scheme] {
+    /// Resolve UI appearance on the main actor before reading configuration.
+    @MainActor
+    static func load() -> GhosttyConfig {
+        load(colorScheme: ColorSchemePreference.fromAppAppearance())
+    }
+
+    /// Explicit color schemes can be loaded without accessing AppKit state.
+    static func load(colorScheme: ColorSchemePreference) -> GhosttyConfig {
+        cacheQueue.sync {
+            if let cached = cache[colorScheme] {
                 return cached
             }
-            let config = loadFromDisk(colorScheme: scheme)
-            cache[scheme] = config
+            let config = loadFromDisk(colorScheme: colorScheme)
+            cache[colorScheme] = config
             return config
         }
     }

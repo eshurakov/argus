@@ -45,6 +45,7 @@ struct ChromePalette {
     }
 }
 
+@MainActor
 enum ChromeColors {
     static var shellBackground: some View {
         WindowFocusBackground(focusedColor: shellBackgroundNSColor)
