@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 extension WorktreeService {
@@ -92,10 +93,11 @@ extension WorktreeService {
                 options: [.skipsHiddenFiles]
             )
         else { return [] }
+        let canonicalKnownPaths = Set(knownWorkspacePaths.map(canonicalDiscoveryPath))
         return entries.compactMap { entry in
             guard let values = try? entry.resourceValues(forKeys: [.isDirectoryKey]),
                 values.isDirectory == true,
-                !knownWorkspacePaths.contains(entry.path)
+                !canonicalKnownPaths.contains(canonicalDiscoveryPath(entry.path))
             else { return nil }
             return OrphanedWorktreeInfo(
                 path: entry.path,
@@ -108,18 +110,28 @@ extension WorktreeService {
     /// An Orphaned Worktree has no Workspace state left to protect, so it uses
     /// the same forced removal contract as "Delete Worktree and Close".
     func cleanupOrphanedWorktree(
+        projectId: UUID,
         repositoryPath: String,
         worktreePath: String
     ) async throws {
         try await removeWorktree(
             repositoryPath: repositoryPath,
             worktreePath: worktreePath,
-            force: true
+            force: true,
+            managedOrphanProjectId: projectId
         )
         _ = try? await runGit(
             args: ["-C", repositoryPath, "worktree", "prune"],
             workingDirectory: repositoryPath
         )
+    }
+
+    private func canonicalDiscoveryPath(_ path: String) -> String {
+        guard let resolvedPath = realpath(path, nil) else {
+            return URL(fileURLWithPath: path).standardizedFileURL.path
+        }
+        defer { free(resolvedPath) }
+        return String(cString: resolvedPath)
     }
 
     private func parseWorktrees(_ output: String) -> [WorktreeInfo] {

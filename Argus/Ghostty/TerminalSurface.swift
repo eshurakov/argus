@@ -336,6 +336,7 @@ final class TerminalSurface: ObservableObject, Identifiable {
 
     /// Tear down and free the Ghostty surface.
     func teardownSurface() {
+        TerminalClipboardConfirmationPresenter.shared.cancel(surfaceId: id)
         let surfaceToFree = surface
         self.surface = nil
 

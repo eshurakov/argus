@@ -77,12 +77,16 @@ func ghosttyConfirmReadClipboardCallback(
     let requestState = TerminalClipboardRequestState(pointer: state)
     let decision = TerminalClipboardDecision(surfaceId: terminalSurface.id) { approved in
         guard let ghosttySurface = terminalSurface.surface else { return }
-        value.withCString { pointer in
+        let resolution = TerminalClipboardRequestResolution.resolve(
+            content: value,
+            approved: approved
+        )
+        resolution.content.withCString { pointer in
             ghostty_surface_complete_clipboard_request(
                 ghosttySurface,
                 pointer,
                 requestState.pointer,
-                approved
+                resolution.confirmed
             )
         }
     }

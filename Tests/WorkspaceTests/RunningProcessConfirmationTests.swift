@@ -136,7 +136,7 @@ struct RunningProcessConfirmationTests {
         let manager = try makeManager(suiteName: "ArgusTests.RunningProcessTabClose")
         let workspace = try #require(manager.selectedWorkspace)
         let firstTerminalId = try #require(workspace.panelOrder.first)
-        let remainingTerminalId = workspace.addTerminalPanel(workingDirectory: "/tmp").id
+        let remainingTerminalId = try #require(workspace.addTerminalPanel(workingDirectory: "/tmp")).id
         setNeedsConfirmQuit(true, on: firstTerminalId, in: workspace)
         let confirmation = observeRunningProcessConfirmation()
 
@@ -154,7 +154,7 @@ struct RunningProcessConfirmationTests {
         let manager = try makeManager(suiteName: "ArgusTests.RunningProcessTabConfirm")
         let workspace = try #require(manager.selectedWorkspace)
         let firstTerminalId = try #require(workspace.panelOrder.first)
-        let remainingTerminalId = workspace.addTerminalPanel(workingDirectory: "/tmp").id
+        let remainingTerminalId = try #require(workspace.addTerminalPanel(workingDirectory: "/tmp")).id
         setNeedsConfirmQuit(true, on: firstTerminalId, in: workspace)
 
         manager.requestCloseTab(firstTerminalId, in: workspace.id)
@@ -306,7 +306,7 @@ struct RunningProcessConfirmationTests {
         let manager = try makeManager(suiteName: "ArgusTests.RunningProcessCount")
         let workspace = try #require(manager.selectedWorkspace)
         let first = try #require(workspace.activePanelId)
-        let second = workspace.addTerminalPanel(workingDirectory: "/tmp").id
+        let second = try #require(workspace.addTerminalPanel(workingDirectory: "/tmp")).id
         setNeedsConfirmQuit(true, on: first, in: workspace)
         setNeedsConfirmQuit(true, on: second, in: workspace)
 

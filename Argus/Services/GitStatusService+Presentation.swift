@@ -41,11 +41,11 @@ func statusSynchronously(request: GitStatusRequest) -> GitStatusLoadState {
             "-C", rootPath, "status", "--porcelain=v2", "--branch", "--untracked-files=all", "-z"
         ])
         let rawStatus = GitStatusPorcelainParser.parseUncapped(result.stdout)
-        let unstagedOutput = try? runGit(args: ["-C", rootPath, "diff", "--numstat"]).stdout
-        let stagedOutput = try? runGit(args: ["-C", rootPath, "diff", "--cached", "--numstat"]).stdout
+        let unstagedOutput = try? runGit(args: ["-C", rootPath, "diff", "--numstat", "-z"]).stdout
+        let stagedOutput = try? runGit(args: ["-C", rootPath, "diff", "--cached", "--numstat", "-z"]).stdout
         let stats = GitStatusDiffStats(
-            staged: GitDiffStatParser.parse(stagedOutput ?? ""),
-            unstaged: GitDiffStatParser.parse(unstagedOutput ?? ""),
+            staged: GitDiffStatParser.parseNUL(stagedOutput ?? ""),
+            unstaged: GitDiffStatParser.parseNUL(unstagedOutput ?? ""),
             untracked: diffStatsForUntrackedFiles(rootPath: rootPath, files: rawStatus.untrackedFiles)
         )
         return .loaded(

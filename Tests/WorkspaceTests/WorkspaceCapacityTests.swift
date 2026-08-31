@@ -38,4 +38,26 @@ struct WorkspaceCapacityTests {
         )
         #expect(persisted.isValidForRestore(maxWorkspaces: WorkspaceManager.maxWorkspaces))
     }
+
+    @Test
+    func terminalTabCreationCannotWriteAnUnrestorableWorkspaceSnapshot() throws {
+        let workspace = Workspace(title: "Capacity", workingDirectory: "/tmp")
+        while workspace.snapshot().panelCount < WorkspaceSnapshot.maximumTerminalPanels {
+            #expect(workspace.addTerminalPanel() != nil)
+        }
+
+        #expect(workspace.addTerminalPanel() == nil)
+        let session = ArgusSessionSnapshot(
+            selectedWorkspaceId: workspace.id,
+            projects: [],
+            workspaces: [workspace.snapshot()]
+        )
+        let restored = try JSONDecoder().decode(
+            ArgusSessionSnapshot.self,
+            from: JSONEncoder().encode(session)
+        )
+
+        #expect(restored.isValidForRestore(maxWorkspaces: WorkspaceManager.maxWorkspaces))
+        #expect(restored.workspaces[0].panelCount == WorkspaceSnapshot.maximumTerminalPanels)
+    }
 }

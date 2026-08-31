@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
+import { createServer } from "node:net";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import plugin, {
   closeIsEligible,
   createPlugin,
   environmentIsValid,
+  send,
   turnEventID,
 } from "../../Argus/Resources/ArgusKiloTurnCompletionPlugin.js";
 
@@ -70,3 +74,20 @@ assert.deepEqual(deliveries[0], {
 });
 
 assert.equal(plugin.id, "argus-turn-completed");
+
+const socketPath = join(tmpdir(), `argus-kilo-transport-${process.pid}-${Date.now()}.sock`);
+let serverReleasedConnection = false;
+const server = createServer({ allowHalfOpen: true }, (socket) => {
+  socket.on("data", () => {});
+  setTimeout(() => {
+    serverReleasedConnection = true;
+    socket.end();
+  }, 30);
+});
+await new Promise((resolve, reject) => {
+  server.once("error", reject);
+  server.listen(socketPath, resolve);
+});
+await send(socketPath, { version: 1 });
+assert.equal(serverReleasedConnection, true, "delivery waits for the connection to close");
+await new Promise((resolve) => server.close(resolve));

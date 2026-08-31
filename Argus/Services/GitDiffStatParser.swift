@@ -44,19 +44,15 @@ struct GitDiffStatParser: Sendable {
                 deletions: Int(fields[1]),
                 isBinary: fields[0] == "-" || fields[1] == "-"
             )
-            if fields[2].isEmpty,
-                index + 2 < records.count,
-                !records[index + 1].contains("\t"),
-                !records[index + 2].contains("\t")
-            {
+            if fields[2].isEmpty, index + 2 < records.count {
                 // Rename/copy records have an empty path in the stat tuple,
                 // followed by old and new paths as separate NUL values.
-                stats[normalizedPath(String(records[index + 1]))] = stat
-                stats[normalizedPath(String(records[index + 2]))] = stat
+                stats[String(records[index + 1])] = stat
+                stats[String(records[index + 2])] = stat
                 index += 3
                 continue
             }
-            stats[normalizedPath(String(fields[2]))] = stat
+            stats[String(fields[2])] = stat
             index += 1
         }
 

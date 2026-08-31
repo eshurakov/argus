@@ -82,6 +82,7 @@
 		5974AE95C0C64669D0C96C1E /* GitPreviewServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B61F2A403CEF604900074280 /* GitPreviewServiceTests.swift */; };
 		5A59FFC0BA2E3DDE375850FB /* BrowserPanelUIContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A04D862809818007329A335B /* BrowserPanelUIContractTests.swift */; };
 		5B4BB7179424815BEF595AF7 /* ExistingWorktreeBranchChoiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3FB117AE6DF223AE2B1A0A0 /* ExistingWorktreeBranchChoiceTests.swift */; };
+		5BD7689CFC2FDEE71D53E5A0 /* ArgusKiloTurnCompletionPlugin-1.13.0.js in Resources */ = {isa = PBXBuildFile; fileRef = C3C4B6C5B4B41EB345468D1F /* ArgusKiloTurnCompletionPlugin-1.13.0.js */; };
 		5CA8BA83FC424DB7E9538E28 /* ContentAreaView+SyntaxHighlighter.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED1CFB5B60DC9CCCB94CEADB /* ContentAreaView+SyntaxHighlighter.swift */; };
 		60D35C0C98C048D83AB865C7 /* TurnCompletionUIContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31969B9823692A92F6DA9079 /* TurnCompletionUIContractTests.swift */; };
 		6107C062A10FDF40A50DC40E /* BranchNameSuggestionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84191554144B687CFE12B3AE /* BranchNameSuggestionTests.swift */; };
@@ -96,7 +97,9 @@
 		6F37A27F399CF7C90403678B /* WorkspaceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91C4B07F7CA247F3E95F11A /* WorkspaceManager.swift */; };
 		70582A874872DA5BEE260116 /* RightSidebarSessionStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58D2FD06208386788CD6EAE7 /* RightSidebarSessionStateTests.swift */; };
 		70A03FBF810E62C0614FDCE9 /* TitlebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B4D60E83B20F24AA92F8F19 /* TitlebarView.swift */; };
+		72400ECC9ABB0DEDBDB578CA /* ArgusPiAgentStatusPlugin-1.13.0.js in Resources */ = {isa = PBXBuildFile; fileRef = 38DCF298AC0714118EE1F5BC /* ArgusPiAgentStatusPlugin-1.13.0.js */; };
 		7282ACCFE228871782D92156 /* ChromeComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 681653165C6E738AFBBA18A4 /* ChromeComponents.swift */; };
+		72C05AC70C3F0C8C64B2E873 /* GitPreviewErrorPropagationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 021986DA7812FCB17C12FC29 /* GitPreviewErrorPropagationTests.swift */; };
 		731C90BF98E20510EDF3C7AB /* TerminalNSView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF781F36ADED8076735767AF /* TerminalNSView.swift */; };
 		74EF2866EEC883D1D40C4EA4 /* GitChangesEmptyStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E4ED5A34DFDB7515460CBDE /* GitChangesEmptyStateTests.swift */; };
 		760E71483559B9C4814A3C55 /* GitSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BC41CF5BFC955D50F929F5A /* GitSidebarView.swift */; };
@@ -211,6 +214,7 @@
 
 /* Begin PBXFileReference section */
 		0163CE072B8461A861431A19 /* GitTestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitTestSupport.swift; sourceTree = "<group>"; };
+		021986DA7812FCB17C12FC29 /* GitPreviewErrorPropagationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitPreviewErrorPropagationTests.swift; sourceTree = "<group>"; };
 		0418377FEC3C8161DF8DF2FA /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		04A77AE31C15EB2829A05321 /* MacOS27UIContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacOS27UIContractTests.swift; sourceTree = "<group>"; };
 		063FB1ED7149ED958918434B /* AgentStatusSocketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentStatusSocketTests.swift; sourceTree = "<group>"; };
@@ -248,6 +252,7 @@
 		352F64861AA2C2C5F68D7F07 /* SidebarView+WorkspaceRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SidebarView+WorkspaceRow.swift"; sourceTree = "<group>"; };
 		35911854664604B1690D6DD4 /* GitStatusTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitStatusTypes.swift; sourceTree = "<group>"; };
 		36AB7BEA90617BC349DB39F2 /* WorkspaceUIContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceUIContractTests.swift; sourceTree = "<group>"; };
+		38DCF298AC0714118EE1F5BC /* ArgusPiAgentStatusPlugin-1.13.0.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "ArgusPiAgentStatusPlugin-1.13.0.js"; sourceTree = "<group>"; };
 		39B7F4539F94C01EAA98ADC9 /* GitSidebarView+Sections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GitSidebarView+Sections.swift"; sourceTree = "<group>"; };
 		3A5341177B2D47B156B6A161 /* RightSidebarView+WorkspaceFileModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RightSidebarView+WorkspaceFileModels.swift"; sourceTree = "<group>"; };
 		3CF9D7E08152AE8C5202373F /* KiloIntegrationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KiloIntegrationServiceTests.swift; sourceTree = "<group>"; };
@@ -358,6 +363,7 @@
 		C20F83AF521A162C854D1D55 /* WorkspaceManager+Navigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WorkspaceManager+Navigation.swift"; sourceTree = "<group>"; };
 		C210ABA91B6569BA149CC920 /* WorkspaceRootMutationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceRootMutationTests.swift; sourceTree = "<group>"; };
 		C3425033A6F482EDB6ECD3B8 /* pi-plugin-events.mjs */ = {isa = PBXFileReference; path = "pi-plugin-events.mjs"; sourceTree = "<group>"; };
+		C3C4B6C5B4B41EB345468D1F /* ArgusKiloTurnCompletionPlugin-1.13.0.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "ArgusKiloTurnCompletionPlugin-1.13.0.js"; sourceTree = "<group>"; };
 		C46B327656627D8D71A2C84F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C69B34D7D3E65E340C473C43 /* AgentSocketServerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentSocketServerTests.swift; sourceTree = "<group>"; };
 		C769DEBE4174CF967355B999 /* DestructiveConfirmation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DestructiveConfirmation.swift; sourceTree = "<group>"; };
@@ -490,6 +496,14 @@
 				5B4D60E83B20F24AA92F8F19 /* TitlebarView.swift */,
 			);
 			path = Titlebar;
+			sourceTree = "<group>";
+		};
+		194866910E1AF93B3BB64F74 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				38DCF298AC0714118EE1F5BC /* ArgusPiAgentStatusPlugin-1.13.0.js */,
+			);
+			path = Fixtures;
 			sourceTree = "<group>";
 		};
 		19671693BEDE8C8CB52914ED /* AgentStatusTests */ = {
@@ -628,6 +642,7 @@
 				D9808219B436E2F4D81EE357 /* GitBranchBarUIContractTests.swift */,
 				2E4ED5A34DFDB7515460CBDE /* GitChangesEmptyStateTests.swift */,
 				31F5743E7A55EE9FBC908770 /* GitDiffStatParserTests.swift */,
+				021986DA7812FCB17C12FC29 /* GitPreviewErrorPropagationTests.swift */,
 				3D74EFE13FBE5E49414DB592 /* GitPreviewPanelTests.swift */,
 				B61F2A403CEF604900074280 /* GitPreviewServiceTests.swift */,
 				0F410A49AFC0EC07A8F833A6 /* GitStatusAutoRefreshMetadataTests.swift */,
@@ -694,6 +709,7 @@
 			children = (
 				C3425033A6F482EDB6ECD3B8 /* pi-plugin-events.mjs */,
 				D11FECAF443D881B88A5FD48 /* PiIntegrationServiceTests.swift */,
+				194866910E1AF93B3BB64F74 /* Fixtures */,
 			);
 			path = PiIntegrationTests;
 			sourceTree = "<group>";
@@ -703,6 +719,7 @@
 			children = (
 				3CF9D7E08152AE8C5202373F /* KiloIntegrationServiceTests.swift */,
 				A6EE63B105AB0009F170DE52 /* plugin-events.mjs */,
+				D64C5F69041FA0257B462DF6 /* Fixtures */,
 			);
 			path = KiloIntegrationTests;
 			sourceTree = "<group>";
@@ -806,6 +823,14 @@
 				DC3870BE2DAE279DC4BF8974 /* WorkspaceTitleFormatter.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		D64C5F69041FA0257B462DF6 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				C3C4B6C5B4B41EB345468D1F /* ArgusKiloTurnCompletionPlugin-1.13.0.js */,
+			);
+			path = Fixtures;
 			sourceTree = "<group>";
 		};
 		E5807BC3B490838812E48F72 /* Browser */ = {
@@ -943,6 +968,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5BD7689CFC2FDEE71D53E5A0 /* ArgusKiloTurnCompletionPlugin-1.13.0.js in Resources */,
+				72400ECC9ABB0DEDBDB578CA /* ArgusPiAgentStatusPlugin-1.13.0.js in Resources */,
 				F4D2852568492A9BA56DC428 /* pi-plugin-events.mjs in Resources */,
 				425A9B597D2205A427ADBF35 /* plugin-events.mjs in Resources */,
 			);
@@ -1093,6 +1120,7 @@
 				4DA794F359E00C48E50F95BD /* GitBranchBarUIContractTests.swift in Sources */,
 				74EF2866EEC883D1D40C4EA4 /* GitChangesEmptyStateTests.swift in Sources */,
 				0E12DBED45B56CCE6139ADA2 /* GitDiffStatParserTests.swift in Sources */,
+				72C05AC70C3F0C8C64B2E873 /* GitPreviewErrorPropagationTests.swift in Sources */,
 				15DFA75952566E938AECED46 /* GitPreviewPanelTests.swift in Sources */,
 				5974AE95C0C64669D0C96C1E /* GitPreviewServiceTests.swift in Sources */,
 				F289B618DCF32134C73F80C5 /* GitStatusAutoRefreshMetadataTests.swift in Sources */,
@@ -1307,7 +1335,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 18;
 				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks",
@@ -1327,7 +1355,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks/GhosttyKit.xcframework/macos-arm64",
 				);
-				MARKETING_VERSION = 1.13.1;
+				MARKETING_VERSION = 1.13.2;
 				OTHER_LDFLAGS = (
 					"-lghostty",
 					"-framework Metal",
@@ -1355,7 +1383,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 17;
+				CURRENT_PROJECT_VERSION = 18;
 				ENABLE_HARDENED_RUNTIME = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks",
@@ -1375,7 +1403,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(PROJECT_DIR)/Frameworks/GhosttyKit.xcframework/macos-arm64",
 				);
-				MARKETING_VERSION = 1.13.1;
+				MARKETING_VERSION = 1.13.2;
 				OTHER_LDFLAGS = (
 					"-lghostty",
 					"-framework Metal",

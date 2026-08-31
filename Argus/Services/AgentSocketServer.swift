@@ -194,8 +194,8 @@ actor AgentSocketServer {
                 Darwin.close(client)
                 continue
             }
-            Task.detached {
-                await Self.serve(
+            Thread.detachNewThread {
+                Self.serve(
                     client: client,
                     clients: clients,
                     maximumFrameBytes: maximumFrameBytes,
@@ -212,7 +212,7 @@ actor AgentSocketServer {
         maximumFrameBytes: Int,
         deliver: @escaping @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult,
         deliverStatus: @escaping @MainActor @Sendable (AgentStatusEvent) -> AgentStatusDeliveryResult
-    ) async {
+    ) {
         defer {
             Darwin.close(client)
             clients.remove(client)
@@ -233,7 +233,7 @@ actor AgentSocketServer {
                         .failure(id: nil, code: .frameTooLarge, message: "Frame exceeds maximum size"), to: client)
                     return
                 }
-                let response = await handle(
+                let response = handleSynchronously(
                     frame: Data(frame),
                     deliver: deliver,
                     deliverStatus: deliverStatus
@@ -249,6 +249,38 @@ actor AgentSocketServer {
         }
     }
 
+    private nonisolated static func handleSynchronously(
+        frame: Data,
+        deliver: @escaping @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult,
+        deliverStatus: @escaping @MainActor @Sendable (AgentStatusEvent) -> AgentStatusDeliveryResult
+    ) -> AgentSocketResponse {
+        let result = AgentSocketResponseWaiter()
+        Task.detached {
+            let response = await handle(
+                frame: frame,
+                deliver: deliver,
+                deliverStatus: deliverStatus
+            )
+            result.resolve(response)
+        }
+        return result.wait()
+    }
+}
+
+private final class AgentSocketResponseWaiter: @unchecked Sendable {
+    private let lock = NSLock()
+    private let semaphore = DispatchSemaphore(value: 0)
+    private var response: AgentSocketResponse?
+
+    func resolve(_ response: AgentSocketResponse) {
+        lock.withLock { self.response = response }
+        semaphore.signal()
+    }
+
+    func wait() -> AgentSocketResponse {
+        semaphore.wait()
+        return lock.withLock { response! }
+    }
 }
 
 private final class AgentSocketClientRegistry: @unchecked Sendable {

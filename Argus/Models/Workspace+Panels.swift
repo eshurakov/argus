@@ -14,7 +14,8 @@ extension Workspace {
     }
 
     @discardableResult
-    func addTerminalPanel(workingDirectory: String? = nil) -> TerminalPanel {
+    func addTerminalPanel(workingDirectory: String? = nil) -> TerminalPanel? {
+        guard terminalTabCount < WorkspaceSnapshot.maximumTerminalPanels else { return nil }
         let panel = TerminalPanel(
             workspaceId: id,
             workingDirectory: workingDirectory ?? currentDirectory
@@ -24,6 +25,10 @@ extension Workspace {
         tabLayouts[panel.id] = .leaf(panel.id)
         selectPanel(panel.id)
         return panel
+    }
+
+    private var terminalTabCount: Int {
+        panelOrder.filter { panels[$0] is TerminalPanel }.count
     }
 
     @discardableResult

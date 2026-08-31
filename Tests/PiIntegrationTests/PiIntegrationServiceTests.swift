@@ -38,7 +38,36 @@ struct PiIntegrationServiceTests {
     }
 
     @Test
-    func historicalArgusExtensionIsUpgradedAndRemoved() throws {
+    func previousReleaseExtensionIsUpgradedAndRemoved() throws {
+        try withFixture { fixture in
+            let previousRelease = URL(filePath: #filePath)
+                .deletingLastPathComponent()
+                .appendingPathComponent("Fixtures/ArgusPiAgentStatusPlugin-1.13.0.js")
+            let service = PiIntegrationService(
+                environment: ["PI_CODING_AGENT_DIR": fixture.root.appendingPathComponent("agent").path],
+                homeDirectory: fixture.root,
+                extensionSourceURL: fixture.plugin
+            )
+            let paths = try service.resolvedPaths()
+            try FileManager.default.createDirectory(
+                at: paths.extensionDirectory,
+                withIntermediateDirectories: true
+            )
+            try FileManager.default.copyItem(at: previousRelease, to: paths.extensionFile)
+
+            #expect(!service.isInstalled(at: paths))
+            _ = try service.enable()
+            #expect(try Data(contentsOf: paths.extensionFile) == Data(contentsOf: fixture.plugin))
+
+            try FileManager.default.removeItem(at: paths.extensionFile)
+            try FileManager.default.copyItem(at: previousRelease, to: paths.extensionFile)
+            _ = try service.disable()
+            #expect(!FileManager.default.fileExists(atPath: paths.extensionFile.path))
+        }
+    }
+
+    @Test
+    func injectedHistoricalArgusExtensionIsUpgradedAndRemoved() throws {
         try withFixture { fixture in
             let historicalPlugin = Data(
                 "/* Historical Argus Pi extension */\nexport default {}\n".utf8

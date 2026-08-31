@@ -104,12 +104,13 @@ extension GitStatusPresentationTests {
     }
 
     @Test
-    func handlesCombinedChangesBeforeTheFirstCommit() async throws {
+    func handlesCombinedAndPreviewChangesBeforeTheFirstCommit() async throws {
         let repo = try presentationRepository(prefix: "argus-presentation-unborn")
         defer { repo.remove() }
         let stagedURL = repo.url.appendingPathComponent("staged.txt")
         try "staged\n".write(to: stagedURL, atomically: true, encoding: .utf8)
         try run("/usr/bin/git", ["add", "staged.txt"], in: repo.url)
+        try "working\n".write(to: stagedURL, atomically: true, encoding: .utf8)
         try "untracked\n".write(
             to: repo.url.appendingPathComponent("untracked.txt"),
             atomically: true,
@@ -128,6 +129,19 @@ extension GitStatusPresentationTests {
         assertEqual(staged.additions, 1, "unborn staged additions get empty-old-content stats")
         assertEqual(staged.isNetDiffEmpty, false, "unborn staged additions are not canceled net diffs")
         assertEqual(summary.uncommittedCount, 2, "unborn combined status keeps staged and untracked rows")
+
+        let preview = await GitPreviewService().preview(
+            kind: .diff,
+            rootPath: repo.url.path,
+            file: staged
+        )
+        guard case .loaded(let loaded) = preview,
+            case .diff(let diff) = loaded.content
+        else {
+            fail("expected unborn combined preview, got \(preview)")
+        }
+        assertEqual(diff.oldContent, "", "unborn combined preview has an empty old side")
+        assertEqual(diff.newContent, "working\n", "unborn combined preview reads the working tree")
     }
 
     @Test

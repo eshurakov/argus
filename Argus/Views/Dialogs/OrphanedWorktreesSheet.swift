@@ -179,6 +179,7 @@ struct OrphanedWorktreesSheet: View {
 
             do {
                 try await workspaceManager.worktreeService.cleanupOrphanedWorktree(
+                    projectId: orphan.projectId,
                     repositoryPath: project.repositoryPath,
                     worktreePath: orphan.path
                 )

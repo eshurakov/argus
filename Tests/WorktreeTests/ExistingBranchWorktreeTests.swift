@@ -269,3 +269,62 @@ struct ExistingBranchWorktreeTests {
         assertTrue(!condition, message)
     }
 }
+
+extension ExistingBranchWorktreeTests {
+    @Test
+    func cleanupDeletesAPrunedOrphanOnlyForItsManagedProject() async throws {
+        let temporaryDirectory = try TestTemporaryDirectory(prefix: "argus-pruned-orphan")
+        let temp = temporaryDirectory.url
+        let repo = temp.appendingPathComponent("repo", isDirectory: true)
+        try FileManager.default.createDirectory(at: repo, withIntermediateDirectories: true)
+        defer { temporaryDirectory.remove() }
+        try run("git", ["init", "-b", "main", "."], cwd: repo.path)
+        try run("git", ["config", "user.email", "test@example.com"], cwd: repo.path)
+        try run("git", ["config", "user.name", "Test User"], cwd: repo.path)
+        try "initial".write(
+            to: repo.appendingPathComponent("README.md"), atomically: true, encoding: .utf8)
+        try run("git", ["add", "README.md"], cwd: repo.path)
+        try run("git", ["commit", "-m", "initial"], cwd: repo.path)
+
+        let service = WorktreeService(
+            worktreeBaseURL: temp.appendingPathComponent("managed-worktrees", isDirectory: true))
+        let projectId = UUID()
+        let worktreePath = try await service.createWorktree(
+            projectId: projectId,
+            repositoryPath: repo.path,
+            branchName: "pruned"
+        )
+        try FileManager.default.removeItem(
+            at: URL(fileURLWithPath: worktreePath).appendingPathComponent(".git"))
+        try run("git", ["worktree", "prune", "--expire", "now"], cwd: repo.path)
+
+        let orphans = service.detectOrphanedWorktrees(
+            projectId: projectId,
+            knownWorkspacePaths: []
+        )
+        assertEqual(orphans.count, 1, "pruned directory remains detectable")
+        let orphan = try #require(orphans.first)
+        assertEqual(
+            URL(fileURLWithPath: orphan.path).lastPathComponent,
+            URL(fileURLWithPath: worktreePath).lastPathComponent,
+            "the detected orphan identifies the pruned Managed Worktree"
+        )
+        await #expect(throws: WorktreeError.self) {
+            try await service.cleanupOrphanedWorktree(
+                projectId: UUID(),
+                repositoryPath: repo.path,
+                worktreePath: worktreePath
+            )
+        }
+        try await service.cleanupOrphanedWorktree(
+            projectId: projectId,
+            repositoryPath: repo.path,
+            worktreePath: worktreePath
+        )
+
+        assertFalse(
+            FileManager.default.fileExists(atPath: worktreePath),
+            "authorized cleanup deletes the pruned Managed Worktree"
+        )
+    }
+}

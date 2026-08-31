@@ -54,6 +54,35 @@ struct KiloIntegrationServiceTests {
     }
 
     @Test
+    func previousReleasePluginIsUpgradedAndRemoved() throws {
+        try withFixture { fixture in
+            try fixture.write(
+                "{\"plugin\": [\"plugins/argus-turn-completed.js\"]}",
+                named: "tui.jsonc"
+            )
+            let previousRelease = URL(filePath: #filePath)
+                .deletingLastPathComponent()
+                .appendingPathComponent("Fixtures/ArgusKiloTurnCompletionPlugin-1.13.0.js")
+            let service = fixture.service()
+            let paths = try service.resolvedPaths()
+            try FileManager.default.createDirectory(
+                at: paths.pluginFile.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try FileManager.default.copyItem(at: previousRelease, to: paths.pluginFile)
+
+            #expect(!service.isInstalled(at: paths))
+            _ = try service.enable()
+            #expect(try Data(contentsOf: paths.pluginFile) == Data(contentsOf: fixture.plugin))
+
+            try FileManager.default.removeItem(at: paths.pluginFile)
+            try FileManager.default.copyItem(at: previousRelease, to: paths.pluginFile)
+            _ = try service.disable()
+            #expect(!FileManager.default.fileExists(atPath: paths.pluginFile.path))
+        }
+    }
+
+    @Test
     func repeatedEnableIsIdempotentAndDisablePreservesUserPlugin() throws {
         try withFixture { fixture in
             try fixture.write("{\n  \"plugin\": [\"user.js\"]\n}\n", named: "tui.json")

@@ -39,4 +39,26 @@ struct ClipboardConfirmationTests {
 
         #expect(decisions == [false, true])
     }
+
+    @Test
+    func cancellationCompletesOnceWithoutSubmittingClipboardContent() {
+        let store = TerminalClipboardDecisionStore()
+        let surfaceId = UUID()
+        var resolutions: [TerminalClipboardRequestResolution] = []
+
+        store.register(surfaceId: surfaceId) { approved in
+            resolutions.append(
+                TerminalClipboardRequestResolution.resolve(
+                    content: "secret\ncommand",
+                    approved: approved
+                ))
+        }
+        store.cancel(surfaceId: surfaceId)
+        store.cancel(surfaceId: surfaceId)
+
+        #expect(
+            resolutions == [
+                TerminalClipboardRequestResolution(content: "", confirmed: true)
+            ])
+    }
 }

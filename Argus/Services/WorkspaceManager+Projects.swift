@@ -7,6 +7,7 @@ extension WorkspaceManager {
         mainBranchOverride: String? = nil
     ) async -> Project? {
         guard workspaces.count < Self.maxWorkspaces,
+            namedProjects.count < Self.maxWorkspaces,
             let repositoryRoot = try? await worktreeService.canonicalRepositoryRoot(for: repositoryPath),
             !hasDuplicateProject(repositoryRoot: repositoryRoot)
         else { return nil }
@@ -23,6 +24,7 @@ extension WorkspaceManager {
             (try? await worktreeService.currentBranchName(repositoryPath: repositoryRoot))
             ?? mainBranch
         guard workspaces.count < Self.maxWorkspaces,
+            namedProjects.count < Self.maxWorkspaces,
             !hasDuplicateProject(repositoryRoot: repositoryRoot)
         else { return nil }
         let project = Project(

@@ -1,6 +1,5 @@
 /* Argus-owned Pi extension for live Agent Status and turn completion. */
 const requiredEnvironment = ["ARGUS_SOCKET_PATH", "ARGUS_WORKSPACE_ID", "ARGUS_SURFACE_ID"];
-const deliveryTimeoutMilliseconds = 1500;
 
 export function environmentIsValid(environment) {
   return requiredEnvironment.every(
@@ -22,43 +21,13 @@ export function turnEventID(sessionID, sequence) {
   return `pi:turnCompleted:${sessionID}:${sequence}`;
 }
 
-export async function send(socketPath, payload) {
+async function send(socketPath, payload) {
   const { connect } = await import("node:net");
   await new Promise((resolve, reject) => {
     const socket = connect(socketPath);
-    let settled = false;
-    const finish = (operation) => (value) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeout);
-      socket.destroy();
-      operation(value);
-    };
-    const timeout = setTimeout(
-      () => finish(reject)(new Error("Argus delivery timed out")),
-      deliveryTimeoutMilliseconds,
-    );
-    socket.once("error", finish(reject));
-    socket.once("close", finish(resolve));
-    socket.end(`${JSON.stringify(payload)}\n`);
+    socket.once("error", reject);
+    socket.end(`${JSON.stringify(payload)}\n`, resolve);
   });
-}
-
-async function deliverWithDeadline(transport, socketPath, payload) {
-  let timeout;
-  try {
-    await Promise.race([
-      transport(socketPath, payload),
-      new Promise((_, reject) => {
-        timeout = setTimeout(
-          () => reject(new Error("Argus delivery timed out")),
-          deliveryTimeoutMilliseconds,
-        );
-      }),
-    ]);
-  } finally {
-    clearTimeout(timeout);
-  }
 }
 
 function defaultInstanceID() {
@@ -108,7 +77,7 @@ export function createPlugin({ environment: suppliedEnvironment, transport = sen
         },
       };
       deliveryQueue = deliveryQueue
-        .then(() => deliverWithDeadline(transport, environment.ARGUS_SOCKET_PATH, payload))
+        .then(() => transport(environment.ARGUS_SOCKET_PATH, payload))
         .catch(() => {
           // Delivery failures must not alter Pi's lifecycle behavior.
         });
@@ -131,7 +100,7 @@ export function createPlugin({ environment: suppliedEnvironment, transport = sen
         },
       };
       deliveryQueue = deliveryQueue
-        .then(() => deliverWithDeadline(transport, environment.ARGUS_SOCKET_PATH, payload))
+        .then(() => transport(environment.ARGUS_SOCKET_PATH, payload))
         .catch(() => {
           // Delivery failures must not alter Pi's lifecycle behavior.
         });
@@ -154,7 +123,7 @@ export function createPlugin({ environment: suppliedEnvironment, transport = sen
         },
       };
       deliveryQueue = deliveryQueue
-        .then(() => deliverWithDeadline(transport, environment.ARGUS_SOCKET_PATH, payload))
+        .then(() => transport(environment.ARGUS_SOCKET_PATH, payload))
         .catch(() => {
           // Delivery failures must not alter Pi's shutdown behavior.
         });

@@ -35,6 +35,18 @@ struct TerminalClipboardRequestState: @unchecked Sendable {
     let pointer: UnsafeMutableRawPointer
 }
 
+struct TerminalClipboardRequestResolution: Equatable, Sendable {
+    let content: String
+    let confirmed: Bool
+
+    static func resolve(content: String, approved: Bool) -> Self {
+        // Ghostty's final Boolean means "skip confirmation", not "approved".
+        // Complete denied requests with no clipboard data so request state is
+        // released without pasting or exposing the rejected content.
+        Self(content: approved ? content : "", confirmed: true)
+    }
+}
+
 @MainActor
 final class TerminalClipboardDecisionStore {
     private var pending: [UUID: TerminalClipboardDecision] = [:]

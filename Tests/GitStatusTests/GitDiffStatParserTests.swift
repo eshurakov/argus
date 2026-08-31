@@ -54,6 +54,33 @@ struct GitDiffStatParserTests {
         )
     }
 
+    @Test
+    func nulStatsPreserveTabsNewlinesAndLiteralRenameSyntax() {
+        let stats = GitDiffStatParser.parseNUL(
+            "1\t2\ttab\tname.txt\u{0}3\t4\tline\nname.txt\u{0}5\t6\tliteral => name.txt\u{0}"
+                + "7\t8\t\u{0}old\tname.txt\u{0}new\nname.txt\u{0}"
+        )
+
+        assertEqual(
+            stats["tab\tname.txt"],
+            GitDiffStat(additions: 1, deletions: 2, isBinary: false),
+            "tab path is exact"
+        )
+        assertEqual(
+            stats["line\nname.txt"],
+            GitDiffStat(additions: 3, deletions: 4, isBinary: false),
+            "newline path is exact"
+        )
+        assertEqual(
+            stats["literal => name.txt"],
+            GitDiffStat(additions: 5, deletions: 6, isBinary: false),
+            "literal rename syntax is not normalized in NUL mode"
+        )
+        let renameStat = GitDiffStat(additions: 7, deletions: 8, isBinary: false)
+        assertEqual(stats["old\tname.txt"], renameStat, "rename source tab path is exact")
+        assertEqual(stats["new\nname.txt"], renameStat, "rename destination newline path is exact")
+    }
+
     private func assertEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
         #expect(actual == expected, Comment(rawValue: message))
     }

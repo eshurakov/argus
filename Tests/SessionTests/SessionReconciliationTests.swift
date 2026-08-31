@@ -53,22 +53,76 @@ struct SessionReconciliationTests {
     }
 
     @Test
-    func decoderRejectsExcessivePanelCountsBeforeExpansion() {
+    func decoderBoundsLegacyPanelMetadataWithoutDiscardingTheWorkspace() throws {
+        let directories = (0..<129).map { "\"/tmp/\($0)\"" }.joined(separator: ",")
+        let titles = (0..<129).map { "\"Tab \($0)\"" }.joined(separator: ",")
         let json = """
             {
               "id":"11111111-1111-1111-1111-111111111111",
               "workspaceType":"external",
-              "title":"Malformed",
+              "title":"Legacy",
               "currentDirectory":"/tmp",
               "panelCount":129,
-              "terminalDirectories":[],
-              "terminalCustomTitles":[]
+              "terminalDirectories":[\(directories)],
+              "terminalCustomTitles":[\(titles)]
             }
             """
 
-        #expect(throws: DecodingError.self) {
-            try JSONDecoder().decode(WorkspaceSnapshot.self, from: Data(json.utf8))
+        let decoded = try JSONDecoder().decode(WorkspaceSnapshot.self, from: Data(json.utf8))
+
+        #expect(decoded.panelCount == WorkspaceSnapshot.maximumTerminalPanels)
+        #expect(decoded.terminalDirectories.count == WorkspaceSnapshot.maximumTerminalPanels)
+        #expect(decoded.terminalCustomTitles.count == WorkspaceSnapshot.maximumTerminalPanels)
+        #expect(decoded.terminalDirectories.last == "/tmp/127")
+    }
+
+    @Test
+    @MainActor
+    func restoreValidationAllowsTheMaximumNamedProjectsPlusCatchAll() {
+        let workspace = workspace(
+            id: UUID(),
+            projectId: nil,
+            branchName: nil,
+            type: .external,
+            directory: "/tmp"
+        )
+        let projects = (0...WorkspaceManager.maxWorkspaces).map { index in
+            ProjectSnapshot(
+                id: UUID(),
+                repositoryPath: "/tmp/repo-\(index)",
+                isCatchAll: false,
+                displayName: "Repo \(index)",
+                mainBranch: "main",
+                workspaceIds: [],
+                isExpanded: true,
+                color: nil
+            )
         }
+        let snapshot = ArgusSessionSnapshot(
+            selectedWorkspaceId: workspace.id,
+            projects: projects,
+            workspaces: [workspace]
+        )
+
+        #expect(snapshot.isValidForRestore(maxWorkspaces: WorkspaceManager.maxWorkspaces))
+
+        let excessive = ArgusSessionSnapshot(
+            selectedWorkspaceId: workspace.id,
+            projects: projects + [
+                ProjectSnapshot(
+                    id: UUID(),
+                    repositoryPath: "/tmp/excessive-repo",
+                    isCatchAll: false,
+                    displayName: "Excessive Repo",
+                    mainBranch: "main",
+                    workspaceIds: [],
+                    isExpanded: true,
+                    color: nil
+                )
+            ],
+            workspaces: [workspace]
+        )
+        #expect(!excessive.isValidForRestore(maxWorkspaces: WorkspaceManager.maxWorkspaces))
     }
 
     private func makeSnapshot(ids: ReconciliationIDs) -> ArgusSessionSnapshot {

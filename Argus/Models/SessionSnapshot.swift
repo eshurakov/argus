@@ -66,20 +66,19 @@ struct WorkspaceSnapshot: Codable, Sendable {
         self.title = title
         self.customTitle = customTitle
         self.currentDirectory = currentDirectory
-        let normalizedPanelCount = max(panelCount, 0)
-        let safeExpansionCount = min(normalizedPanelCount, Self.maximumTerminalPanels)
-        self.panelCount = normalizedPanelCount
+        let safePanelCount = min(max(panelCount, 0), Self.maximumTerminalPanels)
+        self.panelCount = safePanelCount
         self.terminalDirectories =
-            terminalDirectories
+            terminalDirectories.map { Array($0.prefix(Self.maximumTerminalPanels)) }
             ?? Array(
                 repeating: currentDirectory,
-                count: safeExpansionCount
+                count: safePanelCount
             )
         self.terminalCustomTitles =
-            terminalCustomTitles
+            terminalCustomTitles.map { Array($0.prefix(Self.maximumTerminalPanels)) }
             ?? Array(
                 repeating: nil,
-                count: safeExpansionCount
+                count: safePanelCount
             )
     }
 
@@ -108,27 +107,15 @@ struct WorkspaceSnapshot: Codable, Sendable {
         let customTitle = try container.decodeIfPresent(String.self, forKey: .customTitle)
         let currentDirectory = try container.decode(String.self, forKey: .currentDirectory)
         let panelCount = try container.decode(Int.self, forKey: .panelCount)
-        guard (0...Self.maximumTerminalPanels).contains(panelCount) else {
+        guard panelCount >= 0 else {
             throw DecodingError.dataCorruptedError(
                 forKey: .panelCount,
                 in: container,
-                debugDescription: "Terminal Panel count is outside the supported range"
+                debugDescription: "Terminal Panel count cannot be negative"
             )
         }
-        let terminalDirectories = try container.decodeIfPresent([String].self, forKey: .terminalDirectories)
-        let terminalCustomTitles = try container.decodeIfPresent(
-            [String?].self,
-            forKey: .terminalCustomTitles
-        )
-        guard (terminalDirectories?.count ?? 0) <= Self.maximumTerminalPanels,
-            (terminalCustomTitles?.count ?? 0) <= Self.maximumTerminalPanels
-        else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .terminalDirectories,
-                in: container,
-                debugDescription: "Terminal Panel metadata exceeds the supported range"
-            )
-        }
+        let terminalDirectories = try Self.decodeTerminalDirectories(from: container)
+        let terminalCustomTitles = try Self.decodeTerminalCustomTitles(from: container)
 
         self.init(
             id: id,
@@ -143,6 +130,43 @@ struct WorkspaceSnapshot: Codable, Sendable {
             terminalDirectories: terminalDirectories,
             terminalCustomTitles: terminalCustomTitles
         )
+    }
+
+    private static func decodeTerminalDirectories(
+        from container: KeyedDecodingContainer<CodingKeys>
+    ) throws -> [String]? {
+        guard container.contains(.terminalDirectories) else { return nil }
+        var values = try container.nestedUnkeyedContainer(forKey: .terminalDirectories)
+        var result: [String] = []
+        result.reserveCapacity(min(values.count ?? 0, maximumTerminalPanels))
+        while !values.isAtEnd {
+            let value = try values.decode(String.self)
+            if result.count < maximumTerminalPanels {
+                result.append(value)
+            }
+        }
+        return result
+    }
+
+    private static func decodeTerminalCustomTitles(
+        from container: KeyedDecodingContainer<CodingKeys>
+    ) throws -> [String?]? {
+        guard container.contains(.terminalCustomTitles) else { return nil }
+        var values = try container.nestedUnkeyedContainer(forKey: .terminalCustomTitles)
+        var result: [String?] = []
+        result.reserveCapacity(min(values.count ?? 0, maximumTerminalPanels))
+        while !values.isAtEnd {
+            let value: String?
+            if try values.decodeNil() {
+                value = nil
+            } else {
+                value = try values.decode(String.self)
+            }
+            if result.count < maximumTerminalPanels {
+                result.append(value)
+            }
+        }
+        return result
     }
 }
 

@@ -1,4 +1,5 @@
 import Combine
+import CryptoKit
 import Darwin
 import Foundation
 
@@ -75,24 +76,38 @@ final class KiloIntegrationService: @unchecked Sendable {
     static let pluginFileName = "argus-turn-completed.js"
     static let pluginDeclaration = "plugins/\(pluginFileName)"
 
+    // Complete-file digests for exact Argus-managed plugins from previous releases.
+    private static let historicalPluginDigests: Set<Data> = [
+        // Argus 1.13.0 plugin from before delivery deadlines were added.
+        Data([
+            0x93, 0x58, 0x36, 0x99, 0x5f, 0x7d, 0x5e, 0x10,
+            0xd9, 0x39, 0xb3, 0x89, 0x20, 0x22, 0x01, 0x5c,
+            0x40, 0xd4, 0x5b, 0xca, 0x3e, 0x56, 0x93, 0x9b,
+            0x9b, 0x90, 0xc5, 0xd0, 0x7b, 0x3d, 0x2c, 0x1f
+        ])
+    ]
+
     let environment: [String: String]
     let homeDirectory: URL
     let pluginSourceURL: URL?
     private let fileManager: FileManager
     private let injectFailure: ((KiloIntegrationFailurePoint) throws -> Void)?
+    private let acceptedHistoricalPluginDigests: Set<Data>
 
     init(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
         pluginSourceURL: URL? = Bundle.main.url(forResource: "ArgusKiloTurnCompletionPlugin", withExtension: "js"),
         fileManager: FileManager = .default,
-        injectFailure: ((KiloIntegrationFailurePoint) throws -> Void)? = nil
+        injectFailure: ((KiloIntegrationFailurePoint) throws -> Void)? = nil,
+        acceptedHistoricalPluginDigests: Set<Data> = KiloIntegrationService.historicalPluginDigests
     ) {
         self.environment = environment
         self.homeDirectory = homeDirectory
         self.pluginSourceURL = pluginSourceURL
         self.fileManager = fileManager
         self.injectFailure = injectFailure
+        self.acceptedHistoricalPluginDigests = acceptedHistoricalPluginDigests
     }
 
     struct Paths: Equatable {
@@ -200,10 +215,11 @@ final class KiloIntegrationService: @unchecked Sendable {
 
     func isInstalled(at paths: Paths) -> Bool {
         guard let config = try? String(contentsOf: paths.configFile, encoding: .utf8),
-            let plugin = try? Data(contentsOf: paths.pluginFile)
+            let plugin = try? Data(contentsOf: paths.pluginFile),
+            let currentPlugin = try? pluginData()
         else { return false }
         return (try? JSONCEditor.containsDeclaration(Self.pluginDeclaration, in: config)) == true
-            && (try? isOwnedPlugin(plugin)) == true
+            && plugin == currentPlugin
     }
 
     private func existingData(at url: URL) throws -> Data? {
@@ -240,5 +256,6 @@ final class KiloIntegrationService: @unchecked Sendable {
     private func isOwnedPlugin(_ data: Data) throws -> Bool {
         let expectedPlugin = try pluginData()
         return data == expectedPlugin
+            || acceptedHistoricalPluginDigests.contains(Data(SHA256.hash(data: data)))
     }
 }

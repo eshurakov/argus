@@ -298,7 +298,7 @@ final class Workspace: Identifiable, ObservableObject {
             snapshot.restoredTerminalDirectories,
             snapshot.restoredTerminalCustomTitles
         ) {
-            let panel = addTerminalPanel(workingDirectory: directory)
+            guard let panel = addTerminalPanel(workingDirectory: directory) else { break }
             if let customTitle {
                 renameTerminalPanel(panel.id, title: customTitle)
             }

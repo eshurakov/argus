@@ -102,5 +102,24 @@ struct GitStatusSafetyRegressionTests {
             fail("expected exact filename status, got \(state)")
         }
         assertEqual(summary.untrackedFiles.map(\.path).sorted(), names.sorted(), "status paths are exact")
+
+        try run("/usr/bin/git", ["config", "user.email", "argus@example.test"], in: repo.url)
+        try run("/usr/bin/git", ["config", "user.name", "Argus Test"], in: repo.url)
+        try run("/usr/bin/git", ["add", "--", "."], in: repo.url)
+        try run("/usr/bin/git", ["commit", "-m", "initial"], in: repo.url)
+        for name in names {
+            try "changed\ncontent\n".write(
+                to: repo.url.appendingPathComponent(name), atomically: true, encoding: .utf8)
+        }
+
+        let modifiedState = await GitStatusService().status(rootPath: repo.url.path)
+        guard case .loaded(let modified) = modifiedState else {
+            fail("expected exact modified filename status, got \(modifiedState)")
+        }
+        assertEqual(modified.unstagedFiles.map(\.path).sorted(), names.sorted(), "modified paths are exact")
+        for file in modified.unstagedFiles {
+            assertEqual(file.additions, 1, "\(file.path) additions use its exact path")
+            assertEqual(file.deletions, 0, "\(file.path) deletions use its exact path")
+        }
     }
 }

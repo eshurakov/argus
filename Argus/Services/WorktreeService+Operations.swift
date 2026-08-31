@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 extension WorktreeService {
@@ -65,22 +66,15 @@ extension WorktreeService {
     func removeWorktree(
         repositoryPath: String,
         worktreePath: String,
-        force: Bool = false
+        force: Bool = false,
+        managedOrphanProjectId: UUID? = nil
     ) async throws {
-        let canonicalRepositoryPath = canonicalRemovalPath(repositoryPath)
-        let canonicalWorktreePath = canonicalRemovalPath(worktreePath)
-        let canonicalStorageRoot = canonicalRemovalPath(managedWorktreeBaseURL.path)
-        let registeredWorktree = try await listWorktrees(repositoryPath: repositoryPath).first {
-            canonicalRemovalPath($0.path) == canonicalWorktreePath
-        }
-        guard canonicalWorktreePath != canonicalRepositoryPath,
-            canonicalWorktreePath != canonicalStorageRoot,
-            registeredWorktree?.isHead == false
-        else {
-            throw WorktreeError.worktreeRemovalFailed(
-                "Refusing to remove a path that is not an authorized secondary worktree"
-            )
-        }
+        let canonicalWorktreePath = try await authorizedRemovalPath(
+            repositoryPath: repositoryPath,
+            worktreePath: worktreePath,
+            force: force,
+            managedOrphanProjectId: managedOrphanProjectId
+        )
 
         var arguments = ["-C", repositoryPath, "worktree", "remove"]
         if force {
@@ -124,11 +118,54 @@ extension WorktreeService {
         )
     }
 
+    private func authorizedRemovalPath(
+        repositoryPath: String,
+        worktreePath: String,
+        force: Bool,
+        managedOrphanProjectId: UUID?
+    ) async throws -> String {
+        let canonicalRepositoryPath = canonicalRemovalPath(repositoryPath)
+        let canonicalWorktreePath = canonicalRemovalPath(worktreePath)
+        let canonicalStorageRoot = canonicalRemovalPath(managedWorktreeBaseURL.path)
+        let registeredWorktree = try await listWorktrees(repositoryPath: repositoryPath).first {
+            canonicalRemovalPath($0.path) == canonicalWorktreePath
+        }
+        let managedOrphanIsAuthorized =
+            managedOrphanProjectId.map { projectId in
+                guard force else { return false }
+                let projectStorageRoot = canonicalRemovalPath(
+                    managedWorktreeBaseURL
+                        .appendingPathComponent(projectId.uuidString, isDirectory: true)
+                        .path
+                )
+                let targetParent = URL(fileURLWithPath: canonicalWorktreePath)
+                    .deletingLastPathComponent()
+                    .path
+                var isDirectory: ObjCBool = false
+                return targetParent == projectStorageRoot
+                    && FileManager.default.fileExists(
+                        atPath: canonicalWorktreePath,
+                        isDirectory: &isDirectory
+                    )
+                    && isDirectory.boolValue
+            } ?? false
+        guard canonicalWorktreePath != canonicalRepositoryPath,
+            canonicalWorktreePath != canonicalStorageRoot,
+            registeredWorktree?.isHead == false || managedOrphanIsAuthorized
+        else {
+            throw WorktreeError.worktreeRemovalFailed(
+                "Refusing to remove a path that is not an authorized secondary worktree"
+            )
+        }
+        return canonicalWorktreePath
+    }
+
     private func canonicalRemovalPath(_ path: String) -> String {
-        URL(fileURLWithPath: path)
-            .resolvingSymlinksInPath()
-            .standardizedFileURL
-            .path
+        guard let resolvedPath = realpath(path, nil) else {
+            return URL(fileURLWithPath: path).standardizedFileURL.path
+        }
+        defer { free(resolvedPath) }
+        return String(cString: resolvedPath)
     }
 
     func listBranches(repositoryPath: String) async throws -> [String] {

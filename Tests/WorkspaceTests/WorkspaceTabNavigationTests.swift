@@ -126,8 +126,8 @@ struct WorkspaceTabNavigationTests {  // swiftlint:disable:this type_body_length
     func cyclingSelectsAdjacentTabsWithWraparound() throws {
         let workspace = Workspace(workingDirectory: "/tmp")
         let firstTab = try #require(workspace.panelOrder.first)
-        let secondTab = workspace.addTerminalPanel(workingDirectory: "/tmp/second").id
-        let lastTab = workspace.addTerminalPanel(workingDirectory: "/tmp/last").id
+        let secondTab = try #require(workspace.addTerminalPanel(workingDirectory: "/tmp/second")).id
+        let lastTab = try #require(workspace.addTerminalPanel(workingDirectory: "/tmp/last")).id
 
         workspace.selectNextTab()
         #expect(workspace.activeTabId == firstTab)
@@ -367,7 +367,7 @@ struct WorkspaceTabNavigationTests {  // swiftlint:disable:this type_body_length
         )
         let workspace = try #require(manager.selectedWorkspace)
         let firstTerminalId = try #require(workspace.panelOrder.first)
-        let remainingTerminalId = workspace.addTerminalPanel(workingDirectory: "/tmp").id
+        let remainingTerminalId = try #require(workspace.addTerminalPanel(workingDirectory: "/tmp")).id
 
         manager.requestCloseTab(firstTerminalId, in: workspace.id)
 

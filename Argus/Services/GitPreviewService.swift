@@ -211,6 +211,8 @@ struct GitDiffContentLoader: Sendable {
         let old: Data
         if file.status == .added || file.status == .untracked || file.isUntracked {
             old = Data()
+        } else if try !headExists(rootPath: rootPath) {
+            old = Data()
         } else {
             let originalPath = file.originalPath ?? file.path
             old = try gitObject(rootPath: rootPath, specifier: "HEAD:\(originalPath)")
@@ -264,6 +266,16 @@ struct GitDiffContentLoader: Sendable {
             throw GitDiffContentError.unavailable("Could not find a merge base with \"\(baseName)\".")
         }
         return value
+    }
+
+    private func headExists(rootPath: String) throws -> Bool {
+        let result = try commandRunner.run(
+            GitPreviewCommand(
+                executablePath: "/usr/bin/git",
+                arguments: ["-C", rootPath, "rev-parse", "--verify", "--quiet", "HEAD"],
+                successfulExitCodes: [0, 1]
+            ))
+        return !result.stdout.isEmpty
     }
 
     private func gitObject(rootPath: String, specifier: String) throws -> Data {

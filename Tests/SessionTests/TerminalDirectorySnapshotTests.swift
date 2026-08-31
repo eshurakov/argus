@@ -107,7 +107,7 @@ struct TerminalDirectorySnapshotTests {
     func surfaceNotificationsUpdateOnlyTheirTerminalSynchronously() throws {
         let workspace = Workspace(workingDirectory: "/repo")
         let terminal = try #require(workspace.activePanel as? TerminalPanel)
-        let other = workspace.addTerminalPanel(workingDirectory: "/other")
+        let other = try #require(workspace.addTerminalPanel(workingDirectory: "/other"))
 
         NotificationCenter.default.post(
             name: .argusSetSurfaceTitle,
