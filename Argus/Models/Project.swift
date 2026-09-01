@@ -61,6 +61,7 @@ struct ProjectSnapshot: Codable, Sendable {
     let workspaceIds: [UUID]
     let isExpanded: Bool
     let color: ProjectColor?
+    var collapsedStackIds: Set<String>? = nil
 }
 
 /// A project groups workspaces under a single git repository.
@@ -91,6 +92,7 @@ final class Project: Identifiable, ObservableObject {
     @Published var workspaceIds: [UUID]
     @Published var isExpanded: Bool
     @Published var color: ProjectColor?
+    @Published var collapsedStackIds: Set<String> = []
 
     // MARK: - Initializers
 
@@ -123,6 +125,7 @@ final class Project: Identifiable, ObservableObject {
         self.workspaceIds = snapshot.workspaceIds
         self.isExpanded = snapshot.isExpanded
         self.color = snapshot.color
+        self.collapsedStackIds = snapshot.collapsedStackIds ?? []
     }
 
     /// Creates the non-removable catch-all project for unassigned workspaces.
@@ -152,7 +155,8 @@ final class Project: Identifiable, ObservableObject {
             mainBranch: mainBranch,
             workspaceIds: workspaceIds,
             isExpanded: isExpanded,
-            color: color
+            color: color,
+            collapsedStackIds: collapsedStackIds
         )
     }
 

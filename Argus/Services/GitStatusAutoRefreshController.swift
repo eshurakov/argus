@@ -22,6 +22,7 @@ final class GitStatusAutoRefreshController {
     private let now: () -> Date
     private var refresh: (@MainActor @Sendable () async -> Void)?
     private var currentRootPath: String?
+    private var metadataWatchPaths: GitMetadataWatchPaths?
     private var lastRefreshCompletedAt: Date?
 
     convenience init() {
@@ -49,7 +50,9 @@ final class GitStatusAutoRefreshController {
             watcher.stop()
         }
         currentRootPath = rootPath
-        watcher.start(paths: Self.watchedPaths(for: rootPath)) { [weak self] paths in
+        let metadataWatchPaths = GitMetadataWatchPaths(rootPath: rootPath)
+        self.metadataWatchPaths = metadataWatchPaths
+        watcher.start(paths: metadataWatchPaths.watchedPaths) { [weak self] paths in
             self?.handleFileEvents(paths)
         }
     }
@@ -58,6 +61,7 @@ final class GitStatusAutoRefreshController {
         scheduler.cancel()
         watcher.stop()
         currentRootPath = nil
+        metadataWatchPaths = nil
         refresh = nil
     }
 
@@ -66,7 +70,7 @@ final class GitStatusAutoRefreshController {
         guard !relevantPaths.isEmpty else { return }
 
         if !isOutsideCooldown {
-            guard relevantPaths.contains(where: isGitReferenceEvent) else { return }
+            guard relevantPaths.contains(where: isRelevantMetadataEvent) else { return }
             scheduleRefresh(after: max(Self.debounceInterval, remainingCooldownInterval))
             return
         }
@@ -94,65 +98,16 @@ final class GitStatusAutoRefreshController {
     }
 
     private func shouldRefresh(for path: String) -> Bool {
-        let components = path.split(separator: "/")
-        guard components.contains(".git") else { return true }
-
-        // Index writes are deliberately ignored because reading status can
-        // cause more Git metadata activity. Ref and HEAD-log writes, however,
-        // are the only observable signal for metadata-only operations such as
-        // committing already-staged files.
-        return isGitReferenceEvent(path)
+        let relativePaths = metadataWatchPaths?.relativeMetadataPaths(for: path) ?? []
+        return relativePaths.isEmpty || relativePaths.contains(where: GitMetadataEventPath.isRelevant)
     }
 
-    private func isGitReferenceEvent(_ path: String) -> Bool {
-        path.hasSuffix("/HEAD")
-            || path.hasSuffix("/packed-refs")
-            || path.hasSuffix("/config")
-            || path.hasSuffix("/config.worktree")
-            || path.contains("/refs/heads/")
-            || path.contains("/refs/remotes/")
-            || path.contains("/refs/branch-metadata/")
-            || path.contains("/logs/refs/heads/")
-            || path.contains("/logs/refs/remotes/")
+    private func isRelevantMetadataEvent(_ path: String) -> Bool {
+        metadataWatchPaths?.relativeMetadataPaths(for: path).contains(where: GitMetadataEventPath.isRelevant) == true
     }
 
     nonisolated static func watchedPaths(for rootPath: String) -> [String] {
-        let rootURL = URL(fileURLWithPath: rootPath).standardizedFileURL
-        let dotGitURL = rootURL.appendingPathComponent(".git")
-        var isDirectory: ObjCBool = false
-
-        if FileManager.default.fileExists(atPath: dotGitURL.path, isDirectory: &isDirectory),
-            isDirectory.boolValue
-        {
-            return [rootURL.path]
-        }
-
-        guard let contents = try? String(contentsOf: dotGitURL, encoding: .utf8),
-            let firstLine = contents.split(whereSeparator: \.isNewline).first,
-            firstLine.hasPrefix("gitdir:")
-        else {
-            return [rootURL.path]
-        }
-
-        let gitDirectoryPath = firstLine.dropFirst("gitdir:".count)
-            .trimmingCharacters(in: .whitespaces)
-        let gitDirectoryURL = URL(fileURLWithPath: gitDirectoryPath, relativeTo: rootURL)
-            .standardizedFileURL
-        let commonDirectoryURL: URL
-        let commonDirectoryFile = gitDirectoryURL.appendingPathComponent("commondir")
-        if let commonDirectoryPath = try? String(contentsOf: commonDirectoryFile, encoding: .utf8)
-            .trimmingCharacters(in: .whitespacesAndNewlines),
-            !commonDirectoryPath.isEmpty
-        {
-            commonDirectoryURL =
-                URL(
-                    fileURLWithPath: commonDirectoryPath,
-                    relativeTo: gitDirectoryURL
-                ).standardizedFileURL
-        } else {
-            commonDirectoryURL = gitDirectoryURL
-        }
-        return Array(Set([rootURL.path, gitDirectoryURL.path, commonDirectoryURL.path])).sorted()
+        GitMetadataWatchPaths(rootPath: rootPath).watchedPaths
     }
 }
 

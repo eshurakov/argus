@@ -220,28 +220,23 @@ struct GitStatusAutoRefreshTests {
     }
 
     @Test
-    func watchesLinkedWorktreeGitDirectory() throws {
+    func watchesLinkedWorktreeCommonDirectory() throws {
         let base = FileManager.default.temporaryDirectory
             .appendingPathComponent("argus-linked-worktree-\(UUID().uuidString)", isDirectory: true)
         let worktree = base.appendingPathComponent("worktree", isDirectory: true)
         let gitDirectory = base.appendingPathComponent("repository/.git/worktrees/feature", isDirectory: true)
         try FileManager.default.createDirectory(at: worktree, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: gitDirectory, withIntermediateDirectories: true)
-        let commonDirectory = base.appendingPathComponent("repository/.git", isDirectory: true)
-        try "../..\n".write(
-            to: gitDirectory.appendingPathComponent("commondir"), atomically: true, encoding: .utf8)
         try "gitdir: ../repository/.git/worktrees/feature\n".write(
             to: worktree.appendingPathComponent(".git"), atomically: true, encoding: .utf8)
+        try "../..\n".write(to: gitDirectory.appendingPathComponent("commondir"), atomically: true, encoding: .utf8)
         defer { try? FileManager.default.removeItem(at: base) }
 
+        let commonDirectory = base.appendingPathComponent("repository/.git").resolvingSymlinksInPath()
         assertEqual(
             GitStatusAutoRefreshController.watchedPaths(for: worktree.path),
-            [
-                worktree.standardizedFileURL.path,
-                gitDirectory.standardizedFileURL.path,
-                commonDirectory.standardizedFileURL.path
-            ].sorted(),
-            "linked worktrees watch private and common git metadata")
+            [worktree.standardizedFileURL.path, commonDirectory.path],
+            "linked worktrees watch the common Git tree including sibling administration")
     }
 
     @Test
@@ -287,7 +282,7 @@ private final class FSEventTestRecorder {
     var paths: [String] = []
 }
 
-private final class RecordingFileSystemEventWatcher: FileSystemEventWatching, @unchecked Sendable {
+final class RecordingFileSystemEventWatcher: FileSystemEventWatching, @unchecked Sendable {
     var onEvents: (@MainActor @Sendable ([String]) -> Void)?
     private(set) var startedRoots: [String] = []
     private(set) var stopCount = 0
@@ -308,7 +303,7 @@ private final class RecordingFileSystemEventWatcher: FileSystemEventWatching, @u
 }
 
 @MainActor
-private final class RecordingRefreshScheduler: RefreshScheduling {
+final class RecordingRefreshScheduler: RefreshScheduling {
     private(set) var scheduledDelays: [TimeInterval] = []
     private(set) var cancelCount = 0
     private var scheduledOperation: (@MainActor @Sendable () async -> Void)?

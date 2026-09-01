@@ -29,10 +29,19 @@ private struct CommandKeyHeldKey: EnvironmentKey {
     static let defaultValue = false
 }
 
+private struct SidebarWidthMetricsKey: EnvironmentKey {
+    static let defaultValue = SidebarWidthMetrics(width: SidebarLayout.leftDefaultWidth)
+}
+
 extension EnvironmentValues {
     var isCommandKeyHeld: Bool {
         get { self[CommandKeyHeldKey.self] }
         set { self[CommandKeyHeldKey.self] = newValue }
+    }
+
+    var sidebarWidthMetrics: SidebarWidthMetrics {
+        get { self[SidebarWidthMetricsKey.self] }
+        set { self[SidebarWidthMetricsKey.self] = newValue }
     }
 }
 

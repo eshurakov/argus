@@ -3,11 +3,20 @@ import Foundation
 
 extension WorkspaceManager {
     func selectWorkspace(_ workspaceId: UUID) {
-        guard workspaces.contains(where: { $0.id == workspaceId }) else { return }
+        guard let workspace = workspaces.first(where: { $0.id == workspaceId }) else { return }
+        pendingWorkspaceStackReveal = nil
         selectedWorkspace?.activePanel?.unfocus()
         selectedWorkspaceId = workspaceId
+        if let project = project(for: workspaceId) {
+            project.isExpanded = true
+            if let group = stackGroup(for: workspaceId, in: project.id) {
+                project.collapsedStackIds.remove(group.id)
+            }
+        }
+        workspaceRevealRevision &+= 1
         selectedWorkspace?.activePanel?.focus()
         acknowledgeSelectedActiveTabIfViewed()
+        retainPendingWorkspaceStackRevealIfNeeded(for: workspace)
     }
 
     func selectWorkspaceByIndex(_ index: Int) {
@@ -22,18 +31,20 @@ extension WorkspaceManager {
     }
 
     func selectNextWorkspace() {
+        let ordered = sidebarOrderedWorkspaces
         guard let currentId = selectedWorkspaceId,
-            let currentIndex = workspaces.firstIndex(where: { $0.id == currentId })
+            let currentIndex = ordered.firstIndex(where: { $0.workspace.id == currentId })
         else { return }
-        selectWorkspace(workspaces[(currentIndex + 1) % workspaces.count].id)
+        selectWorkspace(ordered[(currentIndex + 1) % ordered.count].workspace.id)
     }
 
     func selectPreviousWorkspace() {
+        let ordered = sidebarOrderedWorkspaces
         guard let currentId = selectedWorkspaceId,
-            let currentIndex = workspaces.firstIndex(where: { $0.id == currentId })
+            let currentIndex = ordered.firstIndex(where: { $0.workspace.id == currentId })
         else { return }
-        let previousIndex = (currentIndex - 1 + workspaces.count) % workspaces.count
-        selectWorkspace(workspaces[previousIndex].id)
+        let previousIndex = (currentIndex - 1 + ordered.count) % ordered.count
+        selectWorkspace(ordered[previousIndex].workspace.id)
     }
 
     func renameWorkspace(_ workspaceId: UUID, title: String) {
@@ -87,20 +98,6 @@ extension WorkspaceManager {
             source != destination
         else { return }
         workspaces.insert(workspaces.remove(at: source), at: destination)
-    }
-
-    func reorderWorkspace(
-        in projectId: UUID,
-        moving workspaceId: UUID,
-        before targetWorkspaceId: UUID
-    ) {
-        guard let project = projects.first(where: { $0.id == projectId }),
-            let source = project.workspaceIds.firstIndex(of: workspaceId),
-            let target = project.workspaceIds.firstIndex(of: targetWorkspaceId),
-            source != target
-        else { return }
-        project.moveWorkspace(from: source, to: source < target ? max(target - 1, 0) : target)
-        syncFlatWorkspaceOrderToSidebarOrder()
     }
 
     @discardableResult
@@ -336,7 +333,7 @@ extension WorkspaceManager {
 
     var sidebarOrderedWorkspaces: [(project: Project, workspace: Workspace)] {
         projects.flatMap { project in
-            project.workspaceIds.compactMap { workspaceId in
+            sidebarItems(for: project).flatMap(\.workspaceIds).compactMap { workspaceId in
                 workspaces.first(where: { $0.id == workspaceId }).map { (project, $0) }
             }
         }
@@ -344,16 +341,6 @@ extension WorkspaceManager {
 
     func globalSidebarIndex(for workspaceId: UUID) -> Int? {
         sidebarOrderedWorkspaces.firstIndex { $0.workspace.id == workspaceId }.map { $0 + 1 }
-    }
-
-    private func syncFlatWorkspaceOrderToSidebarOrder() {
-        let orderedIds = sidebarOrderedWorkspaces.map(\.workspace.id)
-        let indexById = Dictionary(
-            uniqueKeysWithValues: orderedIds.enumerated().map { ($0.element, $0.offset) }
-        )
-        workspaces.sort { lhs, rhs in
-            (indexById[lhs.id] ?? Int.max) < (indexById[rhs.id] ?? Int.max)
-        }
     }
 
     private var browserPanelConfiguration: BrowserPanelConfiguration {

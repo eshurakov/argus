@@ -25,25 +25,32 @@ private final class WorktreeProcessStreamReader {
         close()
     }
 
-    func drain() {
-        guard !isFinished else { return }
-        var buffer = [UInt8](repeating: 0, count: 16_384)
-        while true {
-            let count = Darwin.read(fileDescriptor, &buffer, buffer.count)
+    func drain(maximumAdditionalBytes: Int?) -> Bool {
+        guard !isFinished else { return false }
+        var remaining = maximumAdditionalBytes
+        let bufferSize = remaining.map { $0 < 16_384 ? $0 + 1 : 16_384 } ?? 16_384
+        var buffer = [UInt8](repeating: 0, count: bufferSize)
+        for _ in 0..<16 {
+            let readSize = remaining.map { $0 < buffer.count ? $0 + 1 : buffer.count } ?? buffer.count
+            let count = Darwin.read(fileDescriptor, &buffer, readSize)
             if count > 0 {
-                data.append(buffer, count: count)
+                let accepted = min(count, remaining ?? count)
+                data.append(buffer, count: accepted)
+                remaining = remaining.map { $0 - accepted }
+                if accepted < count { return true }
             } else if count == 0 {
                 close()
-                return
+                return false
             } else if errno == EINTR {
                 continue
             } else if errno == EAGAIN || errno == EWOULDBLOCK {
-                return
+                return false
             } else {
                 close()
-                return
+                return false
             }
         }
+        return false
     }
 
     func close() {
@@ -59,8 +66,10 @@ private final class WorktreeProcessStreamReader {
 final class WorktreeProcessOutputReader {
     private let stdoutReader: WorktreeProcessStreamReader
     private let stderrReader: WorktreeProcessStreamReader
+    private let maximumOutputBytes: Int?
 
-    init(stdout: Pipe, stderr: Pipe) {
+    init(stdout: Pipe, stderr: Pipe, maximumOutputBytes: Int? = nil) {
+        self.maximumOutputBytes = maximumOutputBytes.map { max(0, $0) }
         stdoutReader = WorktreeProcessStreamReader(fileHandle: stdout.fileHandleForReading)
         stderrReader = WorktreeProcessStreamReader(fileHandle: stderr.fileHandleForReading)
     }
@@ -69,9 +78,17 @@ final class WorktreeProcessOutputReader {
         stdoutReader.isFinished && stderrReader.isFinished
     }
 
-    func drain() {
-        stdoutReader.drain()
-        stderrReader.drain()
+    func drain() throws {
+        if stdoutReader.drain(maximumAdditionalBytes: remainingOutputBytes)
+            || stderrReader.drain(maximumAdditionalBytes: remainingOutputBytes)
+        {
+            close()
+            throw ExternalProcessOutputLimitError()
+        }
+    }
+
+    private var remainingOutputBytes: Int? {
+        maximumOutputBytes.map { $0 - stdoutReader.data.count - stderrReader.data.count }
     }
 
     func close() {

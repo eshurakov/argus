@@ -234,6 +234,24 @@ Sidebars are navigators, not alternate content areas. They SHOULD stay compact,
 use full-width rows, and put directories before files at each tree level.
 Disclosure state belongs to the tree row; opening content belongs to a tab.
 
+In the left sidebar, Stack Groups MUST use shallow collapsible headers and
+fixed-inset Workspace rows rather than recursively nesting Workspaces. A
+connector points from an actual recorded parent to its dependent and MUST use
+measured row geometry. Forks MUST use distinct connector lanes rather than
+connecting adjacent sibling rows as a chain, while member text keeps a fixed
+inset within each group. Status icons and process badges retain their own
+meanings; missing-Workspace parent references appear once, are nonselectable,
+and receive no shortcut. Unknown or conflicted parents MUST be described
+honestly, and help/accessibility MUST include all recorded direct dependents.
+Disclosure never selects content or acknowledges Turn Completion Attention.
+
+At narrow sidebar widths, decorative spacing and icons MAY give way to a
+compact layout. Discovery and Add actions MAY share a reserved control area
+when their context-menu alternatives remain available. Process badges MAY sit
+below labels, but their space MUST remain stable when a count becomes zero.
+Required hit targets, status information, full-row selection, and relationship
+help MUST remain available at the supported minimum width.
+
 The Changes View MUST render the ordered typed Change Sections in the active
 Git Status Snapshot. With both Changes View settings disabled, it MUST preserve
 the Staged, Unstaged, and Untracked sections and their existing layout. When

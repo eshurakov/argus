@@ -1,7 +1,8 @@
 # ADR 0007: Resolve Base Branch from recorded stack metadata
 
-- Status: Accepted
+- Status: Superseded
 - Date: 2026-08-26
+- Superseded by: [ADR 0009](0009-share-tool-agnostic-recorded-parents.md)
 
 ## Context
 

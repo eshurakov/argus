@@ -35,10 +35,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this 
         runtime: TurnCompletionRuntime,
         agentStatusRuntime: AgentStatusRuntime
     ) {
+        if self.workspaceManager !== workspaceManager {
+            self.workspaceManager?.stopWorkspaceStackObservations()
+        }
         self.workspaceManager = workspaceManager
         turnCompletionRuntime = runtime
         self.agentStatusRuntime = agentStatusRuntime
         startAgentSocketIfReady()
+        startWorkspaceStackObservationsIfReady()
     }
 
     func configureSettings(
@@ -138,6 +142,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this 
             ) { _ in }
         ]
         startAgentSocketIfReady()
+        startWorkspaceStackObservationsIfReady()
         observeQuitConfirmation()
 
         // Start Ghostty after the initial view hierarchy is mounted. GhosttyApp
@@ -157,6 +162,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this 
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        workspaceManager?.stopWorkspaceStackObservations()
         workspaceManager?.saveSession()
         if let windowTitleObserver {
             NotificationCenter.default.removeObserver(windowTitleObserver)
@@ -300,6 +306,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this 
         targetWindow?.title =
             workspaceManager?.activeWorkspaceTitle
             ?? WorkspaceTitleFormatter.fallbackTitle
+    }
+
+    private func startWorkspaceStackObservationsIfReady() {
+        guard !isRunningUnderTest else { return }
+        workspaceManager?.startWorkspaceStackObservations()
     }
 
     private func startAgentSocketIfReady() {
