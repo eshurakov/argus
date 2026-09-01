@@ -71,73 +71,14 @@ function sessionIDFor(context, instanceID) {
   return `${base}:${instanceID}`;
 }
 
-// pi-subagents is optional. Use its public event-bus protocol, not package imports
-// or child event traffic: only its current-session snapshot proves work is idle.
-function createSubagentStatusReader(pi, instanceID) {
-  let advertisement;
-  let requestSequence = 0;
-  let cancel = () => {};
-  const unsubscribeReady = pi.events?.on("subagents:rpc:v1:ready", (data) => {
-    advertisement = data ?? null;
-  });
-
-  return {
-    cancel() { cancel(); },
-    dispose() {
-      cancel();
-      unsubscribeReady?.();
-    },
-    async hasActiveWork(context) {
-      if (advertisement === undefined) return false; // Plain Pi, no package advertised.
-      if (advertisement?.version !== 1
-          || advertisement.capabilities?.fleetStatus?.version !== 1
-          || advertisement.session?.sessionId !== context?.sessionManager?.getSessionId?.()) {
-        return undefined;
-      }
-      cancel();
-      const requestId = `argus:${instanceID}:${++requestSequence}`;
-      return new Promise((resolve) => {
-        let settled = false;
-        let unsubscribe;
-        const finish = (active) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timeout);
-          unsubscribe?.();
-          cancel = () => {};
-          resolve(active);
-        };
-        const timeout = setTimeout(() => finish(undefined), deliveryTimeoutMilliseconds);
-        cancel = () => finish(undefined);
-        try {
-          unsubscribe = pi.events.on(`subagents:rpc:v1:reply:${requestId}`, (reply) => {
-            if (reply?.version !== 1 || reply.requestId !== requestId
-                || (reply.method !== undefined && reply.method !== "status")) return;
-            const fleet = reply.success === true ? reply.data?.fleet : undefined;
-            finish(fleet?.version === 1 && Number.isSafeInteger(fleet.totalActive) && fleet.totalActive >= 0
-              ? fleet.totalActive > 0 : undefined);
-          });
-          pi.events.emit("subagents:rpc:v1:request", { version: 1, requestId, method: "status" });
-        } catch {
-          finish(undefined);
-        }
-      });
-    },
-  };
-}
-
 export function createPlugin({ environment: suppliedEnvironment, transport = send, instanceID = defaultInstanceID() } = {}) {
   return function install(pi) {
     const environment = suppliedEnvironment ?? (typeof process === "undefined" ? {} : process.env);
-    if (environment.PI_SUBAGENT_CHILD === "1" || !environmentIsValid(environment)) return;
+    if (!environmentIsValid(environment)) return;
 
-    const subagents = createSubagentStatusReader(pi, instanceID);
     let sessionID;
     let sequence = 0;
-    let generation = 0;
-    let turnPending = false;
     let finalAgentError = false;
-    let finalAgentAborted = false;
     let deliveryQueue = Promise.resolve();
 
     function ensureSession(context) {
@@ -150,7 +91,7 @@ export function createPlugin({ environment: suppliedEnvironment, transport = sen
       return sessionID;
     }
 
-    function enqueue(context, state, isCurrent = () => true) {
+    function enqueue(context, state) {
       const currentSessionID = ensureSession(context);
       const currentSequence = ++sequence;
       const payload = {
@@ -167,14 +108,14 @@ export function createPlugin({ environment: suppliedEnvironment, transport = sen
         },
       };
       deliveryQueue = deliveryQueue
-        .then(() => isCurrent() ? deliverWithDeadline(transport, environment.ARGUS_SOCKET_PATH, payload) : undefined)
+        .then(() => deliverWithDeadline(transport, environment.ARGUS_SOCKET_PATH, payload))
         .catch(() => {
           // Delivery failures must not alter Pi's lifecycle behavior.
         });
       return deliveryQueue;
     }
 
-    function enqueueTurnCompletion(context, isCurrent) {
+    function enqueueTurnCompletion(context) {
       const currentSessionID = ensureSession(context);
       const currentSequence = ++sequence;
       const eventId = turnEventID(currentSessionID, currentSequence);
@@ -190,7 +131,7 @@ export function createPlugin({ environment: suppliedEnvironment, transport = sen
         },
       };
       deliveryQueue = deliveryQueue
-        .then(() => isCurrent() ? deliverWithDeadline(transport, environment.ARGUS_SOCKET_PATH, payload) : undefined)
+        .then(() => deliverWithDeadline(transport, environment.ARGUS_SOCKET_PATH, payload))
         .catch(() => {
           // Delivery failures must not alter Pi's lifecycle behavior.
         });
@@ -220,55 +161,27 @@ export function createPlugin({ environment: suppliedEnvironment, transport = sen
       return deliveryQueue;
     }
 
-    pi.on("session_start", (_event, context) => {
-      generation++;
-      turnPending = false;
-      subagents.cancel();
-      return enqueue(context, "idle");
-    });
+    pi.on("session_start", (_event, context) => enqueue(context, "idle"));
 
     pi.on("agent_start", (_event, context) => {
-      generation++;
-      subagents.cancel();
-      turnPending = true;
       finalAgentError = false;
-      finalAgentAborted = false;
       return enqueue(context, "running");
     });
 
     pi.on("agent_end", (event) => {
       finalAgentError = hasFinalAgentError(event?.messages);
-      finalAgentAborted = Array.isArray(event?.messages) && event.messages.some(
-        (message) => message?.role === "assistant" && message.stopReason === "aborted",
-      );
     });
 
-    pi.on("agent_settled", async (_event, context) => {
-      if (!turnPending) return;
-      turnPending = false;
-      const settledGeneration = generation;
-      const settledSessionID = ensureSession(context);
-      const isCurrent = () => generation === settledGeneration
-        && sessionIDFor(context, instanceID) === settledSessionID
-        && context?.isIdle?.() !== false;
-      const failed = finalAgentError;
-      const aborted = finalAgentAborted;
-      if (failed) return enqueue(context, "error", isCurrent);
-
-      const activeWork = await subagents.hasActiveWork(context);
-      if (!isCurrent() || activeWork === undefined) return;
-      await enqueue(context, activeWork ? "running" : "idle", isCurrent);
-      // A child completion never announces success. Wait for the main agent's
-      // next successful settlement after it has consumed the delegated results.
-      if (!activeWork && !aborted && isCurrent()) await enqueueTurnCompletion(context, isCurrent);
+    pi.on("agent_settled", (_event, context) => {
+      const state = finalAgentError ? "error" : "idle";
+      return enqueue(context, state)
+        .then(() => state === "idle" ? enqueueTurnCompletion(context) : undefined)
+        .then(() => {
+          finalAgentError = false;
+        });
     });
 
-    pi.on("session_shutdown", (_event, context) => {
-      generation++;
-      turnPending = false;
-      subagents.dispose();
-      return enqueueClear(context);
-    });
+    pi.on("session_shutdown", (_event, context) => enqueueClear(context));
   };
 }
 

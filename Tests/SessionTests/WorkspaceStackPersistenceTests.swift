@@ -43,8 +43,10 @@ struct WorkspaceStackPersistenceTests {
         let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
         #expect(Set(json.keys) == ["schemaVersion", "selectedWorkspaceId", "projects", "workspaces"])
         let projects = try #require(json["projects"] as? [[String: Any]])
-        for key in ["stacks", "parents", "trunkBranches", "conflicts", "diagnostics", "worktrees", "gitCommonDirectory"]
-        {
+        let runtimeKeys = [
+            "stacks", "parents", "trunkBranches", "conflicts", "diagnostics", "worktrees", "gitCommonDirectory"
+        ]
+        for key in runtimeKeys {
             #expect(projects.allSatisfy { $0[key] == nil })
         }
 

@@ -37,12 +37,12 @@ struct PiIntegrationServiceTests {
         }
     }
 
-    @Test
-    func previousReleaseExtensionIsUpgradedAndRemoved() throws {
+    @Test(arguments: ["1.13.0", "1.13.2"])
+    func previousReleaseExtensionIsUpgradedAndRemoved(_ version: String) throws {
         try withFixture { fixture in
             let previousRelease = URL(filePath: #filePath)
                 .deletingLastPathComponent()
-                .appendingPathComponent("Fixtures/ArgusPiAgentStatusPlugin-1.13.0.js")
+                .appendingPathComponent("Fixtures/ArgusPiAgentStatusPlugin-\(version).js")
             let service = PiIntegrationService(
                 environment: ["PI_CODING_AGENT_DIR": fixture.root.appendingPathComponent("agent").path],
                 homeDirectory: fixture.root,

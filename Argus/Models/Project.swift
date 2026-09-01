@@ -61,7 +61,7 @@ struct ProjectSnapshot: Codable, Sendable {
     let workspaceIds: [UUID]
     let isExpanded: Bool
     let color: ProjectColor?
-    var collapsedStackIds: Set<String>? = nil
+    var collapsedStackIds: Set<String>?
 }
 
 /// A project groups workspaces under a single git repository.

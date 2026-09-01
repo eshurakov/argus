@@ -1,6 +1,13 @@
 import Foundation
 
 extension WorkspaceManager {
+    struct PendingWorkspaceStackReveal {
+        let project: Project
+        let workspaceId: UUID
+        let path: String
+        let revision: UInt64
+    }
+
     func sidebarItems(for project: Project) -> [WorkspaceSidebarItem] {
         let inputs = project.workspaceIds.compactMap { workspaceId -> WorkspaceStackWorkspace? in
             guard let workspace = workspaces.first(where: { $0.id == workspaceId }) else { return nil }
@@ -34,7 +41,8 @@ extension WorkspaceManager {
             let path = workspaceStackPath(for: workspace, in: project),
             workspaceStackSnapshots[project.id]?.worktrees.contains(where: { $0.path == path }) != true
         else { return }
-        pendingWorkspaceStackReveal = (project, workspace.id, path, workspaceRevealRevision)
+        pendingWorkspaceStackReveal = PendingWorkspaceStackReveal(
+            project: project, workspaceId: workspace.id, path: path, revision: workspaceRevealRevision)
         refreshWorkspaceStacks(in: project.id)
     }
 

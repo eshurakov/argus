@@ -1,6 +1,6 @@
 # ADR 0004: Report successful Pi turn completion for workspace attention
 
-- Status: Accepted
+- Status: Superseded by ADR 0010 (`0010-pi-main-agent-completion-with-delegated-work.md`)
 - Date: 2026-08-08
 
 ## Context

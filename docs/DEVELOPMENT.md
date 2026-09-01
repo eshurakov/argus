@@ -180,6 +180,25 @@ the app-owned `~/.argus/argus.sock` endpoint. The socket accepts
 `agent.turnCompleted`, `agent.statusChanged`, and `agent.statusCleared`; it is
 not a Companion CLI command transport.
 
+After updating Argus, enable the Pi integration again in Settings to install
+its bundled extension, then restart Pi or use `/reload`. Reloading alone does
+not copy the updated extension from Argus.
+
+The Pi extension ignores processes marked with `PI_SUBAGENT_CHILD=1`. When
+`pi-subagents` advertises its public fleet status API, a main agent that yields
+with delegated work still active stays running in Argus and produces no
+completion sound or Turn Completion Attention. Completion is reported at the
+next successful main-agent settlement with no active delegated work. An
+advertised status API that is unsupported or fails suppresses completion;
+plain Pi sessions need no subagent package.
+
+Run the Pi lifecycle and socket transport regression tests without launching
+Argus or making model calls:
+
+```sh
+node Tests/PiIntegrationTests/pi-plugin-events.mjs
+```
+
 ## Local state
 
 Argus writes user state outside the repository:

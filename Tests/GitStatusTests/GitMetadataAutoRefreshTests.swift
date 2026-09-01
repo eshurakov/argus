@@ -3,7 +3,8 @@ import Testing
 
 @testable import Argus
 
-@Suite
+// Synchronous Git setup must not delay another case's MainActor event callbacks.
+@Suite(.serialized)
 @MainActor
 struct GitMetadataAutoRefreshTests {
     @Test(arguments: GitMetadataRepositoryLayout.allCases)

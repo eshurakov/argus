@@ -17,7 +17,7 @@ struct SidebarWorkspaceRow: View {
     let shortcutDigit: Int?
     let isSelected: Bool
     let onSelect: () -> Void
-    var stackRelationship: WorkspaceStackRow? = nil
+    var stackRelationship: WorkspaceStackRow?
     var showsStackGutter = false
     @State private var isHovered = false
     @FocusState private var isFocused: Bool

@@ -14,7 +14,7 @@ struct WorkspaceStackRow: Equatable, Identifiable, Sendable {
     let dependentBranches: [String]
     let workspaceId: UUID?
     var lane: Int = 0
-    var issue: String? = nil
+    var issue: String?
 
     var id: String { branch }
 }

@@ -3,11 +3,13 @@ import Testing
 
 @testable import Argus
 
-@Suite
+// Each case creates multiple real Git worktrees with synchronous subprocesses.
+@Suite(.serialized)
 struct GitMetadataWatchPathTests {
     @Test(arguments: GitMetadataRepositoryLayout.allCases)
-    func watchesActualGitDirectoriesIncludingCommonAndSiblingAdministration(layout: GitMetadataRepositoryLayout) throws
-    {
+    func watchesActualGitDirectoriesIncludingCommonAndSiblingAdministration(
+        layout: GitMetadataRepositoryLayout
+    ) throws {
         let fixture = try GitMetadataRefreshRepository(layout: layout)
         defer { fixture.directory.remove() }
         var expected = [fixture.root.path]

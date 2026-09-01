@@ -11,8 +11,8 @@ struct GitMetadataWatchPaths {
         let dotGitURL = checkoutURL.appendingPathComponent(".git", isDirectory: true)
         var gitURL = dotGitURL
         var isDirectory: ObjCBool = false
-        if !FileManager.default.fileExists(atPath: dotGitURL.path, isDirectory: &isDirectory) || !isDirectory.boolValue
-        {
+        let exists = FileManager.default.fileExists(atPath: dotGitURL.path, isDirectory: &isDirectory)
+        if !exists || !isDirectory.boolValue {
             if let record = Self.pathFileRecord(at: dotGitURL), record.hasPrefix("gitdir: "),
                 let directory = Self.directoryURL(String(record.dropFirst("gitdir: ".count)), relativeTo: checkoutURL)
             {
@@ -30,10 +30,9 @@ struct GitMetadataWatchPaths {
 
     var watchedPaths: [String] {
         var paths = [rootPath]
-        for directory in [commonDirectory, gitDirectory] {
-            if !paths.contains(where: { GitMetadataEventPath.relativePath(directory, in: $0) != nil }) {
-                paths.append(directory)
-            }
+        for directory in [commonDirectory, gitDirectory]
+        where !paths.contains(where: { GitMetadataEventPath.relativePath(directory, in: $0) != nil }) {
+            paths.append(directory)
         }
         return paths
     }

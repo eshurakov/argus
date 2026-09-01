@@ -141,21 +141,8 @@ struct RecordedBaseBranchReader: Sendable {
                     continue
                 }
                 do {
-                    let values = try directory.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
-                    guard values.isDirectory == true, values.isSymbolicLink != true,
-                        let data = try metadataData(
-                            at: directory.appendingPathComponent("gitdir"), failure: .discovery, oversized: .discovery),
-                        let path = String(data: data, encoding: .utf8), path.hasPrefix("/"), path.hasSuffix("\n")
-                    else { continue }
-                    let pointer = URL(fileURLWithPath: String(path.dropLast())).standardizedFileURL
-                    guard pointer.lastPathComponent == ".git" else { continue }
-                    let checkoutPath = pointer.deletingLastPathComponent().resolvingSymlinksInPath().path
-                    guard FileManager.default.fileExists(atPath: checkoutPath) else { continue }
-                    let checkout = try verifiedCheckout(at: checkoutPath)
-                    if checkout.worktree.path == checkoutPath,
-                        checkout.gitDirectory == directory.standardizedFileURL.resolvingSymlinksInPath()
-                    {
-                        worktrees.append(checkout.worktree)
+                    if let worktree = try registeredWorktree(at: directory) {
+                        worktrees.append(worktree)
                     }
                 } catch is CancellationError {
                     throw CancellationError()
@@ -169,6 +156,24 @@ struct RecordedBaseBranchReader: Sendable {
             records.diagnose(error, fallback: .discovery)
         }
         return worktrees
+    }
+
+    private func registeredWorktree(at directory: URL) throws -> GitWorktreeBranch? {
+        let values = try directory.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+        guard values.isDirectory == true, values.isSymbolicLink != true,
+            let data = try metadataData(
+                at: directory.appendingPathComponent("gitdir"), failure: .discovery, oversized: .discovery),
+            let path = String(data: data, encoding: .utf8), path.hasPrefix("/"), path.hasSuffix("\n")
+        else { return nil }
+        let pointer = URL(fileURLWithPath: String(path.dropLast())).standardizedFileURL
+        guard pointer.lastPathComponent == ".git" else { return nil }
+        let checkoutPath = pointer.deletingLastPathComponent().resolvingSymlinksInPath().path
+        guard FileManager.default.fileExists(atPath: checkoutPath) else { return nil }
+        let checkout = try verifiedCheckout(at: checkoutPath)
+        guard checkout.worktree.path == checkoutPath,
+            checkout.gitDirectory == directory.standardizedFileURL.resolvingSymlinksInPath()
+        else { return nil }
+        return checkout.worktree
     }
 
     private func verifiedCheckout(at path: String) throws -> (worktree: GitWorktreeBranch, gitDirectory: URL) {

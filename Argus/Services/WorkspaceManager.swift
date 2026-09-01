@@ -53,7 +53,7 @@ final class WorkspaceManager: ObservableObject {
     let workspaceStackReader: any WorkspaceStackReading
     var workspaceStackObservations: [UUID: (project: Project, observation: WorkspaceStackObservation)] = [:]
     var isObservingWorkspaceStacks = false
-    var pendingWorkspaceStackReveal: (project: Project, workspaceId: UUID, path: String, revision: UInt64)?
+    var pendingWorkspaceStackReveal: PendingWorkspaceStackReveal?
 
     /// The non-removable catch-all project for standalone workspaces.
     var catchAllProject: Project!
