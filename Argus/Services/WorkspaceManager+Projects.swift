@@ -42,7 +42,7 @@ extension WorkspaceManager {
         )
         workspaces.append(workspace)
         project.addWorkspace(workspace.id)
-        selectedWorkspaceId = workspace.id
+        selectWorkspace(workspace.id)
         saveSession()
         return project
     }
@@ -51,6 +51,7 @@ extension WorkspaceManager {
         guard let project = projects.first(where: { $0.id == projectId }),
             !project.isCatchAll
         else { return }
+        cancelPendingWorkspaceStackReveal(in: projectId)
         for workspaceId in project.workspaceIds {
             guard let workspace = workspaces.first(where: { $0.id == workspaceId }) else { continue }
             agentStatusRuntime?.removeStatuses(forWorkspace: workspaceId)
@@ -67,9 +68,10 @@ extension WorkspaceManager {
             }
         }
         let idsToRemove = Set(project.workspaceIds)
+        let previousOrder = sidebarOrderedWorkspaces.map(\.workspace.id)
         workspaces.removeAll { idsToRemove.contains($0.id) }
         projects.removeAll { $0.id == projectId }
-        restoreSelectionAfterRemovingWorkspaces(idsToRemove)
+        restoreSelectionAfterRemovingWorkspaces(idsToRemove, previousOrder: previousOrder)
     }
 
     func renameProject(_ projectId: UUID, name: String) {
@@ -108,7 +110,7 @@ extension WorkspaceManager {
         )
         workspaces.append(workspace)
         project.addWorkspace(workspace.id)
-        selectedWorkspaceId = workspace.id
+        selectWorkspace(workspace.id)
         saveSession()
         return workspace
     }
@@ -209,7 +211,7 @@ extension WorkspaceManager {
         }
         workspaces.append(workspace)
         project.addWorkspace(workspace.id)
-        selectedWorkspaceId = workspace.id
+        selectWorkspace(workspace.id)
         saveSession()
         return workspace
     }
@@ -298,7 +300,7 @@ extension WorkspaceManager {
                 existingWorkspace.customTitle = metadata.title
                 saveSession()
             }
-            selectedWorkspaceId = existingWorkspace.id
+            selectWorkspace(existingWorkspace.id)
             return existingWorkspace
         }
 
@@ -323,7 +325,7 @@ extension WorkspaceManager {
         workspace.customTitle = metadata.title
         workspaces.append(workspace)
         currentProject.addWorkspace(workspace.id)
-        selectedWorkspaceId = workspace.id
+        selectWorkspace(workspace.id)
         saveSession()
         return workspace
     }
@@ -352,15 +354,24 @@ extension WorkspaceManager {
             .path
     }
 
-    private func restoreSelectionAfterRemovingWorkspaces(_ removedIds: Set<UUID>) {
+    func restoreSelectionAfterRemovingWorkspaces(_ removedIds: Set<UUID>, previousOrder: [UUID]) {
         guard let selectedWorkspaceId, removedIds.contains(selectedWorkspaceId) else { return }
         if workspaces.isEmpty {
             let workspace = freshStandaloneWorkspace()
             workspaces.append(workspace)
             catchAllProject.addWorkspace(workspace.id)
-            self.selectedWorkspaceId = workspace.id
-        } else {
-            self.selectedWorkspaceId = workspaces.first?.id
+            selectWorkspace(workspace.id)
+            return
+        }
+        let survivingIds = Set(workspaces.map(\.id))
+        let selectedIndex = previousOrder.firstIndex(of: selectedWorkspaceId) ?? 0
+        let replacementId =
+            previousOrder.dropFirst(selectedIndex + 1).first(where: survivingIds.contains)
+            ?? previousOrder.prefix(selectedIndex).last(where: survivingIds.contains)
+            ?? sidebarOrderedWorkspaces.first?.workspace.id
+            ?? workspaces.first?.id
+        if let replacementId {
+            selectWorkspace(replacementId)
         }
     }
 }

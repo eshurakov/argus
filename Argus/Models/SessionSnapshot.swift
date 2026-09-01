@@ -346,7 +346,8 @@ private struct SessionSnapshotReconciler {
                 workspaceById: workspaceById
             ),
             isExpanded: project.isExpanded,
-            color: project.color
+            color: project.color,
+            collapsedStackIds: project.collapsedStackIds
         )
     }
 
@@ -369,7 +370,8 @@ private struct SessionSnapshotReconciler {
                 workspaceById: workspaceById
             ),
             isExpanded: catchAll.isExpanded,
-            color: catchAll.color
+            color: catchAll.color,
+            collapsedStackIds: catchAll.collapsedStackIds
         )
     }
 }

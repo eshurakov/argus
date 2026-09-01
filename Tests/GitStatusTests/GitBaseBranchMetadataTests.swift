@@ -220,7 +220,7 @@ extension GitStatusPresentationTests {
     /// main -> `sticky-slider` (two commits) -> `eshurakov/silver-atlas` (one
     /// commit), the shape of a stacked pull request. The child branch name keeps
     /// its slash so recorded lookups are exercised against a real branch name.
-    private func stackedRepository(prefix: String) throws -> GitStatusPresentationRepository {
+    func stackedRepository(prefix: String) throws -> GitStatusPresentationRepository {
         let repo = try presentationRepository(prefix: prefix)
         try "base\n".write(
             to: repo.url.appendingPathComponent("base.txt"), atomically: true, encoding: .utf8)
@@ -243,7 +243,7 @@ extension GitStatusPresentationTests {
         return repo
     }
 
-    private func stackedSummary(
+    func stackedSummary(
         repo: GitStatusPresentationRepository,
         configuredBaseBranch: String?
     ) async throws -> GitStatusSummary {
@@ -262,7 +262,7 @@ extension GitStatusPresentationTests {
 
     /// Writes a branch-metadata blob the way a stacking tool does, keeping the
     /// payload out of the working tree so the fixture stays clean.
-    private func writeBranchMetadata(
+    func writeBranchMetadata(
         repo: GitStatusPresentationRepository,
         branch: String,
         payload: String

@@ -352,6 +352,7 @@ enum GitReferenceValidation {
             !value.contains("//"),
             !value.contains(".."),
             !value.contains("@{"),
+            !value.hasSuffix("."),
             !value.hasSuffix(".lock")
         else { return false }
 
@@ -368,7 +369,6 @@ enum GitReferenceValidation {
             return component != "."
                 && component != ".."
                 && !component.hasPrefix(".")
-                && !component.hasSuffix(".")
                 && !component.hasSuffix(".lock")
         }
     }

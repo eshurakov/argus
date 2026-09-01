@@ -26,10 +26,25 @@ func buildAgainstBase(
     presentation: GitStatusPresentation,
     currentBranch: String?
 ) -> BaseComparisonResult {
+    var recordedParent: String?
+    if let currentBranch, !currentBranch.isEmpty, currentBranch != "(detached)" {
+        do {
+            let metadata = try RecordedBaseBranchReader().read(repositoryPath: rootPath)
+            if let conflict = metadata.conflicts[currentBranch] {
+                return unavailableBase(message: conflict)
+            }
+            recordedParent = metadata.parents[currentBranch]
+        } catch {
+            return unavailableBase(
+                message: "Could not read the recorded base branch: \(error.localizedDescription)"
+            )
+        }
+    }
     let resolution = resolveBaseBranch(
         rootPath: rootPath,
         presentation: presentation,
-        currentBranch: currentBranch
+        currentBranch: currentBranch,
+        recordedParent: recordedParent
     )
     guard let baseName = resolution.name else {
         return unavailableBase(message: "No base branch was found for this workspace.")
@@ -105,9 +120,10 @@ private func loadAgainstBaseComparison(
 private func resolveBaseBranch(
     rootPath: String,
     presentation: GitStatusPresentation,
-    currentBranch: String?
+    currentBranch: String?,
+    recordedParent: String?
 ) -> BaseBranchResolution {
-    if let recorded = recordedBaseBranch(rootPath: rootPath, currentBranch: currentBranch),
+    if let recorded = recordedParent.map(RecordedBaseBranch.init(name:)),
         let recordedRef = recorded.refCandidates.first(where: { verifyGitRef(rootPath: rootPath, ref: $0) })
     {
         return BaseBranchResolution(name: recorded.name, ref: recordedRef)
@@ -127,46 +143,6 @@ private func resolveBaseBranch(
     let preferredRef = inferredName.preferredRef
     let ref = resolveBaseRef(rootPath: rootPath, name: inferredName.name, preferredRef: preferredRef)
     return BaseBranchResolution(name: inferredName.name, ref: ref)
-}
-
-/// Base Branch recorded for the current branch by a stacking tool, so a branch
-/// stacked on another branch is compared with its own parent instead of the
-/// repository's main branch. Both sources are local reads: no remote is
-/// contacted and no repository state changes.
-///
-/// A recorded name that is missing, empty, or names the current branch itself
-/// is ignored so resolution continues with the configured and inferred names.
-private func recordedBaseBranch(rootPath: String, currentBranch: String?) -> RecordedBaseBranch? {
-    guard let currentBranch, !currentBranch.isEmpty, currentBranch != "(detached)" else { return nil }
-    return [
-        configuredStackBase(rootPath: rootPath, branch: currentBranch),
-        graphiteStackBase(rootPath: rootPath, branch: currentBranch)
-    ]
-    .compactMap { $0 }
-    .first { $0 != currentBranch }
-    .map(RecordedBaseBranch.init(name:))
-}
-
-/// `branch.<name>.base` is written by stacking tools; Git itself never sets it.
-private func configuredStackBase(rootPath: String, branch: String) -> String? {
-    optionalGitOutput(args: ["-C", rootPath, "config", "--get", "branch.\(branch).base"])
-}
-
-/// Graphite records a branch's parent in a `refs/branch-metadata/<branch>`
-/// blob holding JSON. Only `parentBranchName` is read, and a payload that is
-/// absent, not JSON, or missing that key is ignored rather than reported as a
-/// failure, because the layout belongs to another tool.
-private func graphiteStackBase(rootPath: String, branch: String) -> String? {
-    guard
-        let payload = optionalGitOutput(
-            args: ["-C", rootPath, "cat-file", "-p", "refs/branch-metadata/\(branch)"]
-        ),
-        let data = payload.data(using: .utf8),
-        let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
-        let parent = object["parentBranchName"] as? String
-    else { return nil }
-    let trimmed = parent.trimmingCharacters(in: .whitespacesAndNewlines)
-    return trimmed.isEmpty ? nil : trimmed
 }
 
 private func inferBaseBranchName(

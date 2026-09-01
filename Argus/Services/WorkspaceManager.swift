@@ -28,15 +28,32 @@ final class WorkspaceManager: ObservableObject {
 
     /// ID of the currently selected workspace.
     @Published var selectedWorkspaceId: UUID? {
-        didSet { notifyWorkspaceContextChanged() }
+        didSet {
+            if oldValue != selectedWorkspaceId {
+                pendingWorkspaceStackReveal = nil
+            }
+            notifyWorkspaceContextChanged()
+        }
     }
 
     /// Changes whenever the selected Workspace's filesystem context changes
     /// without changing Workspace identity.
     @Published private(set) var workspaceContextRevision: UInt64 = 0
 
+    @Published internal(set) var workspaceRevealRevision: UInt64 = 0
+    @Published internal(set) var workspaceStackSnapshots: [UUID: WorkspaceStackSnapshot] = [:]
+    @Published internal(set) var workspaceStackErrors: [UUID: String] = [:]
+    @Published internal(set) var refreshingWorkspaceStackProjectIds: Set<UUID> = []
+
     /// Ordered list of projects (named projects first, catch-all last).
-    @Published var projects: [Project] = []
+    @Published var projects: [Project] = [] {
+        didSet { reconcileWorkspaceStackObservations() }
+    }
+
+    let workspaceStackReader: any WorkspaceStackReading
+    var workspaceStackObservations: [UUID: (project: Project, observation: WorkspaceStackObservation)] = [:]
+    var isObservingWorkspaceStacks = false
+    var pendingWorkspaceStackReveal: (project: Project, workspaceId: UUID, path: String, revision: UInt64)?
 
     /// The non-removable catch-all project for standalone workspaces.
     var catchAllProject: Project!
@@ -102,7 +119,7 @@ final class WorkspaceManager: ObservableObject {
     /// Index of the currently selected workspace in the sidebar.
     var selectedWorkspaceIndex: Int? {
         guard let id = selectedWorkspaceId else { return nil }
-        return workspaces.firstIndex { $0.id == id }
+        return sidebarOrderedWorkspaces.firstIndex { $0.workspace.id == id }
     }
 
     // MARK: - Constants
@@ -135,11 +152,13 @@ final class WorkspaceManager: ObservableObject {
         sessionSnapshotURL: URL? = nil,
         environment: [String: String] = ProcessInfo.processInfo.environment,
         worktreeService: WorktreeService = WorktreeService(),
-        pullRequestService: GitHubPullRequestService = GitHubPullRequestService()
+        pullRequestService: GitHubPullRequestService = GitHubPullRequestService(),
+        workspaceStackReader: any WorkspaceStackReading = WorkspaceStackService()
     ) {
         self.settings = settings
         self.worktreeService = worktreeService
         self.pullRequestService = pullRequestService
+        self.workspaceStackReader = workspaceStackReader
         self.sessionSnapshotURL = Self.resolvedSessionSnapshotURL(
             suppliedURL: sessionSnapshotURL,
             environment: environment
@@ -208,14 +227,16 @@ final class WorkspaceManager: ObservableObject {
         sessionSnapshotURL: URL? = nil,
         environment: [String: String] = ProcessInfo.processInfo.environment,
         worktreeService: WorktreeService = WorktreeService(),
-        githubPullRequestService: GitHubPullRequestService
+        githubPullRequestService: GitHubPullRequestService,
+        workspaceStackReader: any WorkspaceStackReading = WorkspaceStackService()
     ) {
         self.init(
             settings: settings,
             sessionSnapshotURL: sessionSnapshotURL,
             environment: environment,
             worktreeService: worktreeService,
-            pullRequestService: githubPullRequestService
+            pullRequestService: githubPullRequestService,
+            workspaceStackReader: workspaceStackReader
         )
     }
 
@@ -404,7 +425,7 @@ final class WorkspaceManager: ObservableObject {
         )
         workspaces.append(workspace)
         catchAllProject.addWorkspace(workspace.id)
-        selectedWorkspaceId = workspace.id
+        selectWorkspace(workspace.id)
         // Checkpoint Workspace identity and its Workspace Root immediately so
         // an application crash cannot discard a newly created Workspace.
         saveSession()
@@ -466,6 +487,7 @@ final class WorkspaceManager: ObservableObject {
         guard let index = workspaces.firstIndex(where: { $0.id == workspaceId }) else { return }
 
         let workspace = workspaces[index]
+        let previousOrder = sidebarOrderedWorkspaces.map(\.workspace.id)
 
         turnCompletionRuntime?.removeAttention(forWorkspace: workspaceId)
         agentStatusRuntime?.removeStatuses(forWorkspace: workspaceId)
@@ -482,20 +504,7 @@ final class WorkspaceManager: ObservableObject {
 
         workspaces.remove(at: index)
 
-        // Maintain selection invariant.
-        if selectedWorkspaceId == workspaceId {
-            if workspaces.isEmpty {
-                // Spec: always have at least one workspace.
-                let newWorkspace = freshStandaloneWorkspace()
-                workspaces.append(newWorkspace)
-                catchAllProject.addWorkspace(newWorkspace.id)
-                selectedWorkspaceId = newWorkspace.id
-            } else {
-                // Select the workspace at the same position (clamped).
-                let newIndex = min(index, workspaces.count - 1)
-                selectedWorkspaceId = workspaces[newIndex].id
-            }
-        }
+        restoreSelectionAfterRemovingWorkspaces([workspaceId], previousOrder: previousOrder)
     }
 
     func notifyWorkspaceContextChanged() {

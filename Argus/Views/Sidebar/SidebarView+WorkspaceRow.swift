@@ -11,11 +11,14 @@ struct SidebarWorkspaceRow: View {
     @EnvironmentObject var turnCompletionAttentionStore: TurnCompletionAttentionStore
     @EnvironmentObject private var appSettings: AppSettings
     @Environment(\.isCommandKeyHeld) private var isCommandKeyHeld
+    @Environment(\.sidebarWidthMetrics) private var sidebarMetrics
     @Environment(WindowFocusState.self) private var windowFocus
     let globalIndex: Int
     let shortcutDigit: Int?
     let isSelected: Bool
     let onSelect: () -> Void
+    var stackRelationship: WorkspaceStackRow? = nil
+    var showsStackGutter = false
     @State private var isHovered = false
     @FocusState private var isFocused: Bool
 
@@ -29,41 +32,27 @@ struct SidebarWorkspaceRow: View {
 
     private var workspaceRowButton: some View {
         Button(action: onSelect) {
-            HStack(spacing: 8) {
-                workspaceIcon
-
-                // Title and Workspace context
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(workspace.displayTitle)
-                        .font(
-                            .system(
-                                size: appSettings.presentationMetrics.textSize(forBaseSize: 13),
-                                weight: isSelected ? .semibold : .regular
-                            )
-                        )
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-
-                    if let subtitle = workspaceSubtitle {
-                        Text(subtitle)
-                            .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 10)))
-                            .foregroundColor(.secondary.opacity(workspace.workspaceType == .external ? 0.55 : 1))
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                            .help(workspaceSubtitleHelp)
-                    }
+            HStack(spacing: sidebarMetrics.rowSpacing) {
+                if let stackRelationship, showsStackGutter {
+                    SidebarStackGutter(branch: stackRelationship.branch, lane: stackRelationship.lane)
                 }
-
-                Spacer()
-
-                // Running-process count badge (shown when any Terminal Surface is busy)
-                if runningProcessCount > 0 {
-                    CountBadge(count: runningProcessCount)
-                        .help(runningProcessCountAccessibilityText)
+                if sidebarMetrics.isCompact {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: sidebarMetrics.rowSpacing) {
+                            workspaceIcon
+                            workspaceLabels
+                        }
+                        runningProcessBadge
+                    }
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                } else {
+                    workspaceIcon
+                    workspaceLabels
+                    Spacer(minLength: 0)
+                    runningProcessBadge
                 }
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, sidebarMetrics.rowPadding)
             .padding(.vertical, appSettings.presentationMetrics.workspaceRowVerticalPadding)
             .background(
                 RoundedRectangle(cornerRadius: 6)
@@ -91,9 +80,47 @@ struct SidebarWorkspaceRow: View {
         .onHover { hovering in
             isHovered = hovering
         }
+        .help(workspaceHelp)
         .accessibilityLabel(workspaceAccessibilityLabel)
         .accessibilityValue(workspaceAccessibilityValue)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var workspaceLabels: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(workspace.displayTitle)
+                .font(
+                    .system(
+                        size: appSettings.presentationMetrics.textSize(forBaseSize: 13),
+                        weight: isSelected ? .semibold : .regular
+                    )
+                )
+                .foregroundColor(.primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+
+            if let subtitle = workspaceSubtitle {
+                Text(subtitle)
+                    .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 10)))
+                    .foregroundColor(.secondary.opacity(workspace.workspaceType == .external ? 0.55 : 1))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .help(workspaceSubtitleHelp)
+            }
+        }
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var runningProcessBadge: some View {
+        if runningProcessCount > 0 || sidebarMetrics.isCompact {
+            CountBadge(count: runningProcessCount)
+                .fixedSize()
+                .opacity(runningProcessCount > 0 ? 1 : 0)
+                .allowsHitTesting(runningProcessCount > 0)
+                .accessibilityHidden(runningProcessCount == 0)
+                .help(runningProcessCountAccessibilityText)
+        }
     }
 
     @ViewBuilder
@@ -168,11 +195,20 @@ struct SidebarWorkspaceRow: View {
         if workspace.workspaceType == .external {
             return WorkspacePathFormatter.abbreviatedPath(workspace.currentDirectory)
         }
-        return workspace.branchName
+        return stackRelationship?.branch ?? workspace.branchName
     }
 
     private var workspaceSubtitleHelp: String {
-        workspace.workspaceType == .external ? workspace.currentDirectory : workspace.branchName ?? ""
+        if workspace.workspaceType == .external {
+            return workspace.currentDirectory
+        }
+        return stackRelationship?.branch ?? workspace.branchName ?? ""
+    }
+
+    private var workspaceHelp: String {
+        let action = "Select \(workspace.displayTitle)"
+        guard let stackRelationship else { return action }
+        return "\(action). \(stackRelationship.sidebarRelationshipDescription)"
     }
 
     private var backgroundColor: Color {
@@ -191,8 +227,11 @@ struct SidebarWorkspaceRow: View {
 
     private var workspaceAccessibilityLabel: String {
         var parts = ["Workspace \(globalIndex)", workspace.displayTitle, workspace.workspaceType.label]
-        if let branch = workspace.branchName {
+        if let branch = stackRelationship?.branch ?? workspace.branchName {
             parts.append("branch \(branch)")
+        }
+        if let stackRelationship {
+            parts.append(stackRelationship.sidebarRelationshipDescription)
         }
         if workspace.workspaceType == .external {
             parts.append("directory \(workspace.currentDirectory)")
@@ -212,5 +251,61 @@ struct SidebarWorkspaceRow: View {
             values.append("Agent status: \(agentStatus.state.label)")
         }
         return values.joined(separator: ", ")
+    }
+}
+
+struct SidebarCollapsedWorkspaceSummary: View {
+    let workspaceIds: [UUID]
+    @EnvironmentObject private var workspaceManager: WorkspaceManager
+    @EnvironmentObject private var turnCompletionAttentionStore: TurnCompletionAttentionStore
+    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(\.sidebarWidthMetrics) private var sidebarMetrics
+
+    private var selectedWorkspace: Workspace? {
+        guard let workspace = workspaceManager.selectedWorkspace,
+            workspaceIds.contains(workspace.id)
+        else { return nil }
+        return workspace
+    }
+
+    private var hasAttention: Bool {
+        workspaceIds.contains { turnCompletionAttentionStore.workspaceHasAttention($0) }
+    }
+
+    var body: some View {
+        if selectedWorkspace != nil || hasAttention {
+            VStack(alignment: .leading, spacing: 2) {
+                if let selectedWorkspace {
+                    SidebarCollapsedSelectionLabel(workspace: selectedWorkspace)
+                        .windowFocusChrome()
+                }
+                if hasAttention {
+                    Label("Unviewed completion", systemImage: "bell.fill")
+                        .foregroundStyle(.orange)
+                        .lineLimit(1)
+                        .help("One or more hidden Workspaces have Turn Completion Attention")
+                        .accessibilityLabel("Turn Completion Attention in hidden Workspaces")
+                }
+            }
+            .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 10)))
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, sidebarMetrics.isCompact ? sidebarMetrics.rowPadding : 26)
+            .padding(.trailing, sidebarMetrics.rowPadding)
+            .padding(.bottom, 4)
+            .accessibilityElement(children: .combine)
+        }
+    }
+}
+
+private struct SidebarCollapsedSelectionLabel: View {
+    @ObservedObject var workspace: Workspace
+
+    var body: some View {
+        Text("Selected: \(workspace.displayTitle)")
+            .foregroundStyle(Color.accentColor)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .help("Selected Workspace: \(workspace.displayTitle)")
+            .accessibilityLabel("Selected Workspace: \(workspace.displayTitle)")
     }
 }
