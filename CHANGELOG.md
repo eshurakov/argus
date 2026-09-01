@@ -2,6 +2,11 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-09-01
+
+- Related Workspaces now appear in collapsible Stack Groups with parent-to-dependent connectors, including forks and missing parent Workspaces. Grouping, keyboard navigation, and reordering share one order, collapsed groups remember their state, and relationship details stay in the list rather than a separate footer. ([a7ec9e8](https://github.com/jeanduplessis/argus/commit/a7ec9e8533a9fa7a7f5dd2c8f2fae51f3238b517))
+- Stack Groups and Against Base now share locally recorded parents from Git configuration, Graphite, and gh-stack. Conflicting metadata is reported without hiding unrelated groups or Working Changes, and metadata changes refresh automatically without contacting a remote. ([a7ec9e8](https://github.com/jeanduplessis/argus/commit/a7ec9e8533a9fa7a7f5dd2c8f2fae51f3238b517))
+
 ## 2026-08-31
 
 - Ghostty and AppKit state now stays on the Main Actor, and the Ghostty build rejects duplicate archive member names that can break dSYM generation. The build cache includes the local archive-naming patch, so patched and unpatched frameworks cannot be mixed. ([22bc945](https://github.com/jeanduplessis/argus/commit/22bc945ae070f41cd7a8f913f57a9c61fa342e1f))
