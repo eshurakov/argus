@@ -252,6 +252,69 @@ below labels, but their space MUST remain stable when a count becomes zero.
 Required hit targets, status information, full-row selection, and relationship
 help MUST remain available at the supported minimum width.
 
+Every Workspace row MUST reserve one fixed 20 by 20 point leading icon slot at
+all sidebar widths, including rows that are not eligible for Pull Request
+Status. Workspace icon precedence MUST be Turn Completion Attention → non-idle
+Agent Status (running, needs input, error) → Pull Request Status → idle Agent
+Status → Workspace-type icon. Apply this precedence to the newest effective
+Agent Status Entry without changing aggregation; Top-level Tab icon precedence
+is unchanged.
+
+Worktree Workspace Pull Request Status MUST use this shared leading slot:
+
+- Keep the title and branch lines and let them use the available text width.
+  Rows MUST NOT reserve a trailing Pull Request slot or show Pull Request numbers.
+  Pull Request numbers belong only in the popover, help, and accessibility text
+  and MUST NOT use localized digit grouping. Branches MUST continue to truncate
+  in the middle.
+- Keep the running-process count on the title line outside compact layouts.
+  Compact layouts MUST retain their separate stable process-count row. Stack
+  Group connectors and gutters MUST retain their geometry, separate from the
+  shared leading slot.
+- The Command-held shortcut digit MUST take visual priority. When it covers
+  Pull Request Status, the hidden icon control MUST reject hit testing and be
+  removed from the accessibility tree.
+- Selection and Pull Request Status MUST be sibling controls, never nested
+  buttons. Retain the row selection hit area, reordering, and context menu. The
+  visible icon MUST independently open the existing popover and provide hover
+  feedback, a pointing-hand cursor, help, keyboard activation, and an
+  accessibility value containing the full status even at narrow widths.
+- Pull Request Status inspection MUST NOT change the Selected Workspace, Active
+  Tab, Focused Pane, or Right-sidebar View. Escape MUST dismiss the popover and
+  return focus to its invoking icon if still visible, otherwise to the row.
+  Context menus MUST retain Show/Refresh actions when Turn Completion Attention
+  or non-idle Agent Status hides the icon, and after confirmed no match or
+  failure. A hidden Pull Request Status control MUST be non-interactive and
+  accessibility-hidden.
+- The native popover MUST use foreground and material appearances that match the
+  main Workspace window. It MUST show the Pull Request number, title, status,
+  refresh information, and actions without repeating the repository, head branch,
+  or base branch.
+- Open Pull Request MUST use the default system browser without mutating
+  Workspace, Top-level Tab, or Pane state or changing the Right-sidebar View.
+  This explicit external navigation does not change the in-Workspace surface
+  rules for other inspectable content.
+- Automatic Pull Request refresh MUST be quiet: no sidebar or popover progress
+  indicator, and no temporary loading icon or refreshing help text. Keep the
+  last-known status and errors; normal freshness and identity validation still
+  apply. With no status or error, including confirmed no match, use idle Agent
+  Status or the Workspace-type icon subject to the shared precedence. Not-checked
+  and unavailable states MUST remain distinguishable through help and the popover.
+- Clicking Refresh in the popover MUST show progress beside that action while
+  its Workspace refresh is pending or running, even with cached status. Progress
+  MUST stop on completion, failure, suspension, a quota/rate-limit pause, state
+  removal, or dismissal. Automatic work MUST NOT activate or reactivate it.
+  Dismissal MUST reset only the popover's progress presentation, not cancel shared
+  refresh work. Progress MUST NOT change selection or focus.
+- A host quota/rate-limit pause MUST retain last-known content, explain the
+  resume time, and disable manual Refresh until the deadline. Paused work MUST
+  NOT display an indefinite loading indicator.
+- For a known Pull Request, the single status icon MUST use the highest-priority
+  applicable signal: stale → failed checks → changes requested → pending checks →
+  unavailable → approval; otherwise, use lifecycle. Merged/closed MUST suppress
+  every signal except stale. Use semantic icons and text, not color alone or
+  pulsing; help and the popover MUST retain full details.
+
 The Changes View MUST render the ordered typed Change Sections in the active
 Git Status Snapshot. With both Changes View settings disabled, it MUST preserve
 the Staged, Unstaged, and Untracked sections and their existing layout. When

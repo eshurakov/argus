@@ -190,6 +190,19 @@ struct SettingsView: View {
                         .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                Toggle(isOn: $settings.showPullRequestStatus) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Show Pull Request status")
+                        Text(
+                            "Shows GitHub Pull Request status beside Worktree Workspaces. Uses the active "
+                                + "GitHub CLI account and contacts GitHub while this window is active. "
+                                + "Does not fetch or change local Git data."
+                        )
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
                 Toggle(isOn: $settings.showBaseBranchChanges) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Show committed changes against Base Branch")

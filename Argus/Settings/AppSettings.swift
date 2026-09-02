@@ -46,6 +46,7 @@ final class AppSettings: ObservableObject {
         static let defaultDiffStyle = "Argus.settings.filesAndChanges.defaultDiffStyle"
         static let combineWorkingChangeSections = "Argus.settings.filesAndChanges.combineWorkingChangeSections"
         static let showBaseBranchChanges = "Argus.settings.filesAndChanges.showBaseBranchChanges"
+        static let showPullRequestStatus = "Argus.settings.filesAndChanges.showPullRequestStatus"
         static let homepage = "Argus.settings.browser.homepage"
         static let searchProvider = "Argus.settings.browser.searchProvider"
         static let defaultZoom = "Argus.settings.browser.defaultZoom"
@@ -128,6 +129,9 @@ final class AppSettings: ObservableObject {
     @Published var showBaseBranchChanges: Bool {
         didSet { persist(showBaseBranchChanges, for: Keys.showBaseBranchChanges) }
     }
+    @Published var showPullRequestStatus: Bool {
+        didSet { persist(showPullRequestStatus, for: Keys.showPullRequestStatus) }
+    }
     @Published var homepage: String {
         didSet {
             let normalized = Self.normalizedHomepage(homepage)
@@ -183,6 +187,7 @@ final class AppSettings: ObservableObject {
         defaultDiffStyle = Self.enumValue(defaults, key: Keys.defaultDiffStyle, fallback: .split)
         combineWorkingChangeSections = Self.bool(defaults, key: Keys.combineWorkingChangeSections, fallback: false)
         showBaseBranchChanges = Self.bool(defaults, key: Keys.showBaseBranchChanges, fallback: false)
+        showPullRequestStatus = Self.bool(defaults, key: Keys.showPullRequestStatus, fallback: true)
         homepage = Self.normalizedHomepage(defaults.string(forKey: Keys.homepage) ?? "")
         searchProvider = Self.enumValue(defaults, key: Keys.searchProvider, fallback: .none)
         defaultZoom = Self.clamp(defaults.double(forKey: Keys.defaultZoom), to: 0.5...2, fallback: 1)
@@ -224,6 +229,7 @@ final class AppSettings: ObservableObject {
         persist(defaultDiffStyle.rawValue, for: Keys.defaultDiffStyle)
         persist(combineWorkingChangeSections, for: Keys.combineWorkingChangeSections)
         persist(showBaseBranchChanges, for: Keys.showBaseBranchChanges)
+        persist(showPullRequestStatus, for: Keys.showPullRequestStatus)
         persist(homepage, for: Keys.homepage)
         persist(searchProvider.rawValue, for: Keys.searchProvider)
         persist(defaultZoom, for: Keys.defaultZoom)

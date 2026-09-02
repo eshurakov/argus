@@ -77,9 +77,9 @@ struct AgentStatusUIContractTests {
 
         row.containsAll(
             [
-                "if let agentStatus",
-                "Image(systemName: agentStatus.state.symbolName)",
-                ".foregroundStyle(agentStatus.state.color)",
+                "case .agent(let state):",
+                "Image(systemName: state.symbolName)",
+                ".foregroundStyle(state.color)",
                 "Image(systemName: workspace.workspaceType.icon)",
                 ".accessibilityValue(workspaceAccessibilityValue)",
                 #"values.append("Agent status: \(agentStatus.state.label)")"#,

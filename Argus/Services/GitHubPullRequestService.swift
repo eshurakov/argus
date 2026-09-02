@@ -251,7 +251,8 @@ private final class BoundedGitHubPipeReader {
 /// Resolves Pull Requests through the active GitHub CLI authentication
 /// context. It is deliberately a service rather than a SwiftUI concern.
 final class GitHubPullRequestService: Sendable {
-    private static let timeout: TimeInterval = 30
+    static let timeout: TimeInterval = 30
+    static let outputLimit = 1_048_576
     private static let jsonFields =
         "number,title,url,headRefName,headRefOid,headRepository,headRepositoryOwner,isCrossRepository"
 
@@ -286,16 +287,11 @@ final class GitHubPullRequestService: Sendable {
             throw PullRequestWorkspaceError.cancelled
         }
 
-        guard let executableURL = executableURLOverride ?? locateExecutable() else {
+        guard let executableURL = resolvedExecutableURL else {
             throw PullRequestWorkspaceError.githubCLIUnavailable
         }
 
-        let environment = processEnvironment.merging([
-            "GH_PROMPT_DISABLED": "1",
-            "GH_PAGER": "cat",
-            "NO_COLOR": "1",
-            "GIT_TERMINAL_PROMPT": "0"
-        ]) { _, new in new }
+        let environment = commandEnvironment
 
         let result: GitHubCommandResult
         do {
@@ -325,7 +321,7 @@ final class GitHubPullRequestService: Sendable {
             )
         }
 
-        guard result.stdout.count <= 1_048_576, result.stderr.count <= 1_048_576 else {
+        guard result.stdout.count <= Self.outputLimit, result.stderr.count <= Self.outputLimit else {
             throw PullRequestWorkspaceError.metadataUnavailable(
                 "GitHub CLI output exceeded the 1 MiB safety limit."
             )
@@ -397,6 +393,22 @@ final class GitHubPullRequestService: Sendable {
             headCommitObjectID: response.headRefOid,
             isCrossRepository: response.isCrossRepository
         )
+    }
+
+    var resolvedExecutableURL: URL? {
+        executableURLOverride ?? locateExecutable()
+    }
+
+    var commandEnvironment: [String: String] {
+        var environment = processEnvironment.merging([
+            "GH_PROMPT_DISABLED": "1",
+            "GH_PAGER": "cat",
+            "NO_COLOR": "1",
+            "GIT_TERMINAL_PROMPT": "0"
+        ]) { _, new in new }
+        environment.removeValue(forKey: "GH_DEBUG")
+        environment.removeValue(forKey: "DEBUG")
+        return environment
     }
 
     private func locateExecutable() -> URL? {
@@ -475,7 +487,7 @@ final class GitHubPullRequestService: Sendable {
         )
     }
 
-    private static func safeDetail(_ raw: String) -> String {
+    static func safeDetail(_ raw: String) -> String {
         let lines =
             raw
             .split(whereSeparator: \.isNewline)

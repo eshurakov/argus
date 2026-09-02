@@ -153,8 +153,12 @@ struct WindowFocusAppearanceTests {
         let tabIndicators = try tabBar.section(after: "if panel.isLoading {", before: "} else if let icon")
         #expect(!tabIndicators.contains(".windowFocusChrome()"))
         let row = try SourceContract("Argus/Views/Sidebar/SidebarView+WorkspaceRow.swift")
-        let workspaceIndicators = try row.section(after: "if hasAttention {", before: "} else {")
+        let workspaceIndicators = try row.section(after: "case .attention:", before: "case .workspaceType:")
         #expect(!workspaceIndicators.contains(".windowFocusChrome()"))
+        let pullRequests = try SourceContract("Argus/Views/Sidebar/PullRequestStatusView.swift")
+        let pullRequestIcon = try pullRequests.section(
+            after: "struct PullRequestStatusIcon", before: "struct PullRequestStatusSummary")
+        #expect(!pullRequestIcon.contains(".windowFocusChrome()"))
     }
 
     private func bitmap(_ content: some View, isKeyWindow: Bool) throws -> NSBitmapImageRep {

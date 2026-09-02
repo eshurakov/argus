@@ -33,6 +33,7 @@ struct AppSettingsTests {
             #expect(settings.defaultDiffStyle == .split)
             #expect(!settings.combineWorkingChangeSections)
             #expect(!settings.showBaseBranchChanges)
+            #expect(settings.showPullRequestStatus)
             #expect(settings.homepage.isEmpty)
             #expect(settings.searchProvider == .none)
             #expect(settings.defaultZoom == 1)
@@ -155,6 +156,33 @@ struct AppSettingsTests {
             #expect(!roundTripped.combineWorkingChangeSections)
             #expect(!roundTripped.showBaseBranchChanges)
         }
+    }
+
+    @Test(arguments: [(false, false), (true, false), (false, true), (true, true)])
+    func pullRequestStatusRoundTripsIndependentlyOfLocalChanges(combineWorkingChanges: Bool, showAgainstBase: Bool) {
+        let defaults = makeDefaults()
+        defer { clear(defaults) }
+        let settings = AppSettings(defaults: defaults)
+        settings.combineWorkingChangeSections = combineWorkingChanges
+        settings.showBaseBranchChanges = showAgainstBase
+        #expect(settings.showPullRequestStatus)
+
+        settings.showPullRequestStatus = false
+        let disabled = AppSettings(defaults: defaults)
+        #expect(!disabled.showPullRequestStatus)
+        #expect(disabled.combineWorkingChangeSections == combineWorkingChanges)
+        #expect(disabled.showBaseBranchChanges == showAgainstBase)
+        #expect(!defaults.bool(forKey: "Argus.settings.filesAndChanges.showPullRequestStatus"))
+
+        disabled.combineWorkingChangeSections.toggle()
+        disabled.showBaseBranchChanges.toggle()
+        #expect(!AppSettings(defaults: defaults).showPullRequestStatus)
+        disabled.showPullRequestStatus = true
+        let enabled = AppSettings(defaults: defaults)
+        #expect(enabled.showPullRequestStatus)
+        #expect(enabled.combineWorkingChangeSections == !combineWorkingChanges)
+        #expect(enabled.showBaseBranchChanges == !showAgainstBase)
+        #expect(defaults.bool(forKey: "Argus.settings.filesAndChanges.showPullRequestStatus"))
     }
 
     @Test

@@ -90,6 +90,8 @@ private struct WorkspaceDeletionProgressView: View {
 
 struct MainWindowView: View {  // swiftlint:disable:this type_body_length
     @EnvironmentObject var workspaceManager: WorkspaceManager
+    @EnvironmentObject private var appSettings: AppSettings
+    @StateObject private var pullRequestStatusModel = WorkspacePullRequestStatusModel()
     @ObservedObject private var ghosttyApp = GhosttyApp.shared
     @State private var windowFocus = WindowFocusState()
     @StateObject private var sidebarState = SidebarState()
@@ -203,7 +205,18 @@ struct MainWindowView: View {  // swiftlint:disable:this type_body_length
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
+        .background {
+            WorkspacePullRequestStatusLifecycle(
+                model: pullRequestStatusModel,
+                targets: workspaceManager.pullRequestStatusTargets,
+                selectedWorkspaceID: workspaceManager.selectedWorkspaceId,
+                isEnabled: appSettings.showPullRequestStatus
+            )
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
         .environment(windowFocus)
+        .environmentObject(pullRequestStatusModel)
         .environmentObject(sidebarState)
         .environmentObject(gitSidebarState)
         .environmentObject(gitStatusViewModel)
@@ -211,7 +224,7 @@ struct MainWindowView: View {  // swiftlint:disable:this type_body_length
         .onChange(of: workspaceIDs, initial: true) { _, ids in
             rightSidebarSessionState.retainWorkspaces(ids)
         }
-        .environment(\.colorScheme, ghosttyApp.chromePalette.isDark ? .dark : .light)
+        .preferredColorScheme(ghosttyApp.chromePalette.isDark ? .dark : .light)
         .onReceive(NotificationCenter.default.publisher(for: .toggleSidebar)) { _ in
             sidebarState.toggle()
             clampSidebarWidths(windowWidth: windowWidth)

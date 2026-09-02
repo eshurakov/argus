@@ -8,6 +8,7 @@ No current proposals.
 
 Completed proposals:
 
+- [Pull Request status for Worktree Workspaces](worktree-pull-request-status/spec.md) — design A and host-batched, quota-aware refresh implemented on 2026-08-30 and promoted into `docs/SPEC.md`; B and C remain design comparisons.
 - [Pull Request Workspace creation](pull-request-workspace/spec.md) — implemented and promoted into the Projects and Workspaces and Git worktrees sections of `docs/SPEC.md`.
 
 Use these lifecycle states:

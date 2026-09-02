@@ -83,7 +83,8 @@ struct WorkspaceStackUIContractTests {
                 "var stackRelationship: WorkspaceStackRow?", "var showsStackGutter = false",
                 "parts.append(stackRelationship.sidebarRelationshipDescription)", ".help(workspaceHelp)"
             ], "relationship inputs are optional and accessible")
-        let button = try row.section(after: "private var workspaceRowButton: some View {", before: "@ViewBuilder")
+        let button = try row.section(
+            after: "private var workspaceRowButton: some View {", before: "private var workspaceLabels")
         let action = try #require(button.range(of: "Button(action: onSelect)"))
         let gutter = try #require(
             button.range(of: "SidebarStackGutter(branch: stackRelationship.branch, lane: stackRelationship.lane)"))
@@ -299,7 +300,8 @@ extension WorkspaceStackUIContractTests {
         #expect(compact.contains("workspaceIcon"))
         #expect(labels.lowerBound < badge.lowerBound)
         #expect(compact.contains(".frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)"))
-        let badgeView = try row.section(after: "private var runningProcessBadge: some View {", before: "@ViewBuilder")
+        let badgeView = try row.section(
+            after: "private var runningProcessBadge: some View {", before: "private var showsPullRequestStatus")
         #expect(badgeView.contains("if runningProcessCount > 0 || sidebarMetrics.isCompact"))
         #expect(badgeView.contains(".opacity(runningProcessCount > 0 ? 1 : 0)"))
         #expect(badgeView.contains(".allowsHitTesting(runningProcessCount > 0)"))

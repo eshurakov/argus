@@ -15,6 +15,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 | **Worktree management** | Repository validation, branch discovery, worktree creation/removal, managed storage, and orphan discovery | `Argus/Services/WorktreeService.swift` | All git operations use spawned `git` processes; no libgit2. |
 | **Terminal runtime** | Global Ghostty engine, terminal surfaces, shell processes, rendering, terminal input, and first-responder behavior | `Argus/Ghostty/`, `Argus/Models/TerminalPanel.swift` | One global `GhosttyApp`; one Terminal Surface per Terminal Panel. |
 | **Files and Changes** | Right-sidebar navigation, workspace file tree, Git status snapshot, change actions, filesystem item actions, and file/preview loading | `Argus/Views/GitSidebar/`, `Argus/Models/GitStatus.swift`, `Argus/Services/GitStatus*`, `Argus/Services/GitPreviewService.swift` | Git Status Root never follows a terminal's live working directory. |
+| **Pull Request Status** | Read-only provider discovery, Workspace-scoped status, refresh scheduling, and freshness | `Argus/Services/WorkspacePullRequestStatusModel*`, `Argus/Services/GitHubPullRequestService+Status.swift`, `Argus/Models/PullRequestStatus.swift` | Main-window-owned runtime, independent of sidebar visibility and local Git Status Snapshots. |
 | **User interface** | Single-window surface placement, tab behavior, interaction affordances, chrome, and accessibility contract | `Argus/Views/`, `docs/UI_DESIGN_PRINCIPLES.md` | Inspectable content belongs in Workspace tabs, not independent windows. |
 | **Session persistence** | Session snapshots, restore validation, Project/Workspace reconciliation, and sidebar preferences | `Argus/Models/SessionSnapshot.swift`, `Argus/Services/WorkspaceManager.swift`, `Argus/Views/Sidebar/SidebarState.swift` | Durable state and ephemeral runtime state must remain distinct. |
 | **Agent status and integrations** | In-process Agent Status display, Turn Completion Attention, Socket Server routing, and external integration setup | `Argus/Services/AgentStatusStore.swift`, `Argus/Services/AgentStatusRuntime.swift`, `Argus/Services/TurnCompletionAttentionStore.swift`, `Argus/Services/AgentSocketServer.swift`, `Argus/Services/KiloIntegrationService.swift`, `Argus/Services/PiIntegrationService.swift`, `ArgusCLI/` | The Socket Server implements only the agent turn-completion and live Agent Status methods; the Companion CLI remains a scaffold. |
@@ -32,6 +33,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 | **Named Project** | Current stable Code Work Mode form of a Project with an immutable Project ID, local Project Repository Root, main-branch metadata, and child Workspaces. The Review Work Mode proposal generalizes Project identity beyond this local-checkout requirement. | When current local repository ownership or removal behavior matters. | "normal project", "regular project". |
 | **Repository Identity** | Stable hosting-provider and repository coordinates used to recognize one hosted repository independently of a local checkout path. | Matching a Pull Request URL to a Project and preventing duplicate cross-mode Projects. | Repository display name or local path as hosted identity. |
 | **Pull Request** | Provider-qualified review subject identified by Repository Identity and provider Pull Request number. | Review Work Mode navigation, tabs, refresh, conversations, and review submission. | Local branch, Git Preview Tab, or an unqualified "PR" in domain contracts. |
+| **Pull Request Status** | Runtime-only provider lifecycle, aggregate review/check results, and refresh health associated with a Worktree Workspace's currently observed branch and Repository Identity. | Sidebar Pull Request Status icons, read-only provider refresh, and status summaries. | Git Status Snapshot, Agent Status, a durable Pull Request association, or merge readiness. |
 | **Review Inbox** | Provider-synchronized set of open Pull Requests for which the active GitHub account is explicitly requested as a reviewer. | Automatic Review Work Mode discovery and refresh. | All open Pull Requests or durable ownership of local review state. |
 | **Saved Pull Request** | Pull Request retained in Review Work Mode independently of current Review Inbox eligibility because it was manually added, explicitly saved, has an open review tab, or has local drafts. | Durable review navigation and safe retention. | A bookmark with no review state or an Inbox item that may be dropped unconditionally. |
 | **Catch-all Project** | The single synthetic, non-removable Project displayed as "Workspaces" that groups Standalone Workspaces. | Referring to unassigned Workspace organization. | "default project", "misc project", "unassigned project". |
@@ -132,6 +134,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 - A nonempty Selected Workspace contains one Active Tab, and the Active Tab contains one Focused Pane. An Empty Workspace contains neither.
 - A Main-checkout Workspace resolves its Git Status Root from its Named Project's Project Repository Root.
 - A Worktree Workspace resolves its Git Status Root from its worktree path.
+- Pull Request Status uses a Worktree Workspace's observed branch/HEAD and verified Repository Identity, not its stored branch label or original intake. `MainWindowView` owns the runtime; services own local input reads and provider I/O.
 - A Standalone Workspace resolves its Git Status Root from its Workspace Root.
 - A Git Status Request combines one Git Status Root with one Git Status Presentation, and a Git Status Snapshot Owner pairs that request with a Workspace ID.
 - A Git Status Snapshot exposes ordered Change Sections. A path may appear in more than one section when it represents different comparison contexts, while Uncommitted itself contains one row per unique Working Changes path.
@@ -144,7 +147,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 - A Pull Request Review Tab reads one Review Revision at a time. A newer remote head is announced but does not replace the loaded revision until the user explicitly updates.
 - A Pending Review belongs to one Pull Request and Review Revision. Existing-conversation replies publish separately; new inline comments publish with the Pending Review and its Review Disposition.
 - A Per-panel Agent Status overrides Workspace-level Agent Status for the same terminal context.
-- The Session Snapshot persists Code Work Mode state. Review Session State persists Review Work Mode state independently. Agent Status Entries, agent PIDs, Git Status Snapshots, and socket connections are ephemeral.
+- The Session Snapshot persists Code Work Mode state. Review Session State persists Review Work Mode state independently. Agent Status Entries, agent PIDs, Git Status Snapshots, Pull Request Status, and socket connections are ephemeral.
 
 ## Agent Rules
 
@@ -158,7 +161,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 - Do not use Panel, Top-level Tab, Pane, and Terminal Surface interchangeably.
 - Use Ghostty's per-surface close-confirmation heuristic for running-process prompts; do not scan process groups or invent a second process-liveness API.
 - Say **Selected Workspace**, **Active Tab**, and **Focused Pane** for their distinct state levels.
-- Qualify "status" as Git Status Snapshot, Git File Status, Agent Status Entry, or a specific load state.
+- Qualify "status" as Git Status Snapshot, Git File Status, Pull Request Status, Agent Status Entry, or a specific load state.
 - Qualify "notification" as Agent Notification, Foundation Notification, macOS notification, or TTS announcement.
 - Qualify "root" as Workspace Root, Project Repository Root, Git Status Root, or managed storage root.
 - Qualify "file tree" as Workspace File Tree or Change Tree.
@@ -216,6 +219,7 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 - **Worktree management** owns repository validation, branch operations, explicit Code Work Mode Pull Request head preparation, Managed Worktree creation/removal, managed storage, and orphan cleanup; it does not own Workspace Item Operations or Git Mutations.
 - **Terminal runtime** owns Ghostty resources and shell state; Workspace organization references terminal runtime through Terminal Panels and IDs.
 - **Files and Changes** owns Workspace Item Operations and Git Mutations, may read Workspace context, must resolve I/O roots explicitly, and publishes inspectable content through Workspace tab APIs.
+- **Pull Request Status** is a read-only consumer of Workspace/worktree context; it owns neither Git Mutations nor Review Work Mode state.
 - **User interface** owns presentation and transient interaction state, not repository, worktree, Workspace, or session truth.
 - **Session persistence** owns serialized durable state and reconciliation; it must exclude live process, socket, Git status, and Agent status state.
 - Future integration proposals must keep the Companion CLI transport-only, the Socket Server app-owned, and authoritative domain state in the Argus Application.
@@ -228,4 +232,6 @@ worktree, terminal, repository-status, UI, persistence, IPC, and agent behavior.
 - `docs/adrs/README.md` defines where accepted architecture decisions are recorded and how they are superseded.
 - `docs/adrs/0002-render-structured-diffs-with-native-swift-diffs.md` defines ownership and runtime boundaries for structured diff rendering.
 - `docs/adrs/0009-share-tool-agnostic-recorded-parents.md` supersedes ADRs 0007 and 0008 with shared local parent resolution, explicit-config precedence, partial diagnostics, and fork-aware Stack grouping. Their offline/reference/lifecycle constraints remain applicable.
+- `docs/adrs/0008-read-only-worktree-pull-request-status.md` permits automatic read-only Pull Request Status while preserving ADR 0005's intake and credential guarantees.
+- `docs/adrs/0009-host-batched-pull-request-status.md` records shared host batches, quota-aware pauses, and independent Workspace ownership of results.
 - `docs/proposals/` contains future behavior and is not authoritative for the current application until a proposal is implemented and promoted into the spec.

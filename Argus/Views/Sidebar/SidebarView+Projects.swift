@@ -10,6 +10,8 @@ struct ProjectSection: View {
     @ObservedObject var project: Project
     var showsHeader: Bool = true
     @EnvironmentObject var workspaceManager: WorkspaceManager
+    @EnvironmentObject private var appSettings: AppSettings
+    @EnvironmentObject private var pullRequestStatusModel: WorkspacePullRequestStatusModel
 
     var body: some View {
         VStack(spacing: 0) {
@@ -32,6 +34,9 @@ struct ProjectSection: View {
             } else {
                 SidebarCollapsedWorkspaceSummary(workspaceIds: project.workspaceIds)
             }
+        }
+        .onChange(of: project.isExpanded) { _, isExpanded in
+            if isExpanded { pullRequestStatusModel.refreshProject(projectID: project.id) }
         }
     }
 
@@ -79,6 +84,12 @@ struct ProjectSection: View {
             }
         }
         workspaceMoveActions(for: workspace.id, isStack: isStack)
+        if appSettings.showPullRequestStatus, !project.isCatchAll,
+            workspace.workspaceType == .worktree, workspace.worktreePath?.isEmpty == false
+        {
+            Divider()
+            PullRequestStatusMenuItems(workspaceID: workspace.id)
+        }
         Divider()
         Button("Copy Path") {
             copyPath(workspace.worktreePath)
