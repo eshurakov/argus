@@ -46,25 +46,30 @@ struct TurnCompletionUIContractTests {
     }
 
     @Test
-    func workspaceBellPrecedesAgentStatusAndTypeIcon() throws {
+    func workspaceBellUsesSharedPrecedenceAheadOfAgentAndPullRequestStatus() throws {
         let row = try SourceContract("Argus/Views/Sidebar/SidebarView+WorkspaceRow.swift")
         let iconSelection = try row.section(
-            after: "if hasAttention",
+            after: "private var workspaceIcon: some View",
             before: "private var showsShortcutOverlay"
         )
 
-        let statusBranch = try #require(iconSelection.range(of: "else if let agentStatus"))
-        let defaultBranch = try #require(iconSelection.range(of: "workspace.workspaceType.icon"))
-        #expect(statusBranch.lowerBound < defaultBranch.lowerBound)
-
+        #expect(iconSelection.contains("switch workspaceIconKind"))
+        #expect(iconSelection.contains("case .attention:"))
         #expect(iconSelection.contains("Image(systemName: \"bell.fill\")"))
         #expect(iconSelection.contains(".foregroundStyle(.orange)"))
-        #expect(iconSelection.contains(".frame(width: 14)"))
+        #expect(iconSelection.contains(".frame(width: 20, height: 20)"))
         #expect(iconSelection.contains(".accessibilityHidden(true)"))
-        row.contains(
-            "turnCompletionAttentionStore.workspaceHasAttention(workspace.id)",
-            "Workspace row summarizes shared Turn Completion Attention"
+        row.containsAll(
+            ["hasAttention: hasAttention", "turnCompletionAttentionStore.workspaceHasAttention(workspace.id)"],
+            "Workspace row passes shared Turn Completion Attention to the icon resolver"
         )
+        let resolver = try SourceContract("Argus/Views/Sidebar/PullRequestStatusView.swift").section(
+            after: "init(hasAttention:", before: "enum PullRequestStatusSignal")
+        let attention = try #require(resolver.range(of: "if hasAttention"))
+        let agent = try #require(resolver.range(of: "else if let agentState, agentState != .idle"))
+        let pullRequest = try #require(resolver.range(of: "else if showsPullRequestStatus"))
+        #expect(attention.lowerBound < agent.lowerBound)
+        #expect(agent.lowerBound < pullRequest.lowerBound)
     }
 
     @Test
@@ -100,7 +105,7 @@ struct TurnCompletionUIContractTests {
         let tabIconSelection = try tabBar.section(after: "if panel.isLoading", before: "Text(title)")
         #expect(!tabIconSelection.contains("selectPanel"))
         let rowIconSelection = try row.section(
-            after: "if hasAttention",
+            after: "private var workspaceIcon: some View",
             before: "private var showsShortcutOverlay"
         )
         #expect(!rowIconSelection.contains("onSelect"))

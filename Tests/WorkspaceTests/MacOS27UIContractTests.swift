@@ -11,10 +11,10 @@ struct MacOS27UIContractTests {
         row.containsAll(
             [
                 "Image(systemName: \"bell.fill\")",
-                "Image(systemName: agentStatus.state.symbolName)",
+                "Image(systemName: state.symbolName)",
                 "Image(systemName: workspace.workspaceType.icon)",
                 ".font(.system(size: 11, weight: .semibold))",
-                ".frame(width: 14)"
+                ".frame(width: 20, height: 20)"
             ], "native Workspace row status and type icons")
         row.excludes("workspaceTypeMarker", "Workspace rows use semantic type symbols")
     }

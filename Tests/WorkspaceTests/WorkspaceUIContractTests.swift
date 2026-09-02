@@ -297,8 +297,10 @@ struct WorkspaceTabAndChromeUIContractTests {
             [
                 "@ObservedObject private var ghosttyApp = GhosttyApp.shared",
                 ".background(ChromeColors.shellBackground)",
-                ".environment(\\.colorScheme, ghosttyApp.chromePalette.isDark ? .dark : .light)"
-            ], "black window shell with Ghostty-derived appearance")
+                ".preferredColorScheme(ghosttyApp.chromePalette.isDark ? .dark : .light)"
+            ], "native window and presentation appearance must match the black shell")
+        try SourceContract("Argus/Views/MainWindowView.swift").excludes(
+            ".environment(\\.colorScheme,", "an environment-only override leaves native popover materials mismatched")
     }
 
     @Test

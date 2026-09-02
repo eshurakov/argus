@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Argus — Pull Request status design options</title>
+<style>
+:root { color-scheme: light; --paper:#f3f1eb; --ink:#242722; --muted:#62665f; --line:#d5d6cf; --accent:#a34328; --shell:#000; --side-width:200px; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+main { max-width:1280px; margin:auto; padding:38px 36px 54px; }
+a { color:inherit; text-underline-offset:4px; }
+button,select,input { font:inherit; }
+button,select,label:has(input) { cursor:pointer; }
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible { outline:2px solid #d26c46; outline-offset:4px; }
+button:disabled { cursor:default; opacity:.45; }
+.eyebrow,.mono { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+.eyebrow { font-size:11px; letter-spacing:.12em; text-transform:uppercase; }
+header { display:flex; gap:30px; align-items:flex-end; justify-content:space-between; margin-bottom:30px; }
+header .eyebrow { color:var(--accent); }
+h1 { font:normal clamp(32px,4vw,49px)/1.08 "Iowan Old Style",Palatino,Georgia,serif; letter-spacing:-.035em; margin:12px 0 14px; }
+header p { margin:0; max-width:640px; color:var(--muted); }
+.document-meta { text-align:right; flex-shrink:0; font-size:12px; color:var(--muted); }
+.document-meta a { display:block; margin-top:10px; }
+.controls { display:flex; align-items:center; flex-wrap:wrap; gap:14px 24px; padding:15px 0; border-block:1px solid var(--line); margin-bottom:24px; font-size:12px; }
+.controls label { display:flex; align-items:center; gap:8px; }
+.controls select { max-width:210px; border:1px solid #c6c8bf; border-radius:5px; background:#faf9f6; color:var(--ink); padding:5px 26px 5px 8px; }
+.controls input { accent-color:var(--accent); }
+.controls .note { margin-left:auto; color:var(--muted); font-size:11px; }
+.options { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; }
+.option { min-width:0; }
+.option-heading { min-height:101px; }
+h2 { font-size:18px; line-height:1.3; letter-spacing:-.025em; margin:0 0 8px; }
+.letter { color:var(--accent); margin-right:8px; font:12px ui-monospace,SFMono-Regular,Menlo,monospace; }
+.recommended { display:inline-block; margin-left:6px; vertical-align:middle; padding:2px 5px; border:1px solid #b3beb1; color:#43573d; font:10px -apple-system,BlinkMacSystemFont,sans-serif; letter-spacing:0; }
+.option-heading p { margin:0; color:var(--muted); font-size:13px; }
+.sample { height:418px; background:var(--shell); border:1px solid #383a39; border-radius:9px; color:#e1e2e5; overflow:hidden; font:12px/1.4 -apple-system,BlinkMacSystemFont,sans-serif; color-scheme:dark; }
+.sample-top { height:44px; display:flex; align-items:center; gap:7px; border-bottom:1px solid #242526; padding:0 13px; }
+.traffic { width:10px; height:10px; border-radius:50%; background:#fe6058; }
+.traffic:nth-child(2) { background:#febc2e; }
+.traffic:nth-child(3) { background:#28c840; }
+.sample-label { margin-left:auto; color:#96999e; font-size:10px; }
+.sample-body { display:flex; height:374px; overflow:hidden; }
+.sidebar { flex:0 0 min(var(--side-width),100%); width:var(--side-width); min-width:0; border-right:1px solid #242526; overflow:auto; scrollbar-width:thin; }
+.project { height:31px; padding:7px 9px; display:flex; gap:6px; align-items:center; color:#aaaeb6; font-size:11px; white-space:nowrap; overflow:hidden; }
+.project-name { overflow:hidden; text-overflow:ellipsis; }
+.project .icon { width:10px; height:10px; }
+.rows { padding:0 5px; }
+.workspace { position:relative; border-radius:5px; margin-bottom:2px; min-width:0; }
+.workspace.selected { background:#15212e; }
+.workspace.selected:before { content:""; position:absolute; left:0; top:3px; bottom:3px; width:3px; border-radius:2px; background:#5b9bd5; z-index:1; }
+.workspace:hover { background:#17191c; }
+.workspace.selected:hover { background:#192b3c; }
+.row-select { display:grid; grid-template-columns:14px minmax(0,1fr); gap:7px; align-items:center; width:100%; height:44px; padding:5px 7px; border:0; border-radius:5px; background:transparent; color:inherit; text-align:left; }
+.leading { width:14px; display:flex; align-items:center; justify-content:center; color:#a4a7ad; }
+.leading.attention { color:#e9ac61; }
+.leading.running { color:#79acd9; }
+.row-text { display:block; min-width:0; }
+.name-line { display:flex; gap:5px; align-items:center; min-width:0; height:17px; }
+.workspace-name { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:12px; flex:1; }
+.selected .workspace-name { font-weight:600; }
+.process-count { min-width:16px; height:15px; border-radius:4px; background:#292c32; color:#bdc0c5; text-align:center; font-size:10px; line-height:15px; }
+.branch-line { height:15px; display:flex; gap:3px; align-items:center; min-width:0; padding-right:68px; }
+.branch { overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font:10px ui-monospace,SFMono-Regular,Menlo,monospace; color:#8d949e; }
+.pr-button { position:absolute; right:6px; bottom:3px; width:68px; height:20px; border:0; border-radius:4px; padding:1px 3px; display:flex; align-items:center; justify-content:flex-end; gap:4px; background:transparent; color:inherit; font:10px ui-monospace,SFMono-Regular,Menlo,monospace; }
+.pr-button:hover,.pr-button:focus-visible { background:#2a2c31; }
+.pr-button .icon { width:12px; height:12px; flex-shrink:0; }
+.pr-number { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.signal { display:inline-flex; }
+.is-empty { visibility:hidden; }
+.option-b .row-select { height:62px; align-items:start; padding-top:6px; }
+.option-b .leading { margin-top:4px; }
+.option-b .branch-line { padding-right:0; }
+.option-b .pr-button { left:28px; right:6px; width:auto; justify-content:flex-start; }
+.option-b .pr-button .state-text { font-family:-apple-system,BlinkMacSystemFont,sans-serif; white-space:nowrap; }
+.option-b .pr-button .signal-label { color:#a1a5ab; margin-left:auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.option-b .is-empty { visibility:visible; color:#808690; }
+.option-c .branch-line { padding-right:20px; }
+.option-c .pr-button { width:20px; justify-content:center; }
+.icon { width:14px; height:14px; display:inline-block; vertical-align:middle; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+.green { color:#68c796; }.purple { color:#b497e8; }.red { color:#eb818a; }.amber { color:#e5b567; }.muted { color:#9a9fa8; }
+.terminal-sliver { flex:1; min-width:0; padding:11px 10px; overflow:hidden; color:#747b83; font:10px/1.85 ui-monospace,SFMono-Regular,Menlo,monospace; opacity:.7; white-space:nowrap; user-select:none; }
+.terminal-sliver strong { color:#c8cbd1; font-weight:normal; }
+.stale-chip { display:inline-flex; align-items:center; gap:4px; font-size:10px; color:#e5b567; }
+.tradeoff { font-size:12px; margin:13px 0 0; color:var(--muted); }
+.tradeoff strong { color:var(--ink); font-weight:600; }
+.detail-example { margin-top:14px; border-top:1px solid var(--line); padding-top:12px; }
+.detail-example .eyebrow { font-size:9px; color:var(--muted); margin-bottom:8px; }
+.inspector { background:var(--shell); color:#d7d9de; padding:12px; border:1px solid #383a39; border-radius:5px; font-size:11px; }
+.inspector-label { color:#9da2ab; font-size:10px; display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.summary-title { display:flex; align-items:center; gap:7px; font-size:12px; }
+.summary-name { margin:8px 0; font-size:12px; line-height:1.5; }
+.summary-line { display:flex; gap:6px; align-items:center; margin:6px 0; color:#aeb4bd; font-size:11px; }
+.summary-time { margin-top:10px; font-size:10px; color:#8e959f; }
+.summary-actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:13px; }
+.summary-actions button,.close-button { display:inline-flex; align-items:center; justify-content:center; gap:5px; border:1px solid #3c4048; border-radius:4px; background:#242830; color:#dce0e5; padding:4px 7px; font-size:11px; min-height:24px; }
+.summary-actions button:not(:disabled):hover,.close-button:hover { background:#353b46; }
+.summary-error { padding:8px 0; color:#b9bec7; font-size:12px; }
+.summary-error code { display:block; color:#e5b567; font-size:11px; margin-top:8px; overflow-wrap:anywhere; }
+.legend { display:flex; align-items:center; flex-wrap:wrap; gap:12px 23px; margin:28px 0 9px; padding:15px 0; border-block:1px solid var(--line); font-size:12px; }
+.legend span { display:inline-flex; gap:6px; align-items:center; }
+.legend .green { color:#317c56; }.legend .purple { color:#76529e; }.legend .red { color:#a73d4e; }.legend .muted { color:#6b7078; }
+.prototype-note { color:var(--muted); font-size:11px; margin:10px 0 32px; }
+.recommendation { border-left:3px solid var(--accent); padding:0 0 0 18px; margin:34px 0; max-width:830px; }
+.recommendation h2 { font:normal 26px "Iowan Old Style",Palatino,Georgia,serif; }
+.recommendation p { margin:8px 0; font-size:14px; color:var(--muted); }
+.bottom-grid { display:grid; grid-template-columns:1.1fr 1fr; gap:55px; border-top:1px solid var(--line); padding-top:27px; }
+h3 { margin:0 0 16px; font-size:17px; letter-spacing:-.02em; }
+.steps { list-style:none; padding:0; margin:0; counter-reset:steps; }
+.steps li { counter-increment:steps; position:relative; padding-left:32px; margin-bottom:19px; }
+.steps li:before { content:"0" counter(steps); position:absolute; left:0; top:2px; font:11px ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--accent); }
+.steps strong { font-size:13px; }.steps p { margin:3px 0 0; font-size:12px; color:var(--muted); }
+.facts { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; padding-bottom:15px; border-bottom:1px solid var(--line); }
+.fact-value { font:normal 30px "Iowan Old Style",Palatino,Georgia,serif; }
+.fact-label { display:block; color:var(--muted); font-size:11px; }
+.evidence p { font-size:12px; color:var(--muted); }
+.evidence code { font-size:10px; overflow-wrap:anywhere; }
+details { border-top:1px solid var(--line); margin-top:20px; padding-top:14px; }
+summary { cursor:pointer; font-size:13px; font-weight:600; }
+details ul { padding-left:19px; color:var(--muted); font-size:12px; }
+details li { margin-bottom:9px; }
+footer { display:flex; justify-content:space-between; gap:18px; flex-wrap:wrap; margin-top:36px; padding-top:16px; border-top:1px solid var(--line); font-size:11px; color:var(--muted); }
+#status-popover { color-scheme:dark; position:fixed; margin:auto; width:310px; max-width:calc(100vw - 28px); max-height:calc(100dvh - 36px); overflow:auto; padding:16px; border:1px solid #454a52; border-radius:10px; background:#101214; color:#dfe3e8; box-shadow:0 12px 50px #0005; }
+#status-popover::backdrop { background:#0002; }
+.popover-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+.popover-heading h3 { margin:0; font-size:12px; color:#a6adb6; font-weight:normal; }
+.close-button { width:24px; height:24px; padding:0; border:0; background:transparent; }
+#notice { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); max-width:calc(100vw - 32px); border:1px solid #4b515a; border-radius:6px; background:#20242a; color:#eee; padding:10px 16px; font-size:12px; z-index:20; }
+#notice:empty { display:none; }
+#browser-demo { margin-top:26px; background:var(--shell); color:#dce0e6; border:1px solid #454a52; border-radius:8px; overflow:hidden; }
+#browser-demo[hidden] { display:none; }
+.demo-tabbar { display:flex; align-items:center; gap:14px; padding:8px 14px; border-bottom:1px solid #30343c; font-size:12px; }
+.demo-tabbar .close-button { margin-left:auto; }
+.demo-browser-body { padding:24px; }
+.demo-browser-body h3 { margin:6px 0; }
+.demo-browser-body p { font-size:12px; color:#a3aab5; max-width:640px; }
+.narrow .option-a .branch-line { padding-right:20px; }
+.narrow .option-a .pr-button { width:20px; justify-content:center; }
+.narrow .option-a .pr-number,.narrow .option-a .signal { display:none; }
+.narrow .option-b .signal-label { display:none; }
+.unfocused { --shell:#1a1a1a; }
+.unfocused .sample-top { color:#828791; }
+.unfocused .workspace.selected { background:#24303a; }
+.unfocused .workspace.selected:before { opacity:.5; }
+.unfocused .traffic { background:#666; }
+.unfocused .project { opacity:.7; }
+.spinner { animation:spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+@media (prefers-reduced-motion:reduce) { .spinner { animation:none; } }
+@media (prefers-contrast:more) { .branch,.project,.summary-line,.summary-time { color:#c0c5ce; }.unfocused .project { opacity:1; } }
+@media (max-width:1000px) { main { padding:26px 22px; }.options { gap:14px; }.recommended { display:table; margin:5px 0 0 22px; }.option-heading { min-height:124px; }.bottom-grid { gap:28px; } }
+@media (max-width:760px) { header { align-items:flex-start; }.document-meta { display:none; }.options { grid-template-columns:1fr; gap:30px; }.option-heading { min-height:0; margin-bottom:14px; }.recommended { display:inline-block; margin:0 0 0 6px; }.sample { height:418px; }.sample-body { height:374px; }.bottom-grid { grid-template-columns:1fr; }.controls .note { margin-left:0; }.detail-example { max-width:340px; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>
+<symbol id="i-pr" viewBox="0 0 16 16"><circle cx="4" cy="3" r="1.7"/><circle cx="4" cy="13" r="1.7"/><circle cx="12" cy="13" r="1.7"/><path d="M4 5v6M12 11V6c0-2-1-3-3-3H8m2-2L8 3l2 2"/></symbol>
+<symbol id="i-draft" viewBox="0 0 16 16"><circle cx="4" cy="3" r="1.7"/><circle cx="4" cy="13" r="1.7"/><circle cx="12" cy="13" r="1.7"/><path d="M4 5v6M12 10V8m0-3c0-1.5-1-2-3-2" stroke-dasharray="1 2"/></symbol>
+<symbol id="i-merged" viewBox="0 0 16 16"><circle cx="4" cy="3" r="1.7"/><circle cx="4" cy="13" r="1.7"/><circle cx="12" cy="3" r="1.7"/><path d="M4 5v6m8-6c0 3-8 1-8 5"/></symbol>
+<symbol id="i-closed" viewBox="0 0 16 16"><circle cx="4" cy="3" r="1.7"/><circle cx="4" cy="13" r="1.7"/><path d="M4 5v6m6-7 4 4m0-4-4 4"/></symbol>
+<symbol id="i-check" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="m5 8 2 2 4-4"/></symbol>
+<symbol id="i-fail" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="m6 6 4 4m0-4-4 4"/></symbol>
+<symbol id="i-clock" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l3 2"/></symbol>
+<symbol id="i-question" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M6 6a2 2 0 1 1 3 1.8L8 9m0 2h0"/></symbol>
+<symbol id="i-bell" viewBox="0 0 16 16"><path d="M3 11h10l-1.5-2V6a3.5 3.5 0 0 0-7 0v3L3 11Zm3.5 2a1.7 1.7 0 0 0 3 0"/></symbol>
+<symbol id="i-running" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.7" stroke-dasharray="19 6"/><path d="m7 5 4 3-4 3Z"/></symbol>
+<symbol id="i-down" viewBox="0 0 16 16"><path d="m4 6 4 4 4-4"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 16 16"><path d="M13 6a5.3 5.3 0 1 0 0 5M13 2v4H9"/></symbol>
+<symbol id="i-close" viewBox="0 0 16 16"><path d="m4 4 8 8m0-8-8 8"/></symbol>
+<symbol id="i-comment" viewBox="0 0 16 16"><path d="M3 2h10v9H7l-4 3V2Z"/><path d="M8 5v2m0 2h0"/></symbol>
+<symbol id="i-terminal" viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path d="m4 6 2 2-2 2m4 0h3"/></symbol>
+</defs></svg>
+<main>
+<header>
+<div><div class="eyebrow">Argus / Design study 01</div><h1>Pull Request status.<br>Right beside the work.</h1><p>Three ways to bring Agent Manager’s at-a-glance PR status into Argus, without competing with Agent Status or turning the sidebar into a review tool.</p></div>
+<div class="document-meta"><div>29 August 2026 · Design study</div><div>A selected and implemented · 30 August</div><a href="spec.md">Read the implementation plan ↗</a></div>
+</header>
+<div class="controls" aria-label="Prototype controls">
+<label for="scenario">Selected row <select id="scenario"><option value="failed">Open · failing checks</option><option value="pending">Open · checks running</option><option value="approved">Open · approved</option><option value="changes">Open · changes requested</option><option value="draft">Draft</option><option value="merged">Merged</option><option value="closed">Closed</option><option value="none">No Pull Request</option><option value="loading">Initial loading</option><option value="stale">Offline · cached status</option><option value="missing">GitHub CLI missing</option><option value="auth">Authentication required</option><option value="ambiguous">Multiple matching PRs</option><option value="unknown">Checks unavailable</option></select></label>
+<label for="width">Sidebar <select id="width"><option value="200">200 pt · default</option><option value="140">140 pt · narrow</option><option value="280">280 pt · wide</option></select></label>
+<label><input id="unfocused" type="checkbox"> Non-key window</label>
+<label><input id="command" type="checkbox"> Hold ⌘</label>
+<span class="note">Click a badge for details.</span>
+</div>
+<section class="options" aria-label="Three visual options">
+<article class="option option-a" data-design="a">
+<div class="option-heading"><h2><span class="letter">A</span>Inline badge <span class="recommended">Recommended</span></h2><p>Keep the two-line row. Add a PR number and a separate attention signal beside the branch.</p></div>
+<div class="sample"><div class="sample-top" aria-hidden="true"><span class="traffic"></span><span class="traffic"></span><span class="traffic"></span><span class="sample-label">Argus · left sidebar</span></div><div class="sample-body"><div class="sidebar"><div class="project"><svg class="icon"><use href="#i-down"/></svg><span class="project-name">Argus</span></div><div class="rows"></div></div><div class="terminal-sliver" aria-hidden="true"><strong>Terminal 1</strong><br><br>argus $ kilo<br><br>Keep terminal<br>focus when<br>switching<br>workspaces.<br><br>Reading<br>Workspace.swift<br>TabBarView.swift<br><br>Working…</div></div></div>
+<p class="tradeoff"><strong>Best density.</strong> Visible across Workspaces, even with the Right Sidebar hidden. Full labels live in the status summary.</p>
+</article>
+<article class="option option-b" data-design="b">
+<div class="option-heading"><h2><span class="letter">B</span>Dedicated status line</h2><p>Give each Worktree Workspace a third line. Spell out lifecycle and the most useful signal.</p></div>
+<div class="sample"><div class="sample-top" aria-hidden="true"><span class="traffic"></span><span class="traffic"></span><span class="traffic"></span><span class="sample-label">Argus · left sidebar</span></div><div class="sample-body"><div class="sidebar"><div class="project"><svg class="icon"><use href="#i-down"/></svg><span class="project-name">Argus</span></div><div class="rows"></div></div><div class="terminal-sliver" aria-hidden="true"><strong>Terminal 1</strong><br><br>argus $ kilo<br><br>Keep terminal<br>focus when<br>switching<br>workspaces.<br><br>Reading<br>Workspace.swift<br>TabBarView.swift<br><br>Working…</div></div></div>
+<p class="tradeoff"><strong>Best readability.</strong> No guessing what the color means. Costs about 18 points per Worktree row; more scrolling.</p>
+</article>
+<article class="option option-c" data-design="c">
+<div class="option-heading"><h2><span class="letter">C</span>Indicator + Changes</h2><p>A small lifecycle icon in navigation. A richer summary in the Selected Workspace’s Changes View.</p></div>
+<div class="sample"><div class="sample-top" aria-hidden="true"><span class="traffic"></span><span class="traffic"></span><span class="traffic"></span><span class="sample-label">Argus · left sidebar</span></div><div class="sample-body"><div class="sidebar"><div class="project"><svg class="icon"><use href="#i-down"/></svg><span class="project-name">Argus</span></div><div class="rows"></div></div><div class="terminal-sliver" aria-hidden="true"><strong>Terminal 1</strong><br><br>argus $ kilo<br><br>Keep terminal<br>focus when<br>switching<br>workspaces.<br><br>Reading<br>Workspace.swift<br>TabBarView.swift<br><br>Working…</div></div></div>
+<p class="tradeoff"><strong>Best selected-Workspace detail.</strong> Less identity visible across rows. Uses more room in Changes and adds another UI integration point.</p>
+<div class="detail-example"><div class="eyebrow">C only / Changes View detail crop</div><div class="inspector"><div class="inspector-label"><span>Changes · below the existing branch bar</span></div><div id="inline-summary"></div></div></div>
+</article>
+</section>
+<div class="legend" aria-label="Pull Request lifecycle legend">
+<span class="green"><svg class="icon"><use href="#i-pr"/></svg> Open</span><span class="muted"><svg class="icon"><use href="#i-draft"/></svg> Draft</span><span class="purple"><svg class="icon"><use href="#i-merged"/></svg> Merged</span><span class="red"><svg class="icon"><use href="#i-closed"/></svg> Closed</span><span><svg class="icon"><use href="#i-fail"/></svg> CI failure is a separate signal</span>
+</div>
+<p class="prototype-note">Independent fixture data, not live GitHub state. Row selection is synchronized across the three examples. Right-click a row, or use Shift+F10, to inspect an empty/error state. Open/Copy/Refresh are simulated; no provider requests or clipboard access.</p>
+<section id="browser-demo" hidden aria-label="Simulated Browser Tab"><div class="demo-tabbar"><svg class="icon"><use href="#i-terminal"/></svg><span>Terminal 1</span><strong id="browser-tab-label"></strong><button class="close-button" id="close-browser" aria-label="Close simulated Browser Tab" title="Close simulated Browser Tab"><svg class="icon"><use href="#i-close"/></svg></button></div><div class="demo-browser-body"><div class="eyebrow">Navigation preview / no website loaded</div><h3 id="browser-workspace"></h3><p>In Argus, the validated Pull Request URL opens in a Browser Tab owned by this Workspace. Reopening the same URL reuses that Workspace’s tab. Refreshing status never changes Workspace selection or terminal focus.</p></div></section>
+<section class="recommendation"><div class="eyebrow">Recommendation</div><h2>Start with A. Keep the workflow quiet.</h2><p>It answers “which PR, and does it need attention?” without increasing row height or requiring the Changes View. The badge opens a compact native summary; the actual Pull Request opens in the originating Workspace’s Browser Tab.</p><p>Keep the leading Agent Status / attention icon and the running-process count intact. Keep PR lifecycle, CI/review signals, and refresh health independent.</p></section>
+<div class="bottom-grid">
+<section id="implementation"><h3>Implementation plan</h3><ol class="steps">
+<li><strong>Extend the existing GitHub boundary</strong><p>Reuse Argus’s bounded, noninteractive <span class="mono">gh</span> runner and provider-qualified identities. Add branch discovery and a small read-only status query; keep intake behavior unchanged.</p></li>
+<li><strong>Match the actual worktree context</strong><p>Read current branch/HEAD from <span class="mono">git worktree list --porcelain</span>, not the saved Workspace subtitle. Validate repository and fork identity. Ambiguous matches stay ambiguous.</p></li>
+<li><strong>Add one runtime status model</strong><p>Key results by Workspace and immutable context. Coalesce requests, cap concurrency, pause in the background, and discard late results after branch switches or Workspace removal. No persisted provider state.</p></li>
+<li><strong>Ship one visual direction</strong><p>Implement A’s badge, accessible summary, scoped Open/Copy/Refresh actions, and a “Show Pull Request status” setting. B and C are alternatives, not additional settings.</p></li>
+<li><strong>Verify, then promote the contract</strong><p>Fixture tests for lookup, lifecycle/check mapping, stale data, races, and no persistence. Native keyboard/VoiceOver and narrow-width checks. Run lint and app tests; update the spec and add a superseding ADR.</p></li>
+</ol><a href="spec.md">Full plan, source map, and verification commands ↗</a></section>
+<section class="evidence" id="evidence"><h3>What Agent Manager taught us</h3><div class="facts"><div><span class="fact-value">15s</span><span class="fact-label">Selected worktree</span></div><div><span class="fact-value">120s</span><span class="fact-label">All worktrees</span></div><div><span class="fact-value">3</span><span class="fact-label">Concurrent lookups</span></div></div><p>The VS Code Agent Manager tries current-branch lookup, explicit branch, then an exact-head SHA fallback. It shows a colored PR-number badge and separate check/review signals. A separate toolbar opens its full PR inspector.</p><p><strong>Borrow the small status surface and refresh cadence—not the entire review system.</strong> Argus already has the CLI runner, timeout, output limits, repository validation, and native Workspace ownership needed here.</p><p>Improve on the reference: explicitly label stale data, distinguish “no PR” from lookup failure, do not conflate pending CI with PR lifecycle, and keep every action keyboard-accessible.</p><p class="mono">Inspected: /Users/evgeny/Projects/kilocode<br>Commit: 5e02825c8c53</p><p><code>packages/kilo-vscode/src/agent-manager/PRStatusPoller.ts:31–64,203–245,342–399</code><br><code>packages/kilo-vscode/webview-ui/agent-manager/WorktreeItem.tsx:91–130,336–391</code></p>
+<details><summary>Scope and correctness boundaries</summary><ul><li>Named Project Worktree Workspaces only. GitHub through the active CLI context; no new dependencies or credential store.</li><li>Open, draft, merged, closed; aggregate checks/review; freshness. No comments, merge actions, check logs, notifications, or Review Work Mode.</li><li>All-state, bounded discovery with explicit repository/branch. Do not take the first same-name fork match or attach an old merged PR to a reused branch.</li><li>Selected refresh every 15 seconds, all eligible Workspaces every 120 seconds; confirmed no-match at most every 60 seconds. Manual refresh bypasses caches.</li><li>Keep matching cached data on failure, visibly stale. Missing CLI/authentication has an inline recovery message, never an installation prompt or modal storm.</li><li>Read-only status must not fetch, rename, checkout, mutate Git state, alter local Changes counts, or redirect focus.</li></ul></details>
+</section>
+</div>
+<footer><span>Argus / Pull Request status for Worktree Workspaces</span><span>Historical design study · A implemented · mockups use fixture data</span></footer>
+</main>
+<div id="status-popover" popover="auto" role="dialog" aria-labelledby="popover-title"><div class="popover-heading"><h3 id="popover-title">Pull Request status</h3><button class="close-button" popovertarget="status-popover" popovertargetaction="hide" title="Close status summary" aria-label="Close status summary"><svg class="icon"><use href="#i-close"/></svg></button></div><div id="popover-summary"></div></div>
+<div id="notice" role="status" aria-live="polite"></div>
+<noscript><p style="padding:24px">Enable JavaScript to display the fixture rows and interact with the mockups. The recommendation and implementation plan remain readable above.</p></noscript>
+<script>
+const icon = (name, extra = '') => `<svg class="icon ${extra}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+const escapeHTML = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+const fixtures = {
+  failed:{label:'Open',icon:'pr',color:'green',signal:'fail',signalColor:'red',short:'1 failed',review:'Approved',checks:'5 passed · 1 failed',checkIcon:'fail',checkColor:'red'},
+  pending:{label:'Open',icon:'pr',color:'green',signal:'clock',signalColor:'amber',short:'Running',review:'Review required',checks:'4 passed · 2 pending',checkIcon:'clock',checkColor:'amber'},
+  approved:{label:'Open',icon:'pr',color:'green',signal:'check',signalColor:'green',short:'Approved',review:'Approved',checks:'6 passed',checkIcon:'check',checkColor:'green'},
+  changes:{label:'Open',icon:'pr',color:'green',signal:'comment',signalColor:'amber',short:'Review',review:'Changes requested',checks:'6 passed',checkIcon:'check',checkColor:'green'},
+  draft:{label:'Draft',icon:'draft',color:'muted',short:'',review:'No review decision',checks:'No checks reported',checkIcon:'question',checkColor:'muted'},
+  merged:{label:'Merged',icon:'merged',color:'purple',short:'',review:'Approved before merge',checks:'6 passed',checkIcon:'check',checkColor:'green'},
+  closed:{label:'Closed',icon:'closed',color:'red',short:'',review:'No review decision',checks:'No checks reported',checkIcon:'question',checkColor:'muted'},
+  none:{label:'No Pull Request',icon:'pr',color:'muted',empty:true,description:'No matching Pull Request was found for this branch. This is a successful lookup, not an error.'},
+  loading:{label:'Checking…',icon:'refresh',color:'muted',empty:true,description:'Looking up the current branch. The status slot stays the same size.'},
+  stale:{label:'Open',icon:'pr',color:'green',signal:'clock',signalColor:'amber',short:'Stale',review:'Approved · last known',checks:'5 passed · 1 failed · last known',checkIcon:'fail',checkColor:'red',stale:true},
+  missing:{label:'Unavailable',icon:'question',color:'muted',empty:true,description:'GitHub CLI is not installed. Local terminals and Changes remain available.',command:'brew install gh'},
+  auth:{label:'Sign in required',icon:'question',color:'muted',empty:true,description:'The active GitHub CLI context is not authenticated. Argus does not store credentials.',command:'gh auth login'},
+  ambiguous:{label:'Multiple matches',icon:'question',color:'amber',empty:true,description:'More than one Pull Request matches this branch. Argus will not choose the first result or guess a fork identity.'},
+  unknown:{label:'Open',icon:'pr',color:'green',signal:'question',signalColor:'amber',short:'CI unknown',review:'Approved',checks:'Checks unavailable · not a success',checkIcon:'question',checkColor:'amber'}
+};
+const workspaces = [
+  {id:'focus',name:'Keep terminal focus',branch:'fix/terminal-focus',number:142,state:'failed',leading:'running',count:2},
+  {id:'split',name:'Restore split layout',branch:'feat/split-restore',number:141,state:'pending',leading:'attention',count:1},
+  {id:'search',name:'Workspace search',branch:'feat/workspace-search',number:145,state:'draft',leading:'',count:1},
+  {id:'stack',name:'Stacked branches',branch:'fix/stacked-base',number:137,state:'merged',leading:'',count:0},
+  {id:'toolbar',name:'Legacy toolbar',branch:'spike/toolbar',number:133,state:'closed',leading:'',count:0},
+  {id:'shortcuts',name:'New shortcuts',branch:'feat/workspace-shortcuts',number:149,state:'none',leading:'',count:0}
+];
+let selected = 'focus';
+let inspected = 'focus';
+let returnFocusKey = '';
+let noticeTimer;
+const refreshing = new Set();
+const versions = new Map();
+const popover = document.getElementById('status-popover');
+function workspace(id) { return workspaces.find(item => item.id === id); }
+function stateLabel(item) {
+  const state = fixtures[item.state];
+  return state.empty ? state.label : `Pull Request #${item.number}, ${state.label}, ${state.review}, ${state.checks}${state.stale ? ', stale, last checked 8 minutes ago' : ''}`;
+}
+function badge(item, design) {
+  const state = fixtures[item.state];
+  const busy = refreshing.has(item.id) || item.state === 'loading';
+  const symbol = icon(busy ? 'refresh' : state.icon, busy ? 'spinner' : '');
+  if (design === 'c') return symbol;
+  if (state.empty) return symbol + (design === 'b' ? `<span class="state-text">${state.label}</span>` : '');
+  const number = `<span class="pr-number">#${item.number}</span>`;
+  if (design === 'b') return `${symbol}${number}<span class="state-text">${state.label}</span><span class="signal-label">${state.short}</span>`;
+  return `${symbol}${number}${state.signal ? `<span class="signal ${state.signalColor}">${icon(state.signal)}</span>` : ''}`;
+}
+function renderRows() {
+  document.querySelectorAll('.option').forEach(option => {
+    const design = option.dataset.design;
+    const scroll = option.querySelector('.sidebar').scrollTop;
+    option.querySelector('.rows').innerHTML = workspaces.map((item,index) => {
+      const state = fixtures[item.state];
+      const leading = document.getElementById('command').checked ? `<span class="mono">${index + 1}</span>` : icon(item.leading === 'attention' ? 'bell' : item.leading === 'running' ? 'running' : 'pr');
+      const count = item.count ? `<span class="process-count" title="${item.count} running processes">${item.count}</span>` : '';
+      const quiet = item.state === 'none' && design !== 'b';
+      return `<div class="workspace ${item.id === selected ? 'selected' : ''}" data-workspace="${item.id}">
+        <button class="row-select" data-select="${item.id}" data-key="row-${design}-${item.id}" aria-pressed="${item.id === selected}" aria-label="Select ${escapeHTML(item.name)}, branch ${escapeHTML(item.branch)}, ${item.count} running processes${item.leading === 'attention' ? ', Turn Completion Attention' : item.leading === 'running' ? ', Agent Status running' : ''}">
+          <span class="leading ${item.leading}" aria-hidden="true">${leading}</span><span class="row-text"><span class="name-line"><span class="workspace-name">${escapeHTML(item.name)}</span>${count}</span><span class="branch-line"><span class="branch" title="${escapeHTML(item.branch)}">${escapeHTML(item.branch)}</span></span></span>
+        </button>
+        <button class="pr-button ${state.color} ${quiet ? 'is-empty' : ''}" data-inspect="${item.id}" data-key="badge-${design}-${item.id}" ${quiet ? 'tabindex="-1" aria-hidden="true"' : ''} aria-label="Show status for ${escapeHTML(item.name)}: ${escapeHTML(stateLabel(item))}" title="${escapeHTML(stateLabel(item))}">${badge(item,design)}</button>
+      </div>`;
+    }).join('');
+    option.querySelector('.sidebar').scrollTop = scroll;
+  });
+}
+function summary(item) {
+  const state = fixtures[item.state];
+  const busy = refreshing.has(item.id) || item.state === 'loading';
+  const identity = state.empty ? state.label : `#${item.number} · ${state.label}`;
+  const status = `<div class="summary-title ${state.color}">${icon(busy ? 'refresh' : state.icon,busy ? 'spinner' : '')}<strong>${identity}</strong>${state.stale ? '<span class="stale-chip">Stale</span>' : ''}</div>`;
+  const detail = state.empty
+    ? `<div class="summary-error">${state.description}${state.command ? `<code>${state.command}</code>` : ''}</div>`
+    : `<p class="summary-name">${escapeHTML(item.name)}</p><div class="summary-line">${icon('comment')}<span>${state.review}</span></div><div class="summary-line ${state.checkColor}">${icon(state.checkIcon)}<span>${state.checks}</span></div>`;
+  const time = busy ? 'Refreshing fixture… previous data remains visible' : state.stale ? 'Could not refresh · last checked 8 minutes ago' : item.state === 'none' ? 'Lookup complete · no matching Pull Request' : state.empty ? 'Provider status is not available' : item.updated ? 'Last checked just now · simulated' : 'Last checked 15 seconds ago · simulated';
+  return `${status}${detail}<div class="summary-time">${time}</div><div class="summary-actions"><button data-open="${item.id}" ${state.empty ? 'disabled' : ''}>Open Pull Request</button><button data-copy="${item.id}" ${state.empty ? 'disabled' : ''}>Copy URL</button><button data-refresh="${item.id}" data-key="refresh-${item.id}" ${busy ? 'disabled' : ''} title="Refresh Pull Request status">${icon('refresh')}Refresh</button></div>`;
+}
+function render() {
+  const focused = document.activeElement?.dataset.key;
+  const focusScope = popover.contains(document.activeElement) ? popover : document;
+  renderRows();
+  document.getElementById('scenario').value = workspace(selected).state;
+  document.getElementById('inline-summary').innerHTML = summary(workspace(selected));
+  if (popover.matches(':popover-open')) document.getElementById('popover-summary').innerHTML = summary(workspace(inspected));
+  if (focused) focusScope.querySelector(`[data-key="${focused}"]`)?.focus({preventScroll:true});
+}
+function notify(message) {
+  clearTimeout(noticeTimer);
+  document.getElementById('notice').textContent = message;
+  noticeTimer = setTimeout(() => { document.getElementById('notice').textContent = ''; },4500);
+}
+function inspect(id,trigger) {
+  inspected = id;
+  returnFocusKey = trigger.dataset.key || '';
+  document.getElementById('popover-title').textContent = `${workspace(id).name} · PR status`;
+  document.getElementById('popover-summary').innerHTML = summary(workspace(id));
+  if (!popover.matches(':popover-open')) popover.showPopover();
+  popover.querySelector('.close-button').focus({preventScroll:true});
+}
+function refresh(id) {
+  if (refreshing.has(id)) return;
+  const version = versions.get(id) || 0;
+  refreshing.add(id);
+  render();
+  setTimeout(() => {
+    refreshing.delete(id);
+    if ((versions.get(id) || 0) === version) {
+      const item = workspace(id);
+      if (item.state === 'stale') item.state = 'failed';
+      item.updated = true;
+      notify('Refresh simulated. No GitHub request was made.');
+    }
+    render();
+  },900);
+}
+document.addEventListener('click',event => {
+  const button = event.target.closest('button');
+  if (!button || button.disabled) return;
+  if (button.dataset.select) { selected = button.dataset.select; render(); }
+  if (button.dataset.inspect) inspect(button.dataset.inspect,button);
+  if (button.dataset.refresh) refresh(button.dataset.refresh);
+  if (button.dataset.copy) notify('Demo: would copy the validated Pull Request URL. Clipboard unchanged.');
+  if (button.dataset.open) {
+    const item = workspace(button.dataset.open);
+    selected = item.id;
+    popover.hidePopover();
+    render();
+    const demo = document.getElementById('browser-demo');
+    demo.hidden = false;
+    document.getElementById('browser-tab-label').textContent = `Browser · PR #${item.number}`;
+    document.getElementById('browser-workspace').textContent = `Opened in “${item.name}”`;
+    demo.scrollIntoView({behavior:'instant',block:'center'});
+    document.getElementById('close-browser').focus({preventScroll:true});
+  }
+});
+document.addEventListener('contextmenu',event => {
+  const row = event.target.closest('.workspace');
+  if (!row) return;
+  event.preventDefault();
+  inspect(row.dataset.workspace,row.querySelector('.row-select'));
+});
+document.addEventListener('keydown',event => {
+  if (event.shiftKey && event.key === 'F10') {
+    const row = event.target.closest('.workspace');
+    if (row) { event.preventDefault(); inspect(row.dataset.workspace,row.querySelector('.row-select')); }
+  }
+});
+popover.addEventListener('toggle',event => {
+  if (event.newState === 'closed' && (popover.contains(document.activeElement) || document.activeElement === document.body)) {
+    document.querySelector(`[data-key="${returnFocusKey}"]`)?.focus({preventScroll:true});
+  }
+});
+document.getElementById('scenario').addEventListener('change',event => {
+  const item = workspace(selected);
+  item.state = event.target.value;
+  item.updated = false;
+  versions.set(item.id,(versions.get(item.id) || 0) + 1);
+  render();
+});
+document.getElementById('width').addEventListener('change',event => {
+  document.documentElement.style.setProperty('--side-width',`${event.target.value}px`);
+  document.body.classList.toggle('narrow',Number(event.target.value) < 160);
+});
+document.getElementById('unfocused').addEventListener('change',event => document.body.classList.toggle('unfocused',event.target.checked));
+document.getElementById('command').addEventListener('change',render);
+document.getElementById('close-browser').addEventListener('click',() => {
+  document.getElementById('browser-demo').hidden = true;
+  document.querySelector(`[data-key="row-a-${selected}"]`)?.focus({preventScroll:true});
+});
+render();
+</script>
+</body>
+</html>

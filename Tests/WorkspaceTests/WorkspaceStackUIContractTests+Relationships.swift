@@ -15,8 +15,8 @@ extension WorkspaceStackUIContractTests {
         #expect(offsets.allSatisfy { $0 >= 3 && $0 <= gutterWidth - 3 })
         if laneCount == 1 { #expect(gutterWidth == metrics.stackGutterWidth) }
         if metrics.isCompact {
-            let labelWidth = width - 16 - 2 * metrics.rowPadding - gutterWidth - 2 * metrics.rowSpacing - 14
-            #expect(labelWidth >= 30)
+            let labelWidth = width - 16 - 2 * metrics.rowPadding - gutterWidth - 2 * metrics.rowSpacing - 20
+            #expect(labelWidth >= 24)
         }
     }
 

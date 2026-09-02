@@ -343,7 +343,7 @@ extension WorkspaceManager {
         sidebarOrderedWorkspaces.firstIndex { $0.workspace.id == workspaceId }.map { $0 + 1 }
     }
 
-    private var browserPanelConfiguration: BrowserPanelConfiguration {
+    var browserPanelConfiguration: BrowserPanelConfiguration {
         BrowserPanelConfiguration(
             homepage: settings.homepage,
             searchProvider: settings.searchProvider,

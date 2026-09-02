@@ -18,10 +18,10 @@ Swift 6 toolchains include `swift-format`. Install the other command-line tools 
 brew install xcodegen swiftlint
 ```
 
-The GitHub CLI is also optional. It is used only when creating a Worktree
-Workspace from a Pull Request in a Named Project's New Workspace sheet. Argus
-uses the active `gh` authentication context and never stores GitHub
-credentials.
+The GitHub CLI is optional for Pull Request intake and read-only Pull Request
+Status in Named Project Worktree Workspaces. Argus uses the active `gh`
+authentication context and never stores GitHub credentials. Missing CLI or
+authentication does not block local work; Argus never installs or logs in for you.
 
 Install and authenticate it with:
 
@@ -30,10 +30,30 @@ brew install gh
 gh auth login
 ```
 
-For a bare Pull Request number, run `gh repo set-default <remote>` from the
-Project Repository Root if GitHub CLI reports that the repository is ambiguous
-or unavailable. For GitHub Enterprise, authenticate the matching host with
-`gh auth login --hostname <host>`.
+For bare-number intake or Pull Request Status, run `gh repo set-default <remote>`
+from the Project Repository Root if repository selection is ambiguous or
+unavailable. The default repository must match a Project fetch remote. For
+GitHub Enterprise, authenticate with `gh auth login --hostname <host>`.
+
+Settings > Files & Changes > **Show Pull Request status** defaults to on. It
+contacts GitHub while the application is active and the main window is visible
+and not minimized; turning it off cancels work and clears runtime status.
+After CLI, authentication, or repository setup changes, use **Refresh Pull
+Request Status** in the Workspace context menu or **Refresh** in its Pull Request
+Status popover to bypass ordinary caches, subject to host quota/rate-limit pauses.
+Automatic refresh is quiet; **Refresh** shows progress only inside the popover
+that started it.
+The shared leading Pull Request Status icon opens the popover without selecting
+its Workspace. **Show Pull Request Status** and **Refresh Pull Request Status**
+remain in the Workspace context menu when the icon is hidden or after no match
+or failure; rows have no trailing Pull Request slot or Pull Request-number text.
+Detailed statuses are batched through `gh api graphql`; a known Selected
+Workspace Pull Request refreshes every minute, with background discovery every
+ten minutes. Quota pauses show a resume time and disable manual refresh too;
+toggling the setting does not bypass the pause. **Refresh changes** remains
+local-Git-only. **Open Pull Request** uses the default system browser without
+mutating Workspace, Top-level Tab, or Pane state or changing the Right-sidebar
+View.
 
 ## Local Stack grouping
 
@@ -130,6 +150,10 @@ Run the complete app and CLI validation suite:
 
 The script runs formatting checks and SwiftLint, executes the macOS `ArgusTests` target, builds the CLI, and verifies its version and help output.
 
+The existing Kilo/Pi behavioral harness tests require Node in the Xcode test-host
+PATH. For shell-managed Node installations, forward that PATH explicitly with
+`TEST_RUNNER_PATH="$PATH" ./scripts/test.sh`.
+
 Run linting by itself:
 
 ```sh
@@ -153,6 +177,11 @@ Tests are grouped by product domain:
 - `TestSupport`: shared native test helpers.
 
 Prefer behavioral tests through `@testable import Argus`. Source-contract tests are reserved for SwiftUI and AppKit wiring that cannot be observed through a stable boundary without a full UI test.
+
+Automatic Pull Request Status networking is disabled for app instances with
+`XCTestConfigurationFilePath`, `ARGUS_UNDER_TEST=1`, or
+`ARGUS_DISABLE_SESSION_RESTORE=1`. Status tests inject provider/local-input
+fixtures and scheduling rather than relying on live GitHub access.
 
 ## Native diff rendering
 
