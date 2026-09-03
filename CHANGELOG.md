@@ -2,6 +2,12 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-09-03
+
+- Released Argus 1.15.0 with Collections for organizing Named Projects. Create and rename Collections, move Projects with context menus or drag-and-drop, and reorder whole Project blocks without changing open work. Removing a Collection keeps its Projects and Workspaces. ([4310d91](https://github.com/jeanduplessis/argus/commit/4310d918261998b46a894f90c5f6df83a46e616f))
+- Collections remember their order and disclosure state. Workspace shortcuts follow the same order even when groups are collapsed, and selecting a hidden Workspace reveals it. Session restore retains valid Collections even when invalid or duplicate records precede them. ([4310d91](https://github.com/jeanduplessis/argus/commit/4310d918261998b46a894f90c5f6df83a46e616f))
+- Release checks now pass the current lint rules, with Pull Request Status behavior preserved and regression coverage for invalid UTF-8 diagnostics. ([4310d91](https://github.com/jeanduplessis/argus/commit/4310d918261998b46a894f90c5f6df83a46e616f))
+
 ## 2026-09-01
 
 - Released Argus 1.14.0 with Workspace Stack Groups and main-agent-only Pi completion alerts. Subagents no longer trigger completion sounds or bell indicators, and Pi stays marked as running while delegated work continues. Enable the updated Pi integration in Settings, then restart Pi or run `/reload` to use the fix. ([6f9230f](https://github.com/jeanduplessis/argus/commit/6f9230f484eea0110766a8d2159293976c4bcc50))
