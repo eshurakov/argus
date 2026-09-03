@@ -292,8 +292,9 @@ actor PullRequestRuntimeInputs: WorkspacePullRequestLocalInputProviding {
         fetchRemotes = repositories.mapValues { PullRequestRuntimeFixture.remotes($0) }
     }
 
-    func readProject(repositoryPath: String, worktreePaths: [String]) async throws -> WorkspacePullRequestProjectInputs
-    {
+    func readProject(
+        repositoryPath: String, worktreePaths: [String]
+    ) async throws -> WorkspacePullRequestProjectInputs {
         projectReads.append(ProjectRead(repositoryPath: repositoryPath, worktreePaths: worktreePaths))
         let result = WorkspacePullRequestProjectInputs(
             fetchRemotes: fetchRemotes[repositoryPath] ?? [],

@@ -29,7 +29,7 @@ struct GitHubStatusResponse {
             headers = Self.rateHeaders(block)
             content = Data(content[boundary.upperBound...])
         }
-        let stderr = String(decoding: result.stderr, as: UTF8.self)
+        let stderr = Self.diagnosticText(result.stderr)
         let diagnosticHeaders = Self.rateHeaders(stderr)
         let retries = [headers["retry-after"], diagnosticHeaders["retry-after"]]
             .compactMap { $0.flatMap { Self.retryDate($0, receivedAt: receivedAt) } }
@@ -103,12 +103,17 @@ struct GitHubStatusResponse {
     static func failure(_ result: GitHubCommandResult) -> PullRequestStatusError {
         do {
             let response = try GitHubStatusResponse(result)
-            return response.failure(messages: [String(decoding: response.body, as: UTF8.self)])
+            return response.failure(messages: [diagnosticText(response.body)])
         } catch let error as PullRequestStatusError {
             return error
         } catch {
             return .invalidMetadata("The GitHub response could not be decoded.")
         }
+    }
+
+    static func diagnosticText(_ data: Data) -> String {
+        // Invalid UTF-8 must not hide otherwise readable authentication or rate-limit diagnostics.
+        String(decoding: data, as: Unicode.UTF8.self)
     }
 
     private static func rateHeaders(_ text: String) -> [String: String] {

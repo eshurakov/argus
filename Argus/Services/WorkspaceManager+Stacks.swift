@@ -223,6 +223,7 @@ extension WorkspaceManager {
         guard selectedWorkspaceId == pending.workspaceId,
             workspaceRevealRevision == pending.revision,
             project.isExpanded,
+            collection(containing: project.id)?.isExpanded != false,
             self.project(for: pending.workspaceId) === project,
             let workspace = workspaces.first(where: { $0.id == pending.workspaceId }),
             workspace.projectId == project.id,

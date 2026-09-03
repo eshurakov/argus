@@ -4,18 +4,7 @@ extension GitHubPullRequestStatusDecoder {
     static func batch(
         _ response: GitHubStatusResponse, identities: [PullRequestIdentity]
     ) throws -> PullRequestStatusBatch {
-        let envelope: [String: Any]
-        do {
-            guard let value = try JSONSerialization.jsonObject(with: response.body) as? [String: Any] else {
-                throw PullRequestStatusError.invalidMetadata("The GraphQL response is not an object.")
-            }
-            envelope = value
-        } catch {
-            if response.exitCode != 0 || response.statusCode.map({ $0 >= 400 }) == true {
-                throw response.failure(messages: [String(decoding: response.body, as: UTF8.self)])
-            }
-            throw response.decodingFailure("The GitHub CLI returned malformed GraphQL JSON.")
-        }
+        let envelope = try batchEnvelope(response)
         let errors: [GraphQLFieldError]
         do {
             errors = try envelope["errors"].map { try decodeObject([GraphQLFieldError].self, $0) } ?? []
@@ -42,24 +31,9 @@ extension GitHubPullRequestStatusDecoder {
         var results: [PullRequestIdentity: Result<PullRequestStatus, PullRequestStatusError>] = [:]
         for (index, identity) in identities.enumerated() {
             let alias = "pr\(index)"
-            do {
-                guard !unscoped else {
-                    throw PullRequestStatusError.invalidMetadata("The GraphQL query has unscoped field errors.")
-                }
-                let unavailable = try unavailableFields(errors.filter { $0.path?.first?.field == alias })
-                guard let repository = data[alias] as? [String: Any],
-                    var fields = repository["pullRequest"] as? [String: Any], fields["headRepository"] != nil
-                else {
-                    throw PullRequestStatusError.invalidMetadata("The requested Pull Request fields are unavailable.")
-                }
-                for field in unavailable { fields.removeValue(forKey: field) }
-                let value = try status(from: JSONSerialization.data(withJSONObject: fields), identity: identity)
-                results[identity] = .success(value)
-            } catch {
-                results[identity] = .failure(
-                    error as? PullRequestStatusError ?? .invalidMetadata("The Pull Request response is malformed.")
-                )
-            }
+            results[identity] = batchResult(
+                data[alias], identity: identity, errors: errors.filter { $0.path?.first?.field == alias },
+                unscoped: unscoped)
         }
         let remaining = response.remaining.flatMap { $0 >= 0 ? min($0, quota.remaining) : nil } ?? quota.remaining
         return PullRequestStatusBatch(
@@ -69,6 +43,41 @@ extension GitHubPullRequestStatusDecoder {
             ),
             retryAfter: response.retryAfter
         )
+    }
+
+    private static func batchEnvelope(_ response: GitHubStatusResponse) throws -> [String: Any] {
+        do {
+            guard let value = try JSONSerialization.jsonObject(with: response.body) as? [String: Any] else {
+                throw PullRequestStatusError.invalidMetadata("The GraphQL response is not an object.")
+            }
+            return value
+        } catch {
+            if response.exitCode != 0 || response.statusCode.map({ $0 >= 400 }) == true {
+                throw response.failure(messages: [GitHubStatusResponse.diagnosticText(response.body)])
+            }
+            throw response.decodingFailure("The GitHub CLI returned malformed GraphQL JSON.")
+        }
+    }
+
+    private static func batchResult(
+        _ object: Any?, identity: PullRequestIdentity, errors: [GraphQLFieldError], unscoped: Bool
+    ) -> Result<PullRequestStatus, PullRequestStatusError> {
+        do {
+            guard !unscoped else {
+                throw PullRequestStatusError.invalidMetadata("The GraphQL query has unscoped field errors.")
+            }
+            let unavailable = try unavailableFields(errors)
+            guard let repository = object as? [String: Any],
+                var fields = repository["pullRequest"] as? [String: Any], fields["headRepository"] != nil
+            else {
+                throw PullRequestStatusError.invalidMetadata("The requested Pull Request fields are unavailable.")
+            }
+            for field in unavailable { fields.removeValue(forKey: field) }
+            return .success(try status(from: JSONSerialization.data(withJSONObject: fields), identity: identity))
+        } catch {
+            return .failure(
+                error as? PullRequestStatusError ?? .invalidMetadata("The Pull Request response is malformed."))
+        }
     }
 
     private static func unavailableFields(_ errors: [GraphQLFieldError]) throws -> Set<String> {

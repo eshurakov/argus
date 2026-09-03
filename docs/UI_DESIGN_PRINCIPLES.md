@@ -234,6 +234,23 @@ Sidebars are navigators, not alternate content areas. They SHOULD stay compact,
 use full-width rows, and put directories before files at each tree level.
 Disclosure state belongs to the tree row; opening content belongs to a tab.
 
+Collection headers MUST preserve the user's entered casing, use semibold primary
+text stronger than muted Project headings, and show a disclosure chevron with a
+subtle trailing horizontal rule. They MUST NOT show a Project count, icon, color
+marker, vertical rail, or persistent card/background. A transient full-width
+hover/focus treatment remains appropriate. The rule MUST give way before the
+name truncates and disappear below 160 points. Use the application's text and
+density metrics, with more space before the header than below it.
+
+With Collections present, Named Project content MUST have one 8-point leading
+inset at normal widths and no additional inset below 160 points. This inset MUST
+remain inside full-width Workspace selection fills and hit regions. It MUST NOT
+change Stack gutter/connector geometry, icon/process slots, or introduce
+recursive indentation. Collection disclosure MUST only expand/collapse. A
+collapsed Collection MUST retain readable Selected Workspace context as
+Project / Workspace and undimmed Turn Completion Attention without acknowledging
+it. Explicit selection MUST reveal every ancestor, including same-ID reselection.
+
 In the left sidebar, Stack Groups MUST use shallow collapsible headers and
 fixed-inset Workspace rows rather than recursively nesting Workspaces. A
 connector points from an actual recorded parent to its dependent and MUST use

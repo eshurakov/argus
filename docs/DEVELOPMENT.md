@@ -1,5 +1,19 @@
 # Developing Argus
 
+## Organizing Projects
+
+Choose **New Collection…** from the Projects plus menu or File menu. Use a
+Project's context menu to move it into a Collection or back to **No Collection**.
+The same menus provide move-up/down actions; Collection menus also offer rename
+and removal. Removing a Collection keeps its Projects and all open work intact.
+
+Drag Project headers to reorder or move whole Project blocks. Drop on a
+Collection header to append, or on the top Projects header to return a Project
+to Other Projects. Drop above or below the midpoint of another Project header
+to insert before or after it. Collection headers can be reordered the same way.
+Disclosure does not change Workspace shortcuts; selecting a hidden Workspace
+reveals all of its ancestors.
+
 ## Requirements
 
 Argus targets macOS 26 and Swift 6. The Xcode project is generated from `project.yml` for Xcode 26.

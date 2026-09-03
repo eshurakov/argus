@@ -56,6 +56,7 @@ private struct SidebarStackHeader: View {
     let onToggle: () -> Void
     @EnvironmentObject private var appSettings: AppSettings
     @Environment(\.sidebarWidthMetrics) private var sidebarMetrics
+    @Environment(\.sidebarCollectionContentInset) private var collectionContentInset
     @Environment(WindowFocusState.self) private var windowFocus
     @State private var isHovered = false
     @FocusState private var isFocused: Bool
@@ -125,6 +126,7 @@ private struct SidebarStackHeader: View {
             }
             .foregroundStyle(.secondary)
             .windowFocusChrome()
+            .padding(.leading, collectionContentInset)
             .padding(.horizontal, sidebarMetrics.rowPadding)
             .padding(.vertical, appSettings.presentationMetrics.workspaceRowVerticalPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -262,6 +264,7 @@ private struct SidebarStackReferenceRow: View {
     let row: WorkspaceStackRow
     @EnvironmentObject private var appSettings: AppSettings
     @Environment(\.sidebarWidthMetrics) private var sidebarMetrics
+    @Environment(\.sidebarCollectionContentInset) private var collectionContentInset
 
     var body: some View {
         HStack(spacing: sidebarMetrics.rowSpacing) {
@@ -283,6 +286,7 @@ private struct SidebarStackReferenceRow: View {
                 Spacer(minLength: 0)
             }
         }
+        .padding(.leading, collectionContentInset)
         .padding(.horizontal, sidebarMetrics.rowPadding)
         .padding(.vertical, appSettings.presentationMetrics.workspaceRowVerticalPadding)
         .frame(maxWidth: .infinity, alignment: .leading)

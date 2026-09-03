@@ -65,6 +65,19 @@ extension WorkspacePullRequestStatusModel {
         return false
     }
 
+    private func publishBatchResponse(_ response: PullRequestStatusBatch, batch: RunningBatch) async {
+        for operation in batch.operations where isCurrent(operation) {
+            guard let association = operation.association else { continue }
+            let result =
+                response.results[association.identity]
+                ?? .failure(.invalidMetadata("The GraphQL batch omitted this Pull Request."))
+            if case .failure(let error) = result {
+                recordProjectFailure(error, request: operation.request)
+            }
+            await revalidateAndPublish(result.map(Optional.some), operation: operation)
+        }
+    }
+
     func performBatch(_ batch: RunningBatch) async {
         defer {
             providerTasks[batch.id] = nil
@@ -80,16 +93,7 @@ extension WorkspacePullRequestStatusModel {
             recordQuota(response, host: batch.host)
             recordHostSuccess(host: batch.host, manual: batch.operations.contains { $0.request.kind == .manual })
             guard !Task.isCancelled else { return }
-            for operation in batch.operations where isCurrent(operation) {
-                guard let association = operation.association else { continue }
-                let result =
-                    response.results[association.identity]
-                    ?? .failure(.invalidMetadata("The GraphQL batch omitted this Pull Request."))
-                if case .failure(let error) = result {
-                    recordProjectFailure(error, request: operation.request)
-                }
-                await revalidateAndPublish(result.map(Optional.some), operation: operation)
-            }
+            await publishBatchResponse(response, batch: batch)
         } catch {
             guard !(error is CancellationError) else { return }
             let failure = statusError(error)

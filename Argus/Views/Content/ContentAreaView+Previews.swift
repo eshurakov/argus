@@ -80,7 +80,7 @@ struct FileImagePreview: View {
             Image(nsImage: image)
                 .resizable()
                 .interpolation(.high)
-                .aspectRatio(contentMode: .fit)
+                .scaledToFit()
                 .padding(24)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .accessibilityLabel(accessibilityLabel)

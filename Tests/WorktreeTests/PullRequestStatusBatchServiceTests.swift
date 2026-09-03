@@ -132,7 +132,8 @@ struct PullRequestStatusBatchServiceTests {
             data["pr0"] = unavailable
             envelope["data"] = data
             let runner = StatusCommandRunner([
-                success(String(decoding: try JSONSerialization.data(withJSONObject: envelope), as: UTF8.self))
+                GitHubCommandResult(
+                    stdout: try JSONSerialization.data(withJSONObject: envelope), stderr: Data(), exitCode: 0)
             ])
             let result = try await makeService(runner).refreshPullRequests(
                 [identity, other], repositoryPath: projectPath)
@@ -206,7 +207,9 @@ struct PullRequestStatusBatchServiceTests {
         await expectInvalidMetadata { _ = try await refresh(service) }
         #expect(await runner.calls.count == 1)
     }
+}
 
+extension PullRequestStatusBatchServiceTests {
     @Test
     func includedHeadersAreStrippedAndRateDeadlinesArePreservedWithoutReflectingSecrets() async throws {
         let json = try batchPayload([payload()])
@@ -219,12 +222,11 @@ struct PullRequestStatusBatchServiceTests {
         let retry = try #require(batch.retryAfter)
         #expect(retry >= started.addingTimeInterval(60))
         #expect(retry <= Date().addingTimeInterval(60))
+        let forbiddenHeaders =
+            "HTTP/2.0 403 Forbidden\nX-RateLimit-Remaining: 0\nX-RateLimit-Reset: 2000000000\nRetry-After: 60\n\n{}"
         let response = try GitHubStatusResponse(
-            GitHubCommandResult(
-                stdout: Data(
-                    "HTTP/2.0 403 Forbidden\nX-RateLimit-Remaining: 0\nX-RateLimit-Reset: 2000000000\nRetry-After: 60\n\n{}"
-                        .utf8),
-                stderr: Data(), exitCode: 1), receivedAt: Date(timeIntervalSince1970: 1_000))
+            GitHubCommandResult(stdout: Data(forbiddenHeaders.utf8), stderr: Data(), exitCode: 1),
+            receivedAt: Date(timeIntervalSince1970: 1_000))
         #expect(response.sharedFailure() == .rateLimited(retryAfter: Date(timeIntervalSince1970: 2_000_000_000)))
         let dated = try GitHubStatusResponse(
             success("HTTP/2.0 200 OK\nRetry-After: Wed, 18 May 2033 03:33:20 GMT\n\n{}"))
@@ -311,6 +313,24 @@ struct PullRequestStatusBatchServiceTests {
                 #expect(await runner.calls.count == 1)
             }
         }
+    }
+
+    @Test(
+        arguments: [false, true],
+        [
+            ("Bad credentials", PullRequestStatusError.unauthenticated),
+            ("Secondary rate limit exceeded", .secondaryRateLimited(retryAfter: nil))
+        ])
+    func invalidUTF8RetainsReadableFailureDiagnostics(
+        fromStderr: Bool, diagnostic: (String, PullRequestStatusError)
+    ) async throws {
+        let bytes = Data([255]) + Data(diagnostic.0.utf8)
+        let result = GitHubCommandResult(
+            stdout: fromStderr ? Data() : bytes, stderr: fromStderr ? bytes : Data(), exitCode: 1)
+        #expect(GitHubStatusResponse.failure(result) == diagnostic.1)
+        let runner = StatusCommandRunner([result])
+        await #expect(throws: diagnostic.1) { try await refresh(makeService(runner)) }
+        #expect(await runner.calls.count == 1)
     }
 
     @Test

@@ -118,17 +118,7 @@ extension WorkspacePullRequestStatusModel {
             switch result {
             case .success(let status):
                 do {
-                    if let status {
-                        guard status.identity.repository == operation.repository,
-                            status.headBranchName == request.branch.branchName,
-                            request.branch.upstreamRepository == nil
-                                || status.headRepository == request.branch.upstreamRepository
-                        else {
-                            throw PullRequestStatusError.invalidMetadata(
-                                "The returned Pull Request does not match this Workspace's repository and branch.")
-                        }
-                        try operation.association?.validate(status)
-                    }
+                    if let status { try validateReturnedStatus(status, operation: operation) }
                     publishSuccess(status, operation: operation)
                 } catch {
                     publishFailure(statusError(error), request: request)
@@ -144,6 +134,19 @@ extension WorkspacePullRequestStatusModel {
                     ?? .repositoryUnavailable("The worktree's branch and HEAD could not be revalidated.")
             )
         }
+    }
+
+    private func validateReturnedStatus(_ status: PullRequestStatus, operation: RunningRequest) throws {
+        let request = operation.request
+        guard status.identity.repository == operation.repository,
+            status.headBranchName == request.branch.branchName,
+            request.branch.upstreamRepository == nil
+                || status.headRepository == request.branch.upstreamRepository
+        else {
+            throw PullRequestStatusError.invalidMetadata(
+                "The returned Pull Request does not match this Workspace's repository and branch.")
+        }
+        try operation.association?.validate(status)
     }
 
     func isCurrent(_ request: Request) -> Bool {
@@ -182,7 +185,8 @@ extension WorkspacePullRequestStatusModel {
         let id = request.target.workspaceID
         guard let project = projects[request.target.projectID] else { return }
         let completedAt = now()
-        if project.failureGeneration == request.failureGeneration || project.retryAt.map({ $0 <= completedAt }) == true
+        if project.failureGeneration == request.failureGeneration
+            || project.retryAt.map({ $0 <= completedAt }) == true
         {
             project.failureCount = 0
             project.failureGeneration = UUID()

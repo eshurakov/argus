@@ -64,6 +64,17 @@ selection, or existing Git Preview Tabs.
 8. Removing a Named Project MUST remove its child Workspaces and attempt to remove their Managed Worktrees.
 9. Named Projects MUST appear before the Catch-all Project in the left sidebar.
 
+### Collections
+
+1. A Collection MUST be a user-named, UUID-identified, single-level navigation organizer for zero or more Named Projects. A Named Project MAY belong to one Collection. The Catch-all Project MUST remain outside Collections and last. Collections MUST NOT own repositories, Workspaces, Panels, processes, or worktrees.
+2. Collections MUST persist their name, ordered Project IDs, order, and disclosure state. Empty user-created Collections MUST remain until explicitly removed. Removing a Collection MUST only return its Projects, in member order, to the end of Other Projects; it MUST NOT close or delete resources.
+3. With no Collections, the sidebar MUST retain its existing structure. With Collections, it MUST show ordered Collection sections, then Other Projects only when ungrouped Named Projects exist, then WORKSPACES for the Catch-all Project.
+4. New Collection MUST be available from the Projects plus menu and the application File menu. Creation and rename MUST use native sheets. Project context menus MUST offer Move to Collection, including No Collection, and move-up/down actions within the current section. Collection context menus MUST offer rename, removal, and move-up/down actions.
+5. Drag-and-drop MUST supplement explicit actions. Project headers MUST move whole Project blocks within or between Collections and Other Projects; Collection headers MUST reorder Collections. Dropping a Project on the top Projects header MUST return it to Other Projects, including when that section is empty. Collection and Project payloads MUST be distinct from Workspace payloads, and invalid, mixed, stale, and Catch-all drops MUST be rejected. The destination membership and order MUST be captured before an asynchronous payload read and revalidated before applying a drop.
+6. Collection disclosure MUST NOT select a Workspace or acknowledge Turn Completion Attention. A collapsed Collection MUST summarize its hidden Selected Workspace with Project / Workspace context and hidden Turn Completion Attention. Reordering, membership changes, and disclosure MUST preserve Selected Workspace, Active Tab, Focused Pane, and live content.
+7. The sidebar, Cmd-number shortcuts, adjacent navigation, and selection after closure MUST use the same fully expanded Project order: Collection members in Collection order, ungrouped Named Projects in manual order, then Catch-all. Disclosure MUST NOT renumber Workspaces. Explicit Workspace selection, including same-ID reselection, MUST reveal its Collection, Project, and Stack Group. Collapsing a Collection MUST cancel pending Stack reveal for its children; background discovery MUST remain independent of disclosure.
+8. Argus MUST support at most 128 Collections and names of 1–4096 UTF-8 bytes after trimming surrounding whitespace. Names MUST preserve entered casing. Restore MUST bound Collection state and remove stale, duplicate, and Catch-all membership without discarding an otherwise valid legacy session. Malformed optional Collection records or member IDs MUST be isolated while retaining valid siblings; a malformed top-level Collection field MUST restore as no Collections. Core Project and Workspace validation MUST remain unchanged. Collection fields MUST remain additive, with no schema-version change. User Collection mutations MUST synchronously checkpoint the Session Snapshot.
+
 ### Workspaces
 
 1. A Workspace MUST have an immutable Workspace ID, one Workspace Root, and an ordered set of Top-level Tabs. A nonempty Workspace MUST have one Active Tab; an Empty Workspace has no Active Tab.
@@ -354,11 +365,11 @@ selection, or existing Git Preview Tabs.
 2. The snapshot MUST use one schema version. An incompatible version MUST be discarded rather than migrated.
 3. Snapshots with no Workspaces and snapshots containing more than 128 Workspaces MUST be rejected. A Workspace with zero persisted Terminal Panels is valid.
 4. Restore MUST reconcile Project and Workspace references, retain one Catch-all Project, remove stale references, and choose a valid Selected Workspace.
-5. Project snapshots MUST include Project identity, repository metadata, ordering, expansion state, optional color, and collapsed Stack Group keys. Older snapshots without collapsed keys MUST restore with all Stack Groups expanded.
+5. Project snapshots MUST include Project identity, repository metadata, ordering, expansion state, optional color, and collapsed Stack Group keys. Older snapshots without collapsed keys MUST restore with all Stack Groups expanded. Optional Collection records MUST store Collection identity, name, ordered Project IDs, order, and disclosure. Older snapshots without Collection records MUST restore with no Collections.
 6. Workspace snapshots MUST include Workspace identity and type, Project association, branch and worktree metadata, Workspace Root, display title, the count used to reconstruct Terminal Panels, terminal custom titles, and per-terminal Terminal Working Directories.
 7. Restored Terminal Panels MUST use their last observed Terminal Working Directory as the initial directory.
 8. File Panels, Git Preview Panels, Browser Panels, Release Notes Panels, split layouts, Active Tab, Focused Pane, Git Status Snapshots, Pull Request Status and its provider associations/cache, and Agent Status Entries are runtime-only in v1. A Workspace whose persisted Terminal Panel count is zero MUST restore with no Terminal Panels and nil active state.
-9. Argus MUST synchronously save the Session Snapshot during normal application termination. It MUST also synchronously checkpoint after a user commits a Workspace display-name or Workspace Root change, so those changes survive an application crash.
+9. Argus MUST synchronously save the Session Snapshot during normal application termination. It MUST also synchronously checkpoint after a user commits a Workspace display-name, Workspace Root, or Collection change, so those changes survive an application crash.
 10. V1 does not provide periodic autosave. Event-driven checkpoints for explicitly user-authored durable changes do not constitute periodic autosave.
 11. Restore MUST be skipped when disabled in Settings or by the supported test/restore environment overrides.
 
@@ -379,5 +390,5 @@ selection, or existing Git Preview Tabs.
 - Pi child-session filtering uses the `pi-subagents` package's `PI_SUBAGENT_CHILD` marker, and delegated-work checks use its advertised version-one fleet status API. Other launchers or older packages that do not advertise that API cannot provide delegated-work awareness. Plain Pi sessions retain lifecycle-based completion reporting.
 - Kilo's public extension API cannot prove that every ordinary non-synthetic user message was authored interactively by a person, so completion provenance uses conservative best-effort filtering.
 - Nonterminal Panels, split layout, and current tab/focus state are not restored.
-- Session persistence occurs on normal application termination and after committed Workspace display-name or Workspace Root changes; there is no periodic autosave.
+- Session persistence occurs on normal application termination and after committed Workspace display-name, Workspace Root, or Collection changes; there is no periodic autosave.
 - Worktree ownership is not represented independently from Workspace type.

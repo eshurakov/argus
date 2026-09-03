@@ -277,7 +277,7 @@ private struct StatusResponse: Decodable {
         let checks: PullRequestChecks
 
         init(from decoder: Decoder) throws {
-            let values = try decoder.container(keyedBy: CodingKeys.self)
+            let values = try decoder.container(keyedBy: CommitCodingKeys.self)
             guard values.contains(.statusCheckRollup) else {
                 checks = .unavailable
                 return
@@ -293,10 +293,10 @@ private struct StatusResponse: Decodable {
                 checks = .unavailable
             }
         }
+    }
 
-        private enum CodingKeys: CodingKey {
-            case statusCheckRollup
-        }
+    private enum CommitCodingKeys: CodingKey {
+        case statusCheckRollup
     }
 
     private struct Rollup: Decodable {

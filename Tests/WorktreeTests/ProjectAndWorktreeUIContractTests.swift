@@ -46,9 +46,12 @@ struct ProjectAndWorktreeUIContractTests {
         let sidebar = try SourceContract("Argus/Views/Sidebar/SidebarView.swift")
         sidebar.containsAll(
             [
-                "help: \"New Project\"",
-                "accessibilityLabel: \"New Project\"",
+                ".help(\"New Project or Collection\")",
+                ".accessibilityLabel(\"New Project or Collection\")",
+                "Button(\"New Project…\")",
+                "Button(\"New Collection…\")",
                 "name: .showNewProjectSheet",
+                "name: .showCollectionSheet",
                 "help: \"New Workspace\"",
                 "accessibilityLabel: \"New Workspace\"",
                 "workspaceManager.addWorkspace()",
@@ -56,14 +59,14 @@ struct ProjectAndWorktreeUIContractTests {
                 "name: .showNewWorkspaceSheet",
                 "userInfo: [\"projectId\": project.id]",
                 "Button(\"Add Workspace…\")"
-            ], "project and catch-all add controls")
+            ], "Projects creation menu stays separate from Catch-all Workspace creation")
         sidebar.excludes(
             "New Workspace or Project",
-            "section plus buttons must not share a combined add menu"
+            "Catch-all Workspace creation must remain separate from the Projects menu"
         )
         sidebar.excludes(
             "Image(systemName: \"folder.badge.plus\")",
-            "Projects plus creates a Project directly"
+            "Projects keeps its plus-menu affordance"
         )
     }
 

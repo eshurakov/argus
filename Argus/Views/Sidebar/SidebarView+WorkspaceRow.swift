@@ -14,6 +14,7 @@ struct SidebarWorkspaceRow: View {
     @EnvironmentObject private var workspaceManager: WorkspaceManager
     @Environment(\.isCommandKeyHeld) private var isCommandKeyHeld
     @Environment(\.sidebarWidthMetrics) private var sidebarMetrics
+    @Environment(\.sidebarCollectionContentInset) private var collectionContentInset
     @Environment(WindowFocusState.self) private var windowFocus
     let globalIndex: Int
     let shortcutDigit: Int?
@@ -104,6 +105,7 @@ struct SidebarWorkspaceRow: View {
                     workspaceLabels
                 }
             }
+            .padding(.leading, collectionContentInset)
             .padding(.horizontal, sidebarMetrics.rowPadding)
             .padding(.vertical, appSettings.presentationMetrics.workspaceRowVerticalPadding)
             .background(
@@ -181,6 +183,9 @@ struct SidebarWorkspaceRow: View {
         }
     }
 
+}
+
+extension SidebarWorkspaceRow {
     private var showsPullRequestStatus: Bool {
         appSettings.showPullRequestStatus && workspace.workspaceType == .worktree
             && workspace.worktreePath?.isEmpty == false
@@ -354,61 +359,5 @@ private enum SidebarWorkspaceIconHorizontalAlignment: AlignmentID {
 private enum SidebarWorkspaceIconVerticalAlignment: AlignmentID {
     static func defaultValue(in context: ViewDimensions) -> CGFloat {
         context[VerticalAlignment.center]
-    }
-}
-
-struct SidebarCollapsedWorkspaceSummary: View {
-    let workspaceIds: [UUID]
-    @EnvironmentObject private var workspaceManager: WorkspaceManager
-    @EnvironmentObject private var turnCompletionAttentionStore: TurnCompletionAttentionStore
-    @EnvironmentObject private var appSettings: AppSettings
-    @Environment(\.sidebarWidthMetrics) private var sidebarMetrics
-
-    private var selectedWorkspace: Workspace? {
-        guard let workspace = workspaceManager.selectedWorkspace,
-            workspaceIds.contains(workspace.id)
-        else { return nil }
-        return workspace
-    }
-
-    private var hasAttention: Bool {
-        workspaceIds.contains { turnCompletionAttentionStore.workspaceHasAttention($0) }
-    }
-
-    var body: some View {
-        if selectedWorkspace != nil || hasAttention {
-            VStack(alignment: .leading, spacing: 2) {
-                if let selectedWorkspace {
-                    SidebarCollapsedSelectionLabel(workspace: selectedWorkspace)
-                        .windowFocusChrome()
-                }
-                if hasAttention {
-                    Label("Unviewed completion", systemImage: "bell.fill")
-                        .foregroundStyle(.orange)
-                        .lineLimit(1)
-                        .help("One or more hidden Workspaces have Turn Completion Attention")
-                        .accessibilityLabel("Turn Completion Attention in hidden Workspaces")
-                }
-            }
-            .font(.system(size: appSettings.presentationMetrics.textSize(forBaseSize: 10)))
-            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-            .padding(.leading, sidebarMetrics.isCompact ? sidebarMetrics.rowPadding : 26)
-            .padding(.trailing, sidebarMetrics.rowPadding)
-            .padding(.bottom, 4)
-            .accessibilityElement(children: .combine)
-        }
-    }
-}
-
-private struct SidebarCollapsedSelectionLabel: View {
-    @ObservedObject var workspace: Workspace
-
-    var body: some View {
-        Text("Selected: \(workspace.displayTitle)")
-            .foregroundStyle(Color.accentColor)
-            .lineLimit(1)
-            .truncationMode(.tail)
-            .help("Selected Workspace: \(workspace.displayTitle)")
-            .accessibilityLabel("Selected Workspace: \(workspace.displayTitle)")
     }
 }

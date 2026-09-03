@@ -185,8 +185,8 @@ struct PullRequestStatusNavigationTests {
         source.openReleaseNotesPanel()
 
         switch reason {
-        case "main-checkout": source.workspaceType = .mainCheckout
-        case "standalone": source.workspaceType = .external
+        case "main-checkout", "standalone":
+            source.workspaceType = reason == "main-checkout" ? .mainCheckout : .external
         case "catch-all":
             source.projectId = fixture.manager.catchAllProject.id
             fixture.manager.catchAllProject.addWorkspace(source.id)
@@ -227,7 +227,9 @@ struct PullRequestStatusNavigationTests {
         #expect(selected.panelOrder == [selectedTab.id])
         #expect(try fixture.snapshotData() == before)
     }
+}
 
+extension PullRequestStatusNavigationTests {
     @Test(arguments: [true, false])
     func runtimeStatusAndOpeningLeaveTheSessionSnapshotUnchanged(openSucceeds: Bool) throws {
         let fixture = try PullRequestNavigationFixture()

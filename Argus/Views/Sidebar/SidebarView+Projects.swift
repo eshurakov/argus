@@ -18,6 +18,8 @@ struct ProjectSection: View {
             if showsHeader {
                 ProjectHeaderRow(project: project)
                     .windowFocusChrome()
+                    .modifier(SidebarNavigationDropTarget(target: .project(project.id)))
+                    .onDrag { workspaceManager.projectDrag(project.id).itemProvider }
                     .padding(.top, 4)
             }
 
@@ -187,6 +189,7 @@ private struct ProjectHeaderRow: View {
     @EnvironmentObject private var appSettings: AppSettings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.sidebarWidthMetrics) private var sidebarMetrics
+    @Environment(\.sidebarCollectionContentInset) private var collectionContentInset
     @State private var isHovered = false
     @State private var isAddHovered = false
     @State private var isRemovingProject = false
@@ -225,6 +228,7 @@ private struct ProjectHeaderRow: View {
                 addWorkspaceButton
             }
         }
+        .padding(.leading, collectionContentInset)
         .padding(.horizontal, sidebarMetrics.rowPadding)
         .padding(.vertical, appSettings.presentationMetrics.projectHeaderVerticalPadding)
         .background(
@@ -255,6 +259,7 @@ private struct ProjectHeaderRow: View {
                         userInfo: ["projectId": project.id]
                     )
                 }
+                ProjectCollectionMenu(projectId: project.id)
                 Button("Refresh Stacks") {
                     workspaceManager.refreshWorkspaceStacks(in: project.id)
                 }

@@ -178,6 +178,7 @@ struct ArgusSessionSnapshot: Codable, Sendable {
     let selectedWorkspaceId: UUID?
     let projects: [ProjectSnapshot]
     let workspaces: [WorkspaceSnapshot]
+    let collections: [ProjectCollection]?
 
     var isCompatible: Bool {
         schemaVersion == Self.currentSchemaVersion
@@ -211,12 +212,31 @@ struct ArgusSessionSnapshot: Codable, Sendable {
         schemaVersion: Int = Self.currentSchemaVersion,
         selectedWorkspaceId: UUID?,
         projects: [ProjectSnapshot],
-        workspaces: [WorkspaceSnapshot]
+        workspaces: [WorkspaceSnapshot],
+        collections: [ProjectCollection]? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.selectedWorkspaceId = selectedWorkspaceId
         self.projects = projects
         self.workspaces = workspaces
+        self.collections = collections.map(ProjectCollection.bounded)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, selectedWorkspaceId, projects, workspaces, collections
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try container.decode(Int.self, forKey: .schemaVersion)
+        selectedWorkspaceId = try container.decodeIfPresent(UUID.self, forKey: .selectedWorkspaceId)
+        projects = try container.decode([ProjectSnapshot].self, forKey: .projects)
+        workspaces = try container.decode([WorkspaceSnapshot].self, forKey: .workspaces)
+        if container.contains(.collections), try !container.decodeNil(forKey: .collections) {
+            collections = (try? ProjectCollection.decodeList(from: container.superDecoder(forKey: .collections))) ?? []
+        } else {
+            collections = nil
+        }
     }
 }
 
@@ -258,7 +278,9 @@ private struct SessionSnapshotReconciler {
             schemaVersion: snapshot.schemaVersion,
             selectedWorkspaceId: selectedId,
             projects: projects,
-            workspaces: reconciledWorkspaces
+            workspaces: reconciledWorkspaces,
+            collections: ProjectCollection.reconciled(
+                snapshot.collections ?? [], namedProjectIds: Set(namedProjects.map(\.id)))
         )
     }
 

@@ -98,7 +98,8 @@ struct WorkspaceStackUIContractTests {
         #expect(button.contains("runningProcessBadge"))
         row.contains("CountBadge(count: runningProcessCount)", "both widths retain the running-process badge")
         #expect(button.contains(".accessibilityAddTraits(isSelected ? .isSelected : [])"))
-        #expect(!button.contains(".padding(.leading"))
+        let collectionInset = try #require(button.range(of: ".padding(.leading, collectionContentInset)"))
+        #expect(collectionInset.lowerBound < selection.lowerBound)
     }
 
     @Test
@@ -145,7 +146,7 @@ struct WorkspaceStackUIContractTests {
 
     @Test
     func collapsedSummariesPreserveSelectionAndUndimmedBooleanAttention() throws {
-        let row = try SourceContract("Argus/Views/Sidebar/SidebarView+WorkspaceRow.swift")
+        let row = try SourceContract("Argus/Views/Sidebar/SidebarCollapsedWorkspaceSummary.swift")
         let summary = try row.section(after: "struct SidebarCollapsedWorkspaceSummary: View {", before: "\n}\n")
         #expect(summary.contains("workspaceIds.contains(workspace.id)"))
         #expect(summary.contains("SidebarCollapsedSelectionLabel(workspace: selectedWorkspace)"))

@@ -13,14 +13,19 @@ extension SidebarView {
             // Header with title and global add buttons
             SidebarHeader()
                 .windowFocusChrome()
+                .modifier(SidebarNavigationDropTarget(target: .otherProjects))
 
             // Project sections
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(workspaceManager.namedProjects, id: \.id) { project in
-                            ProjectSection(project: project)
+                        ForEach(workspaceManager.collections) { collection in
+                            SidebarCollectionSection(collection: collection)
                         }
+                        if !workspaceManager.collections.isEmpty && !workspaceManager.ungroupedProjects.isEmpty {
+                            SidebarOtherProjectsHeader()
+                        }
+                        SidebarUngroupedProjects()
 
                         if let catchAll = workspaceManager.catchAllProject {
                             WorkspacesSectionHeader()
@@ -56,7 +61,9 @@ extension SidebarView {
 /// Top header with "Projects" label and a New Project action.
 private struct SidebarHeader: View {
     @EnvironmentObject private var appSettings: AppSettings
+    @EnvironmentObject private var workspaceManager: WorkspaceManager
     @Environment(\.sidebarWidthMetrics) private var sidebarMetrics
+    @State private var isAddHovered = false
 
     var body: some View {
         HStack(spacing: sidebarMetrics.isCompact ? 2 : nil) {
@@ -72,12 +79,31 @@ private struct SidebarHeader: View {
                 .lineLimit(1)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             Spacer(minLength: 0)
-            SidebarSectionAddButton(
-                help: "New Project",
-                accessibilityLabel: "New Project"
-            ) {
-                NotificationCenter.default.post(name: .showNewProjectSheet, object: nil)
+            Menu {
+                Button("New Project…") {
+                    NotificationCenter.default.post(name: .showNewProjectSheet, object: nil)
+                }
+                Button("New Collection…") {
+                    NotificationCenter.default.post(name: .showCollectionSheet, object: nil)
+                }
+                .disabled(!workspaceManager.canCreateCollection)
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 12))
+                    .frame(width: 20, height: 20)
+                    .background {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(isAddHovered ? ChromeColors.hoveredTabFill : Color.clear)
+                    }
+                    .contentShape(Rectangle())
             }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .onHover { isAddHovered = $0 }
+            .cursor(.pointingHand)
+            .help("New Project or Collection")
+            .accessibilityLabel("New Project or Collection")
         }
         .padding(.horizontal, sidebarMetrics.isCompact ? 6 : 12)
         .padding(.vertical, 8)

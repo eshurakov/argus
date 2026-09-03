@@ -109,7 +109,8 @@ extension WorkspacePullRequestStatusModel {
                 budget.pause = pause
             }
             hostBudgets.hosts[host] = budget
-        } else if (pause.pauseDeadline ?? .distantPast) >= (hostBudgets.unresolved.pause?.pauseDeadline ?? .distantPast)
+        } else if (pause.pauseDeadline ?? .distantPast)
+            >= (hostBudgets.unresolved.pause?.pauseDeadline ?? .distantPast)
         {
             hostBudgets.unresolved.pause = pause
         }

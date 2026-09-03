@@ -50,6 +50,8 @@ final class WorkspaceManager: ObservableObject {
         didSet { reconcileWorkspaceStackObservations() }
     }
 
+    @Published internal(set) var collections: [ProjectCollection] = []
+
     let workspaceStackReader: any WorkspaceStackReading
     var workspaceStackObservations: [UUID: (project: Project, observation: WorkspaceStackObservation)] = [:]
     var isObservingWorkspaceStacks = false
@@ -310,7 +312,8 @@ final class WorkspaceManager: ObservableObject {
         ArgusSessionSnapshot(
             selectedWorkspaceId: selectedWorkspaceId,
             projects: projects.map { $0.snapshot() },
-            workspaces: workspaces.map { $0.snapshot() }
+            workspaces: workspaces.map { $0.snapshot() },
+            collections: collections.isEmpty ? nil : collections
         )
     }
 
@@ -361,6 +364,7 @@ final class WorkspaceManager: ObservableObject {
         self.catchAllProject = catchAll
         self.projects = restoredProjects
         self.workspaces = restoredWorkspaces
+        self.collections = reconciledSnapshot.collections ?? []
         self.selectedWorkspaceId = reconciledSnapshot.selectedWorkspaceId
         notifyWorkspaceContextChanged()
         return true

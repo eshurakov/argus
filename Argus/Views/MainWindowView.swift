@@ -102,6 +102,7 @@ struct MainWindowView: View {  // swiftlint:disable:this type_body_length
     // MARK: - Sheet State
 
     @State private var showNewProjectSheet = false
+    @State private var collectionSheetRequest: CollectionSheetRequest?
     @State private var newWorkspaceSheetRequest: NewWorkspaceSheetRequest?
     @State private var changeWorkspaceRootSheetRequest: ChangeWorkspaceRootSheetRequest?
     @State private var showOrphanedWorktreesSheet = false
@@ -238,6 +239,10 @@ struct MainWindowView: View {  // swiftlint:disable:this type_body_length
             NewProjectSheet()
                 .environmentObject(workspaceManager)
         }
+        .sheet(item: $collectionSheetRequest) { request in
+            CollectionNameSheet(request: request)
+                .environmentObject(workspaceManager)
+        }
         // Sheet: New Workspace
         .sheet(item: $newWorkspaceSheetRequest) { request in
             NewWorkspaceSheet(projectId: request.projectId)
@@ -278,6 +283,16 @@ struct MainWindowView: View {  // swiftlint:disable:this type_body_length
             Text(workspaceDeletionErrorMessage)
         }
         // Notification receivers for sheet/alert triggers
+        .onReceive(NotificationCenter.default.publisher(for: .showCollectionSheet)) { notification in
+            if let collectionId = notification.object as? UUID {
+                guard let collection = workspaceManager.collections.first(where: { $0.id == collectionId }) else {
+                    return
+                }
+                collectionSheetRequest = CollectionSheetRequest(collectionId: collectionId, name: collection.name)
+            } else {
+                collectionSheetRequest = CollectionSheetRequest()
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .showNewProjectSheet)) { _ in
             showNewProjectSheet = true
         }

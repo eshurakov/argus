@@ -266,7 +266,7 @@ struct FileTabUIContractTests {
                 "Show SVG source", "Show SVG preview",
                 "if displayMode == .preview",
                 "Image(nsImage: image)",
-                ".aspectRatio(contentMode: .fit)",
+                ".scaledToFit()",
                 "Image preview is unavailable"
             ], "image File Tab previews")
     }

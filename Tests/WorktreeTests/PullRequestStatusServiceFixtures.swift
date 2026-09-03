@@ -21,7 +21,7 @@ func payload(_ changes: [String: Any] = [:], removing: [String] = []) throws -> 
     ]
     fields.merge(changes) { _, new in new }
     for key in removing { fields.removeValue(forKey: key) }
-    return String(decoding: try JSONSerialization.data(withJSONObject: fields), as: UTF8.self)
+    return try #require(String(bytes: JSONSerialization.data(withJSONObject: fields), encoding: .utf8))
 }
 
 func batchPayload(
@@ -46,7 +46,7 @@ func batchPayload(
         data["pr\(index)"] = ["pullRequest": fields]
     }
     let envelope: [String: Any] = ["data": data, "errors": errors]
-    return String(decoding: try JSONSerialization.data(withJSONObject: envelope), as: UTF8.self)
+    return try #require(String(bytes: JSONSerialization.data(withJSONObject: envelope), encoding: .utf8))
 }
 
 func knownStatus(

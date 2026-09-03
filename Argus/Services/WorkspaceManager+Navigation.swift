@@ -8,6 +8,7 @@ extension WorkspaceManager {
         selectedWorkspace?.activePanel?.unfocus()
         selectedWorkspaceId = workspaceId
         if let project = project(for: workspaceId) {
+            revealCollection(containing: project.id)
             project.isExpanded = true
             if let group = stackGroup(for: workspaceId, in: project.id) {
                 project.collapsedStackIds.remove(group.id)
@@ -332,7 +333,7 @@ extension WorkspaceManager {
     }
 
     var sidebarOrderedWorkspaces: [(project: Project, workspace: Workspace)] {
-        projects.flatMap { project in
+        sidebarOrderedProjects.flatMap { project in
             sidebarItems(for: project).flatMap(\.workspaceIds).compactMap { workspaceId in
                 workspaces.first(where: { $0.id == workspaceId }).map { (project, $0) }
             }

@@ -71,6 +71,7 @@ extension WorkspaceManager {
         let previousOrder = sidebarOrderedWorkspaces.map(\.workspace.id)
         workspaces.removeAll { idsToRemove.contains($0.id) }
         projects.removeAll { $0.id == projectId }
+        for index in collections.indices { collections[index].projectIds.removeAll { $0 == projectId } }
         restoreSelectionAfterRemovingWorkspaces(idsToRemove, previousOrder: previousOrder)
     }
 
