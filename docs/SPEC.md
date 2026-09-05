@@ -2,7 +2,7 @@
 
 ## Status
 
-Stable v1 baseline, updated 2026-09-02.
+Stable v1 baseline, updated 2026-09-04.
 
 This document defines behavior implemented by the current Argus application. Future work belongs under `docs/proposals/` until it is implemented and incorporated here.
 
@@ -12,7 +12,7 @@ The words "MUST", "MUST NOT", "SHOULD", "SHOULD NOT", and "MAY" are normative.
 
 Argus is a personal macOS terminal workspace manager built on Ghostty. It organizes terminal, browser, file, and Git preview content into Workspaces; groups repository-backed Workspaces into Projects; manages Git worktrees; shows Workspace files and Git changes; and restores durable session state.
 
-Argus is a single-user, single-machine application. It has one main Workspace window and a separate native Settings surface. It does not provide a general external control API in v1; the local socket is limited to the agent integration events specified below.
+Argus is a single-user, single-machine application. It has one main Workspace window and a separate native Settings surface. It does not provide a general external control API in v1: the local socket implements only the agent integration events and the Companion CLI Workspace Commands specified below.
 
 ## Application shell
 
@@ -156,7 +156,7 @@ selection, or existing Git Preview Tabs.
 2. Each Terminal Panel MUST own one independent Terminal Surface.
 3. Argus MUST load Ghostty default and recursive configuration before applying its bundled opaque-black terminal background override. Unfocused windows MUST use a cached configuration derived from that configuration with only the background changed to dark grey. Focus changes MUST NOT reload user files, recreate Terminal Surfaces, or restart processes.
 4. Terminal surfaces MUST retain user Ghostty configuration except for the Argus-owned background and background-opacity values.
-5. Spawned shells MUST receive `ARGUS_SOCKET_PATH`, `ARGUS_WORKSPACE_ID`, and `ARGUS_SURFACE_ID`.
+5. Spawned shells MUST receive `ARGUS_SOCKET_PATH`, `ARGUS_WORKSPACE_ID`, and `ARGUS_SURFACE_ID`. When the running application bundles the Companion CLI, they MUST also receive a `PATH` whose first entry is the bundled tools directory, so `argus` resolves by name. That value MUST preserve every inherited entry and the application binary directory Ghostty appends, because Argus-supplied variables replace Ghostty's `PATH`. A build without a bundled CLI MUST leave `PATH` untouched.
 6. These variables identify the application socket, Workspace, and Terminal Surface for supported integrations. Their presence MUST NOT be treated as proof that a particular Agent Integration is enabled.
 7. Argus MUST set terminal-identifying environment values and prepend existing supported Homebrew binary directories to `PATH`.
 8. Terminal title and working-directory callbacks MUST update their Terminal Panel state on the main thread.
@@ -340,7 +340,7 @@ selection, or existing Git Preview Tabs.
 5. Per-panel Agent Status MUST override Workspace-level Agent Status for that Terminal Surface.
 6. A loading indicator MUST take precedence over Agent Status in a Top-level Tab. Agent Status MUST take precedence over the default icon.
 7. Agent Status Entries MUST remain ephemeral and MUST NOT be restored.
-8. Argus MUST host a user-local Unix Domain Socket for the implemented `agent.turnCompleted`, `agent.statusChanged`, and `agent.statusCleared` methods. The Socket Server MUST use bounded newline-delimited JSON frames, restrictive permissions, structured responses, and current Workspace/Terminal Surface ownership validation without activating the app or changing focus.
+8. Argus MUST host a user-local Unix Domain Socket for the implemented `agent.turnCompleted`, `agent.statusChanged`, and `agent.statusCleared` methods, alongside the Companion CLI Workspace Commands. The Socket Server MUST use bounded newline-delimited JSON frames, restrictive permissions, structured responses, and current Workspace/Terminal Surface ownership validation without activating the app or changing focus.
 9. Agent Status Socket Requests MUST identify an Agent Key, Workspace ID, reporting session ID, and positive sequence number. A status update MAY identify a Terminal Surface; when supplied, that Surface MUST belong to the supplied Workspace. Older or duplicate updates from the same reporting session MUST be accepted idempotently without changing the Agent Status Entry.
 10. `agent.statusChanged` MUST set one ephemeral Agent Status Entry, and `agent.statusCleared` MUST remove only the exact entry reported by that session and scope. Status ordering and Socket connections MUST remain process-local and MUST NOT be persisted.
 11. A successful Turn Completion Event for an unviewed Top-level Tab MUST create runtime-only Turn Completion Attention on that tab and summarize it on the Workspace row. A completion in the Active Tab of the Selected Workspace while the main window is key MUST create neither attention nor sound.
@@ -350,7 +350,25 @@ selection, or existing Git Preview Tabs.
 15. Kilo integration MUST be installed or removed only through explicit Settings controls. Argus MUST preserve unrelated Kilo JSON/JSONC configuration, own only its declaration and plugin file, surface setup errors, and require running Kilo sessions to restart after a change.
 16. The Kilo TUI plugin MUST use public extension points only, accept successful root-turn completion after conservative non-synthetic, non-compaction user-turn filtering, ignore child, failed, interrupted, and idle-only events, and remain silent on delivery failure.
 17. Pi integration MUST be installed or removed only through explicit Settings controls. It MUST own only its extension file under the effective Pi agent directory, preserve unrelated files, use public lifecycle events to report running, idle, and error states, clear its status on session shutdown, and remain silent on delivery failure. Processes marked with `PI_SUBAGENT_CHILD=1` MUST report neither Agent Status nor Turn Completion Events. A main-agent turn MUST emit at most one successful Turn Completion Event when it settles without a final error or interruption. If `pi-subagents` advertises its public event-bus RPC, the integration MUST check its current-session fleet status before announcing completion. On a successful main-agent settlement, active delegated work MUST retain running Agent Status and suppress completion until a later successful main-agent settlement reports no active work. An unsupported, failed, malformed, or timed-out advertised status check MUST suppress completion without blocking Pi indefinitely. Delayed checks MUST NOT report completion after another turn starts or the session shuts down or changes. Running Pi sessions MUST be restarted or reloaded after a change.
-18. V1 still does not include functional Companion CLI commands, Agent PID tracking, TTS, notification history, or macOS Notification Center notifications.
+18. V1 still does not include Agent PID tracking, TTS, notification history, or macOS Notification Center notifications.
+
+## Companion CLI
+
+1. Argus MUST provide a Companion CLI named `argus`, bundled at `Contents/Resources/bin/argus` relative to the built application and reachable by name in shells Argus spawns. The CLI MUST be transport-only: it MUST NOT read the Session Snapshot, run Git, or own application state. Every identity, branch, and validation decision MUST be made by the Argus Application.
+2. The CLI MUST send requests to `ARGUS_SOCKET_PATH` when that variable is set and otherwise to `~/.argus/argus.sock`. Workspace Commands MUST use the same version-one bounded newline-delimited JSON framing and structured response shape as the agent methods.
+3. `workspace.list` MUST take no parameters and MUST return Projects in left-sidebar navigation order. Each Project MUST carry its Project ID, display name, Catch-all flag, Project Repository Root, main branch, any Stack discovery diagnostic, and its fully expanded sidebar items.
+4. A Stack Group item MUST carry its group key, recorded base branch, and ordered parent-before-dependent rows. Every row MUST carry its branch, recorded parent branch, lane, any per-branch recorded-parent diagnostic, and its Workspace when one is open. Rows for necessary branch references with no open Workspace MUST be included and MUST be distinguishable from Workspace rows.
+5. A Workspace entry MUST carry its Workspace ID, Workspace Number, display title, Workspace type, branch, Workspace Root, worktree path, selection state, and Top-level Tab count.
+6. `workspace.create` MUST create one Worktree Workspace in a Named Project. It MUST accept an optional Project reference, base Workspace reference, branch name, and Workspace name, together with the calling context's Workspace ID and working directory.
+7. A Project reference MUST resolve by Project ID, then exact display name, then a unique case-insensitive display name. `.` and an absent reference MUST resolve contextually, in order: the base Workspace's Project, the calling Workspace's Project, then the Named Project owning the longest Workspace Root, Managed Worktree path, or Project Repository Root containing the calling working directory. The Catch-all Project MUST be refused.
+8. A base Workspace reference MUST resolve by Workspace ID, then unique branch name, then unique display title, each exact before case-insensitive. `.` MUST resolve to the calling context's Workspace. The base Workspace MUST belong to the resolved Project and MUST have a usable branch.
+9. Ambiguous Project and Workspace references MUST be refused with their candidates rather than resolved to a first match.
+10. Without a base Workspace, the new branch MUST start from the Project repository's current `HEAD`, exactly as in-app creation does. With a base Workspace, the new branch MUST start from that Workspace's branch and Argus MUST record it as the new branch's parent in the repository's shared local Git configuration, using the same declaration Stack discovery reads. Argus MUST record a parent only for a branch it just created and MUST NOT rewrite an existing declaration. A failed record MUST be reported without discarding the created Workspace.
+11. An omitted branch name MUST become a generated available name using the configured new-branch prefix. An invalid branch name and an already-existing branch name MUST be refused as distinguishable errors.
+12. Workspace Commands MUST NOT activate Argus, raise a window, or change the Selected Workspace, Active Tab, or Focused Pane. A created Workspace MUST be checkpointed to the Session Snapshot immediately and MUST refresh its Project's Stack grouping.
+13. Rejections MUST carry a distinct structured code with an actionable message. The CLI MUST exit 0 on success, 1 when Argus refuses a request or returns an unreadable response, and 3 when Argus cannot be reached.
+14. Both Workspace Commands MUST offer rendered text output by default and the raw result payload with `--json`.
+15. Stacking onto a Workspace whose branch has no recorded parent and is not a trunk boundary MUST produce a Stack Group containing both Workspaces. Stacking onto a Workspace whose branch is the Project's main branch MUST record the base branch and MUST NOT produce a Stack Group, because a Stack Group requires at least two open Workspaces above a trunk boundary.
 
 ## Release notes
 
@@ -375,7 +393,7 @@ selection, or existing Git Preview Tabs.
 
 ## Build and local installation
 
-1. `scripts/build.sh` MUST build the app and, by default, the Companion CLI scaffold, bundle the CLI at `Contents/Resources/bin/argus` relative to the built application, and ad-hoc sign the result.
+1. `scripts/build.sh` MUST build the app and, by default, the Companion CLI, bundle the CLI at `Contents/Resources/bin/argus` relative to the built application, and ad-hoc sign the result.
 2. Debug MUST remain the default configuration; `--release` MUST select Release.
 3. The build script MUST support build, CLI-only build, run, install, clean, and Xcode-project generation commands.
 4. Structured Git Preview diffs MUST render with the native `SwiftDiffs` package. Normal app builds MUST NOT require Node.js or a committed JavaScript renderer bundle.
@@ -385,7 +403,7 @@ selection, or existing Git Preview Tabs.
 
 ## Known v1 limitations
 
-- The Companion CLI is a versioned scaffold and has no socket-backed commands; the application socket implements only the agent turn-completion and live Agent Status methods described above.
+- The Companion CLI implements Workspace Commands only. It cannot select, rename, or close a Workspace, create a Project or Collection, check out an existing branch, or take Pull Request intake; those remain in-app actions.
 - Pi has no generic public lifecycle event for `needsInput`; the Pi integration reports idle while waiting for the next prompt.
 - Pi child-session filtering uses the `pi-subagents` package's `PI_SUBAGENT_CHILD` marker, and delegated-work checks use its advertised version-one fleet status API. Other launchers or older packages that do not advertise that API cannot provide delegated-work awareness. Plain Pi sessions retain lifecycle-based completion reporting.
 - Kilo's public extension API cannot prove that every ordinary non-synthetic user message was authored interactively by a person, so completion provenance uses conservative best-effort filtering.

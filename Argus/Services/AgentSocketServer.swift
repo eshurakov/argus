@@ -7,15 +7,14 @@ import Foundation
 /// serializes listener/client ownership; Workspace state is reached solely by
 /// hopping through the injected MainActor delivery closure.
 actor AgentSocketServer {
-    static let protocolVersion = 1
-    static let defaultMaximumFrameBytes = 64 * 1024
+    static let protocolVersion = ArgusSocketProtocol.version
+    static let defaultMaximumFrameBytes = ArgusSocketProtocol.maximumRequestBytes
     static let maximumConcurrentConnections = 16
     static let clientIdleTimeout: TimeInterval = 5
 
     private let path: String
     private let maximumFrameBytes: Int
-    private let deliver: @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult
-    private let deliverStatus: @MainActor @Sendable (AgentStatusEvent) -> AgentStatusDeliveryResult
+    private let handlers: AgentSocketHandlers
 
     private var listener: Int32?
     private let clients = AgentSocketClientRegistry()
@@ -27,12 +26,20 @@ actor AgentSocketServer {
         deliver: @escaping @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult,
         deliverStatus: @escaping @MainActor @Sendable (AgentStatusEvent) -> AgentStatusDeliveryResult = { _ in
             .rejected(code: .unavailable, message: "Agent Status delivery is unavailable")
-        }
+        },
+        deliverCommand:
+            @escaping @MainActor @Sendable (WorkspaceCommandRequest) async
+            -> WorkspaceCommandOutcome = { _ in
+                .rejected(code: .commandUnavailable, message: "Workspace commands are unavailable")
+            }
     ) {
         self.path = path
         self.maximumFrameBytes = maximumFrameBytes
-        self.deliver = deliver
-        self.deliverStatus = deliverStatus
+        self.handlers = AgentSocketHandlers(
+            deliver: deliver,
+            deliverStatus: deliverStatus,
+            deliverCommand: deliverCommand
+        )
     }
 
     deinit {
@@ -73,15 +80,13 @@ actor AgentSocketServer {
             listener = socket
             let clients = clients
             let maximumFrameBytes = maximumFrameBytes
-            let deliver = deliver
-            let deliverStatus = deliverStatus
+            let handlers = handlers
             Thread.detachNewThread {
                 Self.acceptConnections(
                     on: socket,
                     clients: clients,
                     maximumFrameBytes: maximumFrameBytes,
-                    deliver: deliver,
-                    deliverStatus: deliverStatus
+                    handlers: handlers
                 )
             }
         } catch {
@@ -166,8 +171,7 @@ actor AgentSocketServer {
         on listener: Int32,
         clients: AgentSocketClientRegistry,
         maximumFrameBytes: Int,
-        deliver: @escaping @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult,
-        deliverStatus: @escaping @MainActor @Sendable (AgentStatusEvent) -> AgentStatusDeliveryResult
+        handlers: AgentSocketHandlers
     ) {
         while true {
             let client = Darwin.accept(listener, nil, nil)
@@ -199,8 +203,7 @@ actor AgentSocketServer {
                     client: client,
                     clients: clients,
                     maximumFrameBytes: maximumFrameBytes,
-                    deliver: deliver,
-                    deliverStatus: deliverStatus
+                    handlers: handlers
                 )
             }
         }
@@ -210,8 +213,7 @@ actor AgentSocketServer {
         client: Int32,
         clients: AgentSocketClientRegistry,
         maximumFrameBytes: Int,
-        deliver: @escaping @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult,
-        deliverStatus: @escaping @MainActor @Sendable (AgentStatusEvent) -> AgentStatusDeliveryResult
+        handlers: AgentSocketHandlers
     ) {
         defer {
             Darwin.close(client)
@@ -233,11 +235,7 @@ actor AgentSocketServer {
                         .failure(id: nil, code: .frameTooLarge, message: "Frame exceeds maximum size"), to: client)
                     return
                 }
-                let response = handleSynchronously(
-                    frame: Data(frame),
-                    deliver: deliver,
-                    deliverStatus: deliverStatus
-                )
+                let response = handleSynchronously(frame: Data(frame), handlers: handlers)
                 writeResponse(response, to: client)
             }
 
@@ -251,17 +249,11 @@ actor AgentSocketServer {
 
     private nonisolated static func handleSynchronously(
         frame: Data,
-        deliver: @escaping @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult,
-        deliverStatus: @escaping @MainActor @Sendable (AgentStatusEvent) -> AgentStatusDeliveryResult
-    ) -> AgentSocketResponse {
+        handlers: AgentSocketHandlers
+    ) -> AgentSocketEncodedResponse {
         let result = AgentSocketResponseWaiter()
         Task.detached {
-            let response = await handle(
-                frame: frame,
-                deliver: deliver,
-                deliverStatus: deliverStatus
-            )
-            result.resolve(response)
+            result.resolve(await handle(frame: frame, handlers: handlers))
         }
         return result.wait()
     }
@@ -270,14 +262,14 @@ actor AgentSocketServer {
 private final class AgentSocketResponseWaiter: @unchecked Sendable {
     private let lock = NSLock()
     private let semaphore = DispatchSemaphore(value: 0)
-    private var response: AgentSocketResponse?
+    private var response: AgentSocketEncodedResponse?
 
-    func resolve(_ response: AgentSocketResponse) {
+    func resolve(_ response: AgentSocketEncodedResponse) {
         lock.withLock { self.response = response }
         semaphore.signal()
     }
 
-    func wait() -> AgentSocketResponse {
+    func wait() -> AgentSocketEncodedResponse {
         semaphore.wait()
         return lock.withLock { response! }
     }

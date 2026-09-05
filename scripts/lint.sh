@@ -49,7 +49,7 @@ cd "$project_root"
   --recursive \
   --parallel \
   --strict \
-  Argus ArgusCLI Tests Package.swift
+  Argus ArgusIPC ArgusCLI ArgusCLICore ArgusCLICoreTests Tests Package.swift
 "$swiftlint_bin" lint \
   --config "$project_root/.swiftlint.yml" \
   --cache-path "$swiftlint_cache_path"

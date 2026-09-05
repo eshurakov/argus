@@ -201,11 +201,9 @@ extension RecordedBaseBranchReader {
         for index in stride(from: 0, to: fields.count, by: 3) {
             try Task.checkCancellation()
             guard fields[index] != "worktree" else { continue }
-            let key = fields[index + 2]
-            guard key.hasPrefix("branch."), key.hasSuffix(".base") else {
+            guard let branch = RecordedBaseBranchConfiguration.branchName(forKey: fields[index + 2]) else {
                 throw RecordedBaseBranchReadError.configuration
             }
-            let branch = String(key.dropFirst("branch.".count).dropLast(".base".count))
             do {
                 try Self.validateBranchName(branch, failure: .invalidConfig)
                 origins[branch] = fields[index + 1]
@@ -219,8 +217,9 @@ extension RecordedBaseBranchReader {
     private func configuredParent(branch: String, checkoutPath: String, file: String? = nil) throws -> String? {
         try Self.validateBranchName(branch, failure: .invalidConfig)
         let fileArguments = file.map { ["--file", $0, "--no-includes"] } ?? []
+        let key = RecordedBaseBranchConfiguration.key(for: branch)
         let result = try git(
-            ["config", "--null"] + fileArguments + ["--get", "branch.\(branch).base"], at: checkoutPath)
+            ["config", "--null"] + fileArguments + ["--get", key], at: checkoutPath)
         if result.terminationStatus == 1 { return nil }
         guard result.terminationStatus == 0, let output = String(data: result.stdout, encoding: .utf8),
             output.hasSuffix("\0"), !output.dropLast().contains("\0")

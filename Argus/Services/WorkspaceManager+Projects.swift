@@ -126,11 +126,18 @@ extension WorkspaceManager {
         }
     }
 
+    /// Creates a Worktree Workspace in a Named Project.
+    ///
+    /// `startPoint` names the committish a new branch starts from; `nil` keeps
+    /// Git's default of the repository's current `HEAD`. `selectsNewWorkspace`
+    /// is false for callers that must not move the Selected Workspace.
     func addWorkspaceToProject(
         _ projectId: UUID,
         branchName: String,
         createNewBranch: Bool = true,
-        customTitle: String? = nil
+        customTitle: String? = nil,
+        startPoint: String? = nil,
+        selectsNewWorkspace: Bool = true
     ) async -> Workspace? {
         lastWorkspaceCreationError = nil
         guard workspaces.count < Self.maxWorkspaces,
@@ -153,7 +160,8 @@ extension WorkspaceManager {
                 projectId: projectId,
                 repositoryPath: project.repositoryPath,
                 branchName: branchName,
-                createNewBranch: createNewBranch
+                createNewBranch: createNewBranch,
+                startPoint: startPoint
             )
             return await attachPreparedWorktree(
                 PreparedWorktreeAttachment(
@@ -162,7 +170,8 @@ extension WorkspaceManager {
                     customTitle: customTitle,
                     projectId: projectId,
                     repositoryPath: project.repositoryPath,
-                    existingWorktreePaths: existingWorktreePaths
+                    existingWorktreePaths: existingWorktreePaths,
+                    selectsNewWorkspace: selectsNewWorkspace
                 ))
         } catch let error as WorktreeError {
             lastWorkspaceCreationError = error
@@ -181,6 +190,7 @@ extension WorkspaceManager {
         let projectId: UUID
         let repositoryPath: String
         let existingWorktreePaths: Set<String>
+        let selectsNewWorkspace: Bool
     }
 
     private func attachPreparedWorktree(_ attachment: PreparedWorktreeAttachment) async -> Workspace? {
@@ -212,7 +222,13 @@ extension WorkspaceManager {
         }
         workspaces.append(workspace)
         project.addWorkspace(workspace.id)
-        selectWorkspace(workspace.id)
+        if attachment.selectsNewWorkspace {
+            selectWorkspace(workspace.id)
+        } else {
+            // Stack grouping still has to catch up with the new branch even
+            // when selection stays where the user left it.
+            refreshWorkspaceStacks(in: attachment.projectId)
+        }
         saveSession()
         return workspace
     }

@@ -15,13 +15,14 @@ V1 includes:
 - Browser Panels;
 - global Settings;
 - session restore for Projects, Workspaces, and Terminal Panels;
-- process-local Agent Status presentation.
+- process-local Agent Status presentation;
+- a Companion CLI for listing and creating Workspaces.
 
 Named Projects can also create Worktree Workspaces from GitHub Pull Request
 URLs or numbers through the active `gh` authentication context. The GitHub CLI
 is optional and is needed only for that intake flow.
 
-The Companion CLI is a scaffold and has no socket-backed commands. Argus supports Kilo turn-completion attention and Pi live Agent Status through an app-owned local socket and explicitly installed extensions. V1 does not include agent PID tracking, notification history, macOS notifications, or TTS. Future work is kept under `docs/proposals/`.
+The Companion CLI provides Workspace Commands over the app-owned local socket: `argus workspace list` prints Projects and Workspaces in sidebar order with their Stack Groups, and `argus workspace create` adds a Worktree Workspace to a Project, optionally stacked on another Workspace's branch. Argus supports Kilo turn-completion attention and Pi live Agent Status through the same socket and explicitly installed extensions. V1 does not include agent PID tracking, notification history, macOS notifications, or TTS. Future work is kept under `docs/proposals/`.
 
 ## Requirements
 

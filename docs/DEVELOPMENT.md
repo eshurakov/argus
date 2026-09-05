@@ -152,7 +152,7 @@ Other supported commands:
 
 Pass `--no-cli` to omit the CLI scaffold or `--no-open` to build or install without launching Argus.
 
-Build products are written under `.build/Build/Products/<configuration>/`. Within the built application, the CLI is bundled at `Argus.app/Contents/Resources/bin/argus`. It currently exposes version and help output only; socket-backed commands are future work.
+Build products are written under `.build/Build/Products/<configuration>/`. Within the built application, the CLI is bundled at `Argus.app/Contents/Resources/bin/argus`, and Argus puts that directory first on the `PATH` of every shell it spawns, so `argus` resolves by name in an Argus terminal.
 
 ## Tests and formatting
 
@@ -219,9 +219,9 @@ program are never replaced or removed.
 
 Restart Kilo sessions after changing the Kilo integration. Restart Pi or use
 `/reload` after changing the Pi integration. Both integrations send requests to
-the app-owned `~/.argus/argus.sock` endpoint. The socket accepts
-`agent.turnCompleted`, `agent.statusChanged`, and `agent.statusCleared`; it is
-not a Companion CLI command transport.
+the app-owned `~/.argus/argus.sock` endpoint, which accepts
+`agent.turnCompleted`, `agent.statusChanged`, and `agent.statusCleared`. The
+same socket serves the Companion CLI's Workspace Commands.
 
 After updating Argus, enable the Pi integration again in Settings to install
 its bundled extension, then restart Pi or use `/reload`. Reloading alone does
@@ -241,6 +241,55 @@ Argus or making model calls:
 ```sh
 node Tests/PiIntegrationTests/pi-plugin-events.mjs
 ```
+
+## Companion CLI
+
+The `argus` executable talks to a running Argus over `~/.argus/argus.sock`
+(or `ARGUS_SOCKET_PATH` when Argus injected one into the shell). It resolves
+nothing itself — the application owns every identity and branch decision.
+
+Shells Argus spawns already have it on `PATH`. To use it from an ordinary
+terminal, call it by its bundled path or symlink it somewhere on your own
+`PATH`:
+
+```sh
+ln -sf /Applications/Argus.app/Contents/Resources/bin/argus ~/.local/bin/argus
+```
+
+Outside an Argus terminal there is no `ARGUS_WORKSPACE_ID`, so `.` has no
+Workspace to resolve and the Project comes from the working directory.
+
+```sh
+# Projects and Workspaces in left-sidebar order, Stack Groups included
+argus workspace list
+argus workspace list --json
+
+# A Worktree Workspace in this terminal's Project, on a generated branch
+argus workspace create
+
+# An explicit Project, branch, and Workspace name
+argus workspace create --project argus --branch feature/api --name "API work"
+
+# Stacked on this terminal's Workspace, or on a named one
+argus workspace create --from . --branch feature/api-ui
+argus workspace create --from feature/api --branch feature/api-ui
+```
+
+`--project` and `--from` accept an ID, an exact name (branch or display title
+for `--from`), or `.` for the terminal's own context. Ambiguous references are
+refused with their candidates instead of guessing.
+
+`--from` also records `branch.<new>.base` so the pair groups as a Stack in the
+sidebar. Stacking onto a Workspace on the Project's main branch records the
+base but shows no Stack Group, because a Stack Group needs two open Workspaces
+above a trunk branch.
+
+Creating a Workspace does not change the Selected Workspace, so it is safe to
+run from an agent's terminal. Exit codes: `0` success, `1` Argus refused the
+request, `3` Argus could not be reached.
+
+Build the CLI alone with `./scripts/build.sh cli`; `swift test` covers its
+rendering and wire contract.
 
 ## Local state
 

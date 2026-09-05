@@ -4,38 +4,52 @@ import Foundation
 extension AgentSocketServer {
     nonisolated static func handle(
         frame: Data,
-        deliver: @escaping @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult,
-        deliverStatus: @escaping @MainActor @Sendable (AgentStatusEvent) -> AgentStatusDeliveryResult
-    ) async -> AgentSocketResponse {
-        let request: AgentSocketRequest
+        handlers: AgentSocketHandlers
+    ) async -> AgentSocketEncodedResponse {
+        let header: AgentSocketRequestHeader
         do {
-            request = try JSONDecoder().decode(AgentSocketRequest.self, from: frame)
+            header = try JSONDecoder().decode(AgentSocketRequestHeader.self, from: frame)
         } catch {
             return .failure(id: nil, code: .malformedRequest, message: "Malformed JSON request")
         }
 
-        guard request.version == protocolVersion else {
-            return .failure(id: request.id, code: .unsupportedVersion, message: "Unsupported protocol version")
+        guard header.version == protocolVersion else {
+            return .failure(id: header.id, code: .unsupportedVersion, message: "Unsupported protocol version")
         }
-        guard ["agent.turnCompleted", "agent.statusChanged", "agent.statusCleared"].contains(request.method) else {
-            return .failure(id: request.id, code: .unknownMethod, message: "Unknown method")
-        }
-        guard let params = request.params else {
-            return .failure(id: request.id, code: .invalidParameters, message: "Missing request parameters")
+        guard let method = ArgusSocketMethod(rawValue: header.method) else {
+            return .failure(id: header.id, code: .unknownMethod, message: "Unknown method")
         }
 
-        switch request.method {
-        case "agent.turnCompleted":
-            return await handleTurnCompletion(params: params, requestID: request.id, deliver: deliver)
-        case "agent.statusChanged", "agent.statusCleared":
-            return await handleStatus(
-                method: request.method,
-                params: params,
-                requestID: request.id,
-                deliver: deliverStatus
-            )
+        switch method {
+        case .agentTurnCompleted, .agentStatusChanged, .agentStatusCleared:
+            return await handleAgentMethod(method, frame: frame, requestID: header.id, handlers: handlers)
+        case .workspaceList, .workspaceCreate:
+            return await handleWorkspaceMethod(method, frame: frame, requestID: header.id, handlers: handlers)
+        }
+    }
+
+    private nonisolated static func handleAgentMethod(
+        _ method: ArgusSocketMethod,
+        frame: Data,
+        requestID: String?,
+        handlers: AgentSocketHandlers
+    ) async -> AgentSocketEncodedResponse {
+        guard let request = try? JSONDecoder().decode(AgentSocketRequest.self, from: frame),
+            let params = request.params
+        else {
+            return .failure(id: requestID, code: .invalidParameters, message: "Missing request parameters")
+        }
+
+        switch method {
+        case .agentTurnCompleted:
+            return await handleTurnCompletion(params: params, requestID: requestID, deliver: handlers.deliver)
         default:
-            return .failure(id: request.id, code: .unknownMethod, message: "Unknown method")
+            return await handleStatus(
+                method: method.rawValue,
+                params: params,
+                requestID: requestID,
+                deliver: handlers.deliverStatus
+            )
         }
     }
 
@@ -43,7 +57,7 @@ extension AgentSocketServer {
         params: AgentSocketParameters,
         requestID: String?,
         deliver: @escaping @MainActor @Sendable (TurnCompletionEvent) -> TurnCompletionDeliveryResult
-    ) async -> AgentSocketResponse {
+    ) async -> AgentSocketEncodedResponse {
         guard let agentKey = params.agentKey,
             let eventID = params.eventId,
             validBounded(agentKey, maximumLength: 128),
@@ -82,7 +96,7 @@ extension AgentSocketServer {
         params: AgentSocketParameters,
         requestID: String?,
         deliver: @escaping @MainActor @Sendable (AgentStatusEvent) -> AgentStatusDeliveryResult
-    ) async -> AgentSocketResponse {
+    ) async -> AgentSocketEncodedResponse {
         let event: AgentStatusEvent
         switch makeStatusEvent(method: method, params: params, requestID: requestID) {
         case .success(let validEvent):
@@ -210,8 +224,8 @@ extension AgentSocketServer {
         }
     }
 
-    nonisolated static func writeResponse(_ response: AgentSocketResponse, to socket: Int32) {
-        guard var data = try? JSONEncoder().encode(response) else { return }
+    nonisolated static func writeResponse(_ response: AgentSocketEncodedResponse, to socket: Int32) {
+        var data = response.data
         data.append(0x0A)
         data.withUnsafeBytes { bytes in
             guard let baseAddress = bytes.baseAddress else { return }
@@ -227,7 +241,15 @@ extension AgentSocketServer {
 
 private enum AgentSocketResult<Value> {
     case success(Value)
-    case failure(AgentSocketResponse)
+    case failure(AgentSocketEncodedResponse)
+}
+
+/// Method-independent request fields, decoded before typed parameters so an
+/// unrecognized method reports `unknown_method` instead of a decoding failure.
+struct AgentSocketRequestHeader: Decodable {
+    let version: Int
+    let id: String?
+    let method: String
 }
 
 struct AgentSocketRequest: Decodable {
@@ -294,13 +316,6 @@ struct AgentSocketResponse: Codable {
     }
 }
 
-enum AgentSocketErrorCode: String, Codable {
-    case malformedRequest = "malformed_request"
-    case unsupportedVersion = "unsupported_version"
-    case unknownMethod = "unknown_method"
-    case invalidParameters = "invalid_parameters"
-    case unknownWorkspace = "unknown_workspace"
-    case unknownTerminalSurface = "unknown_terminal_surface"
-    case statusUnavailable = "status_unavailable"
-    case frameTooLarge = "frame_too_large"
-}
+/// Wire failure codes live in the shared contract; this spelling keeps the
+/// existing agent call sites and tests unchanged.
+typealias AgentSocketErrorCode = ArgusSocketErrorCode

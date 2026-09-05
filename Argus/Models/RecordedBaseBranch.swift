@@ -1,5 +1,25 @@
 import Foundation
 
+/// Git configuration spelling of a recorded branch parent.
+///
+/// Reading and writing a recorded parent must agree on one key format, so both
+/// sides go through this type rather than composing the string in place.
+enum RecordedBaseBranchConfiguration {
+    private static let keyPrefix = "branch."
+    private static let keySuffix = ".base"
+
+    static func key(for branch: String) -> String {
+        "\(keyPrefix)\(branch)\(keySuffix)"
+    }
+
+    static func branchName(forKey key: String) -> String? {
+        guard key.hasPrefix(keyPrefix), key.hasSuffix(keySuffix),
+            key.count > keyPrefix.count + keySuffix.count
+        else { return nil }
+        return String(key.dropFirst(keyPrefix.count).dropLast(keySuffix.count))
+    }
+}
+
 struct GitWorktreeBranch: Equatable, Sendable {
     let path: String
     let branch: String?

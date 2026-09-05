@@ -46,7 +46,7 @@ Human-facing setup and repository orientation live in `README.md` and `docs/DEVE
 - **Swift 6 + SwiftUI** for the app, **AppKit** for window/NSView management
 - **GhosttyKit.xcframework** (pre-built, vendored in `Frameworks/`) for GPU-accelerated Metal terminal rendering
 - **WKWebView** for embedded browser panels
-- **Swift Argument Parser** for the Companion CLI scaffold
+- **Swift Argument Parser** for the Companion CLI
 - **FSEvents API** (`FSEventStreamCreate`) for filesystem watching — NOT `DispatchSource.makeFileSystemObjectSource`
 - **Process spawning** (`git` CLI) for all git operations — no libgit2
 - **JSON (Codable)** for production persistence at `~/Library/Application Support/Argus/`; test instances use a temporary per-process Session Snapshot at `FileManager.default.temporaryDirectory/Argus/TestSessions/<process-id>/session.json`
@@ -59,8 +59,8 @@ Test-instance session rules:
 
 Single-process app with two build targets:
 
-1. **Argus** (app) — Xcode project target with Obj-C bridging header for GhosttyKit and a process-wide Socket Server implementing agent turn-completion and live Agent Status methods
-2. **argus** (Companion CLI) — SwiftPM-based scaffold; it has no socket-backed commands
+1. **Argus** (app) — Xcode project target with Obj-C bridging header for GhosttyKit and a process-wide Socket Server implementing the agent methods and the Companion CLI's Workspace Commands
+2. **argus** (Companion CLI) — SwiftPM-based transport-only client for the Socket Server's Workspace Commands (`workspace.list`, `workspace.create`)
 
 ```
 Argus/
@@ -69,11 +69,16 @@ Argus/
   Models/       Project, Workspace, Terminal/Browser/File/Git Preview Panels
   Services/     WorkspaceManager, WorktreeService, GitStatus services,
                 AgentStatusStore, AgentStatusRuntime, AgentSocketServer,
-                KiloIntegrationService, PiIntegrationService
+                WorkspaceCommandRuntime, KiloIntegrationService,
+                PiIntegrationService
   Ghostty/      GhosttyApp, TerminalSurface, TerminalView, GhosttyConfig
   Browser/      BrowserPanel, BrowserView
+ArgusIPC/
+  *.swift       Socket wire contract, compiled into the app and the CLI
+ArgusCLICore/
+  *.swift       CLI commands, socket client, and rendering
 ArgusCLI/
-  main.swift    CLI scaffold
+  main.swift    CLI entry point
 ```
 
 ## Key Domain Concepts
@@ -82,6 +87,7 @@ ArgusCLI/
 - **Workspace** — User work context with one Workspace Root and ordered Top-level Tabs. A Standalone Workspace need not be a git repository.
 - **Panel** — Content model for Terminal, Browser, File, or Git Preview content. Only Terminal Panels own a Surface ID.
 - **Worktrees** stored at `~/.argus/worktrees/<project-uuid>/<branch-slug>/`
-- **Socket Server** — process-wide, app-owned listener at `~/.argus/argus.sock`; it implements `agent.turnCompleted`, `agent.statusChanged`, and `agent.statusCleared`
-- **Kilo integration** — explicitly installed or removed through Settings; the Companion CLI remains independent and scaffolded
-- **Environment variables** injected into shells: `ARGUS_SOCKET_PATH`, `ARGUS_WORKSPACE_ID`, `ARGUS_SURFACE_ID`
+- **Socket Server** — process-wide, app-owned listener at `~/.argus/argus.sock`; it implements `agent.turnCompleted`, `agent.statusChanged`, `agent.statusCleared`, `workspace.list`, and `workspace.create`
+- **Kilo integration** — explicitly installed or removed through Settings; it is independent of the Companion CLI
+- **Workspace Command** — a Companion CLI Socket Request; Argus resolves every Project and Workspace reference and never lets the CLI own domain state
+- **Environment variables** injected into shells: `ARGUS_SOCKET_PATH`, `ARGUS_WORKSPACE_ID`, `ARGUS_SURFACE_ID`, and a `PATH` led by the bundled Companion CLI directory

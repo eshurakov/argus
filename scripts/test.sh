@@ -19,7 +19,9 @@ xcodebuild test \
   CODE_SIGNING_ALLOWED=NO
 
 swift build --product argus
+swift test
 swift run argus --version | grep -Fq "argus ${version}"
 swift run argus --help | grep -Fq "USAGE: argus"
+swift run argus workspace --help | grep -Fq "USAGE: argus workspace"
 
 echo "Argus tests passed"

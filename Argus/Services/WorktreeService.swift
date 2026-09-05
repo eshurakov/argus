@@ -8,6 +8,7 @@ enum WorktreeError: LocalizedError {
     case branchAlreadyExists(String)
     case worktreeCreationFailed(String)
     case worktreeRemovalFailed(String)
+    case baseBranchRecordingFailed(String)
     case mainBranchDetectionFailed
     case gitCommandFailed(String, Int32)
     case gitCommandTimedOut(String)
@@ -22,6 +23,8 @@ enum WorktreeError: LocalizedError {
             "Worktree creation failed: \(detail)"
         case .worktreeRemovalFailed(let detail):
             "Worktree removal failed: \(detail)"
+        case .baseBranchRecordingFailed(let detail):
+            "Recording the base branch failed: \(detail)"
         case .mainBranchDetectionFailed:
             "Could not detect the main branch of the repository"
         case .gitCommandFailed(let command, let exitCode):

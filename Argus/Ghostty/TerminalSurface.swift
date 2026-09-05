@@ -259,19 +259,19 @@ final class TerminalSurface: ObservableObject, Identifiable {
 
     /// Build the environment variables to inject into the shell.
     private func buildEnvironmentVars() -> [ghostty_env_var_s] {
-        var env: [String: String] = [:]
-
-        // Argus-specific env vars (spec §Terminal Rendering rule 5)
+        // Argus-specific env vars and the bundled Companion CLI on PATH
+        // (spec §Terminal runtime rule 5)
         let socketPath = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".argus/argus.sock").path
-        env["ARGUS_SOCKET_PATH"] = socketPath
-        env["ARGUS_WORKSPACE_ID"] = workspaceId.uuidString
-        env["ARGUS_SURFACE_ID"] = id.uuidString
-
-        // Merge additional environment (caller-provided overrides)
-        for (key, value) in additionalEnvironment {
-            env[key] = value
-        }
+        let env = TerminalEnvironment.variables(
+            socketPath: socketPath,
+            workspaceId: workspaceId,
+            surfaceId: id,
+            bundledToolsDirectory: TerminalEnvironment.bundledToolsDirectory(),
+            inheritedPath: ProcessInfo.processInfo.environment[TerminalEnvironment.pathKey],
+            applicationBinaryDirectory: TerminalEnvironment.applicationBinaryDirectory(),
+            additional: additionalEnvironment
+        )
 
         // Convert to C structs
         return env.map { key, value in

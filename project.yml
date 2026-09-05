@@ -27,6 +27,9 @@ targets:
     type: application
     platform: macOS
     sources:
+      - path: ArgusIPC
+        excludes:
+          - "**/.DS_Store"
       - path: Argus
         excludes:
           - "**/.DS_Store"

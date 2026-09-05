@@ -187,7 +187,7 @@ extension WorktreeService {
         return true
     }
 
-    private func localBranchExists(_ branchName: String, repositoryPath: String) async -> Bool {
+    func localBranchExists(_ branchName: String, repositoryPath: String) async -> Bool {
         await runGitQuiet(
             args: ["-C", repositoryPath, "show-ref", "--verify", "refs/heads/\(branchName)"],
             workingDirectory: repositoryPath

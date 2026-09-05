@@ -14,5 +14,6 @@ swift build \
 
 [[ "$($binary --version)" == "argus $version" ]]
 "$binary" --help | grep -Fq "USAGE: argus"
+"$binary" workspace --help | grep -Fq "USAGE: argus workspace"
 
-echo "Companion CLI reports version $version and provides help"
+echo "Companion CLI reports version $version and provides Workspace Commands"

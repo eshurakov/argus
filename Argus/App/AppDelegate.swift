@@ -13,6 +13,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this 
     private var workspaceManager: WorkspaceManager?
     private var turnCompletionRuntime: TurnCompletionRuntime?
     private var agentStatusRuntime: AgentStatusRuntime?
+    private var workspaceCommandRuntime: WorkspaceCommandRuntime?
     private var agentSocketServer: AgentSocketServer?
     private var settings: AppSettings?
     private var kiloIntegration: KiloIntegrationModel?
@@ -41,6 +42,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this 
         self.workspaceManager = workspaceManager
         turnCompletionRuntime = runtime
         self.agentStatusRuntime = agentStatusRuntime
+        workspaceCommandRuntime = WorkspaceCommandRuntime(workspaceManager: workspaceManager)
         startAgentSocketIfReady()
         startWorkspaceStackObservationsIfReady()
     }
@@ -317,7 +319,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this 
         guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
         guard agentSocketServer == nil,
             let turnCompletionRuntime,
-            let agentStatusRuntime
+            let agentStatusRuntime,
+            let workspaceCommandRuntime
         else { return }
         let path = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".argus/argus.sock").path
         let server = AgentSocketServer(
@@ -327,6 +330,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {  // swiftlint:disable:this 
             },
             deliverStatus: { event in
                 agentStatusRuntime.receive(event)
+            },
+            deliverCommand: { request in
+                await workspaceCommandRuntime.receive(request)
             }
         )
         agentSocketServer = server

@@ -1,6 +1,9 @@
 included:
   - Argus
+  - ArgusIPC
   - ArgusCLI
+  - ArgusCLICore
+  - ArgusCLICoreTests
   - Tests
   - Package.swift
 

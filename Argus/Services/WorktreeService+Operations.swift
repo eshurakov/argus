@@ -2,11 +2,17 @@ import Darwin
 import Foundation
 
 extension WorktreeService {
+    /// Creates a Managed Worktree.
+    ///
+    /// `startPoint` applies only when creating a new branch and names the
+    /// committish the branch starts from. Passing `nil` keeps Git's default of
+    /// branching from the repository's current `HEAD`.
     func createWorktree(
         projectId: UUID,
         repositoryPath: String,
         branchName: String,
-        createNewBranch: Bool = true
+        createNewBranch: Bool = true,
+        startPoint: String? = nil
     ) async throws -> String {
         let configuredRemotes = (try? await remoteNames(repositoryPath: repositoryPath)) ?? []
         let remoteNames = Set(configuredRemotes + ["origin"])
@@ -35,6 +41,9 @@ extension WorktreeService {
             var arguments = ["-C", repositoryPath, "worktree", "add"]
             if createNewBranch {
                 arguments += ["-b", resolvedBranchName, worktreeURL.path]
+                if let startPoint, !startPoint.isEmpty {
+                    arguments.append(startPoint)
+                }
             } else {
                 arguments += [worktreeURL.path, resolvedBranchName]
             }
@@ -225,6 +234,37 @@ extension WorktreeService {
         guard !baseName.isEmpty else { return }
         if existingBranches.contains(baseName) {
             throw WorktreeError.branchAlreadyExists(baseName)
+        }
+    }
+
+    /// Records `baseBranch` as `branch`'s parent in the repository's shared
+    /// local Git configuration — the same declaration Stack discovery reads.
+    ///
+    /// Only branches Argus creates are recorded, and only at creation time, so
+    /// this never rewrites a parent another tool owns.
+    func recordBaseBranch(
+        _ baseBranch: String,
+        forBranch branch: String,
+        repositoryPath: String
+    ) async throws {
+        guard branch != baseBranch,
+            GitReferenceValidation.isValidBranchName(branch),
+            GitReferenceValidation.isValidBranchName(baseBranch)
+        else {
+            throw WorktreeError.baseBranchRecordingFailed(
+                "Invalid branch names: '\(branch)' based on '\(baseBranch)'"
+            )
+        }
+        do {
+            _ = try await runGit(
+                args: [
+                    "-C", repositoryPath, "config",
+                    RecordedBaseBranchConfiguration.key(for: branch), baseBranch
+                ],
+                workingDirectory: repositoryPath
+            )
+        } catch {
+            throw WorktreeError.baseBranchRecordingFailed(error.localizedDescription)
         }
     }
 
