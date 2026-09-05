@@ -2,6 +2,14 @@
 
 This file records changes pushed for local Argus releases. New entries use a `YYYY-MM-DD` heading and link to their commit or commits.
 
+## 2026-09-04
+
+- The `argus` command line tool now lists and creates Workspaces in a running Argus. `argus workspace list` prints Projects and their Workspaces in sidebar order, with each Workspace's number, type, and branch, and shows Stack Groups as parent-to-dependent trees including branches that have no open Workspace. `--json` prints the same information for scripts. ([69d3adf](https://github.com/eshurakov/argus/commit/69d3adfbe7dfab5c15d91b101bbe92a9f84359ed))
+- `argus workspace create` adds a Worktree Workspace to a Project. Without options it uses the Project of the terminal you run it in and generates an available branch name; `--project`, `--branch`, and `--name` set those explicitly. Creating a Workspace this way does not move your place in the sidebar, so it is safe to run from an agent's terminal. ([69d3adf](https://github.com/eshurakov/argus/commit/69d3adfbe7dfab5c15d91b101bbe92a9f84359ed))
+- `argus workspace create --from <workspace>` starts the new branch from that Workspace's branch and records it as the parent, so both Workspaces appear together in a Stack Group in the sidebar and Changes compares against the right branch. Use `--from .` for the Workspace you are running in. ([69d3adf](https://github.com/eshurakov/argus/commit/69d3adfbe7dfab5c15d91b101bbe92a9f84359ed))
+- `argus` now works without setup inside an Argus terminal: the bundled command is first on the `PATH` of every shell Argus starts, alongside the existing Argus environment variables. From an ordinary terminal, call it at `Argus.app/Contents/Resources/bin/argus` or symlink it onto your own `PATH`. ([69d3adf](https://github.com/eshurakov/argus/commit/69d3adfbe7dfab5c15d91b101bbe92a9f84359ed))
+- The tool asks Argus for everything and decides nothing itself: names, branches, and `.` are resolved by the app against its live state, and an ambiguous name is refused with the matching candidates instead of a guess. It exits 0 on success, 1 when Argus refuses a request, and 3 when Argus is not running. ([69d3adf](https://github.com/eshurakov/argus/commit/69d3adfbe7dfab5c15d91b101bbe92a9f84359ed))
+
 ## 2026-09-03
 
 - Released Argus 1.15.0 with Collections for organizing Named Projects. Create and rename Collections, move Projects with context menus or drag-and-drop, and reorder whole Project blocks without changing open work. Removing a Collection keeps its Projects and Workspaces. ([4310d91](https://github.com/jeanduplessis/argus/commit/4310d918261998b46a894f90c5f6df83a46e616f))
